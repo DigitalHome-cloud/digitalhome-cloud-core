@@ -1,0 +1,22 @@
+{
+  "modules": [
+    {
+      "id": "dhc-nfc14100-electrical",
+      "label": "NF C 14-100 Electrical Delivery",
+      "version": "1.0.0",
+      "file": "dhc-nfc14100-electrical.ttl",
+      "category": "electrical",
+      "countries": ["FR"],
+      "toolboxCategory": "NFC 14-100 Delivery"
+    },
+    {
+      "id": "dhc-nfc15100-electrical",
+      "label": "NF C 15-100 Electrical Installation",
+      "version": "1.0.0",
+      "file": "dhc-nfc15100-electrical.ttl",
+      "category": "electrical",
+      "countries": ["FR"],
+      "toolboxCategory": "NFC 15-100 Circuits"
+    }
+  ]
+}

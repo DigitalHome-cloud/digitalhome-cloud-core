@@ -1,0 +1,1235 @@
+@prefix dhc:   <https://digitalhome.cloud/ontology#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+# ============================================================
+# DigitalHome.Cloud Core Ontology — v1.2.0
+#
+# This ontology defines the vocabulary for digital twins of
+# real estate properties. It covers spatial structure, building
+# envelope, electrical systems, plumbing, heating/HVAC,
+# data networks, equipment, automation scenarios, and
+# e-mobility (electric vehicles and charging infrastructure).
+#
+# Design views (for the SmartHome Designer toolbox):
+#   - Spatial:    RealEstate → Area → Space hierarchy
+#   - Building:   Walls, windows, doors, roof, insulation
+#   - Electrical: Circuits, distribution boards, protection
+#   - Plumbing:   Water supply, drainage, fixtures
+#   - Heating:    HVAC, radiators, heat pumps, thermostats
+#   - Network:    LAN, WiFi, ZigBee, automation protocols
+#   - Governance: Agents, roles, role assignments, projects
+#   - Automation: Groups, scenarios, sensors, actors
+# ============================================================
+
+
+# ────────────────────────────────────────────────────────────
+# Ontology metadata
+# ────────────────────────────────────────────────────────────
+
+<https://digitalhome.cloud/ontology>
+  a owl:Ontology ;
+  rdfs:label "DigitalHome.Cloud Core Ontology"@en ;
+  dcterms:description "Semantic foundation for digital twins of real estate properties."@en ;
+  owl:versionInfo "1.2.0" ;
+  dcterms:creator "D-LAB-5 / DigitalHome.Cloud" ;
+  dcterms:license <https://opensource.org/licenses/MIT> .
+
+
+# ============================================================
+# DESIGN VIEW: Spatial
+# The physical hierarchy of a property
+# ============================================================
+
+dhc:RealEstate
+  a owl:Class ;
+  rdfs:label "Real Estate"@en ;
+  rdfs:label "Immobilie"@de ;
+  rdfs:label "Bien immobilier"@fr ;
+  rdfs:comment "A physical property: house, apartment, land with buildings."@en ;
+  dhc:designView "spatial" .
+
+dhc:Area
+  a owl:Class ;
+  rdfs:label "Area"@en ;
+  rdfs:label "Bereich"@de ;
+  rdfs:label "Zone"@fr ;
+  rdfs:comment "A major subdivision of a property (e.g. main building, annex, garden)."@en ;
+  dhc:designView "spatial" .
+
+dhc:Floor
+  a owl:Class ;
+  rdfs:subClassOf dhc:Area ;
+  rdfs:label "Floor"@en ;
+  rdfs:label "Stockwerk"@de ;
+  rdfs:label "Étage"@fr ;
+  rdfs:comment "A storey / level within a building."@en ;
+  dhc:designView "spatial" .
+
+dhc:Space
+  a owl:Class ;
+  rdfs:label "Space"@en ;
+  rdfs:label "Raum"@de ;
+  rdfs:label "Espace"@fr ;
+  rdfs:comment "A specific room or enclosed area (e.g. kitchen, bedroom, garage)."@en ;
+  dhc:designView "spatial" .
+
+dhc:Zone
+  a owl:Class ;
+  rdfs:label "Zone"@en ;
+  rdfs:label "Zone"@de ;
+  rdfs:label "Zone"@fr ;
+  rdfs:comment "A logical zone spanning one or more spaces (e.g. thermal zone, fire compartment)."@en ;
+  dhc:designView "spatial" .
+
+
+# ── Spatial object properties ──
+
+dhc:hasArea
+  a owl:ObjectProperty ;
+  rdfs:label "has area"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range dhc:Area ;
+  dhc:designView "spatial" .
+
+dhc:hasFloor
+  a owl:ObjectProperty ;
+  rdfs:label "has floor"@en ;
+  rdfs:domain dhc:Area ;
+  rdfs:range dhc:Floor ;
+  dhc:designView "spatial" .
+
+dhc:hasSpace
+  a owl:ObjectProperty ;
+  rdfs:label "has space"@en ;
+  rdfs:domain dhc:Area ;
+  rdfs:range dhc:Space ;
+  dhc:designView "spatial" .
+
+dhc:belongsToZone
+  a owl:ObjectProperty ;
+  rdfs:label "belongs to zone"@en ;
+  rdfs:domain dhc:Space ;
+  rdfs:range dhc:Zone ;
+  dhc:designView "spatial" .
+
+# ── Spatial data properties ──
+
+dhc:floorLevel
+  a owl:DatatypeProperty ;
+  rdfs:label "floor level"@en ;
+  rdfs:domain dhc:Floor ;
+  rdfs:range xsd:integer ;
+  rdfs:comment "Numeric level (0 = ground, -1 = basement, 1 = first, ...)."@en ;
+  dhc:designView "spatial" .
+
+dhc:areaM2
+  a owl:DatatypeProperty ;
+  rdfs:label "area (m²)"@en ;
+  rdfs:domain dhc:Space ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "spatial" .
+
+
+# ============================================================
+# DESIGN VIEW: Building
+# Building envelope, structural elements
+# ============================================================
+
+dhc:BuildingElement
+  a owl:Class ;
+  rdfs:label "Building Element"@en ;
+  rdfs:comment "Abstract base for structural/envelope components."@en ;
+  dhc:designView "building" .
+
+dhc:Wall
+  a owl:Class ;
+  rdfs:subClassOf dhc:BuildingElement ;
+  rdfs:label "Wall"@en ;
+  rdfs:label "Wand"@de ;
+  rdfs:label "Mur"@fr ;
+  dhc:designView "building" .
+
+dhc:Window
+  a owl:Class ;
+  rdfs:subClassOf dhc:BuildingElement ;
+  rdfs:label "Window"@en ;
+  rdfs:label "Fenster"@de ;
+  rdfs:label "Fenêtre"@fr ;
+  dhc:designView "building" .
+
+dhc:Door
+  a owl:Class ;
+  rdfs:subClassOf dhc:BuildingElement ;
+  rdfs:label "Door"@en ;
+  rdfs:label "Tür"@de ;
+  rdfs:label "Porte"@fr ;
+  dhc:designView "building" .
+
+dhc:Roof
+  a owl:Class ;
+  rdfs:subClassOf dhc:BuildingElement ;
+  rdfs:label "Roof"@en ;
+  rdfs:label "Dach"@de ;
+  rdfs:label "Toit"@fr ;
+  dhc:designView "building" .
+
+dhc:Insulation
+  a owl:Class ;
+  rdfs:subClassOf dhc:BuildingElement ;
+  rdfs:label "Insulation"@en ;
+  rdfs:label "Dämmung"@de ;
+  rdfs:label "Isolation"@fr ;
+  dhc:designView "building" .
+
+# ── Building object properties ──
+
+dhc:hasBuildingElement
+  a owl:ObjectProperty ;
+  rdfs:label "has building element"@en ;
+  rdfs:domain dhc:Space ;
+  rdfs:range dhc:BuildingElement ;
+  dhc:designView "building" .
+
+# ── Building data properties ──
+
+dhc:uValue
+  a owl:DatatypeProperty ;
+  rdfs:label "U-value (W/m²K)"@en ;
+  rdfs:domain dhc:BuildingElement ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "Thermal transmittance coefficient."@en ;
+  dhc:designView "building" .
+
+dhc:material
+  a owl:DatatypeProperty ;
+  rdfs:label "material"@en ;
+  rdfs:domain dhc:BuildingElement ;
+  rdfs:range xsd:string ;
+  dhc:designView "building" .
+
+
+# ============================================================
+# DESIGN VIEW: Electrical
+# Circuits, distribution, protection, wiring
+# ============================================================
+
+dhc:Circuit
+  a owl:Class ;
+  rdfs:label "Circuit"@en ;
+  rdfs:label "Stromkreis"@de ;
+  rdfs:label "Circuit"@fr ;
+  rdfs:comment "An electrical circuit connecting equipment to a distribution board."@en ;
+  dhc:designView "electrical" .
+
+dhc:CircuitType
+  a owl:Class ;
+  rdfs:label "Circuit Type"@en ;
+  rdfs:comment "Classification: lighting, sockets, dedicated, etc."@en ;
+  dhc:designView "electrical" .
+
+dhc:DistributionBoard
+  a owl:Class ;
+  rdfs:label "Distribution Board"@en ;
+  rdfs:label "Verteilerkasten"@de ;
+  rdfs:label "Tableau électrique"@fr ;
+  rdfs:comment "Main or sub distribution panel."@en ;
+  dhc:designView "electrical" .
+
+dhc:ProtectionDevice
+  a owl:Class ;
+  rdfs:label "Protection Device"@en ;
+  rdfs:comment "Circuit breaker, RCD, fuse, surge protector."@en ;
+  dhc:designView "electrical" .
+
+dhc:WiringSegment
+  a owl:Class ;
+  rdfs:label "Wiring Segment"@en ;
+  rdfs:comment "A run of cable between two points."@en ;
+  dhc:designView "electrical" .
+
+dhc:ElectricalTechnicalSpace
+  a owl:Class ;
+  rdfs:subClassOf dhc:Space ;
+  rdfs:label "Electrical Technical Space"@en ;
+  rdfs:label "Elektro-Technikraum"@de ;
+  rdfs:label "Espace technique électrique"@fr ;
+  rdfs:comment "A generic technical space for electrical installation (e.g. GTL, electrical closet)."@en ;
+  dhc:designView "electrical" .
+
+dhc:EnergyDelivery
+  a owl:Class ;
+  rdfs:label "Energy Delivery"@en ;
+  rdfs:label "Energieeinspeisung"@de ;
+  rdfs:label "Livraison d'énergie"@fr ;
+  rdfs:comment "Root entry point: contractual and physical energy supply to the property."@en ;
+  dhc:designView "electrical" .
+
+dhc:EnergyMeter
+  a owl:Class ;
+  rdfs:label "Energy Meter"@en ;
+  rdfs:label "Stromzähler"@de ;
+  rdfs:label "Compteur d'énergie"@fr ;
+  rdfs:comment "A metering device measuring energy consumption."@en ;
+  dhc:designView "electrical" .
+
+dhc:EmergencyDisconnect
+  a owl:Class ;
+  rdfs:label "Emergency Disconnect"@en ;
+  rdfs:label "Notabschaltung"@de ;
+  rdfs:label "Coupure d'urgence"@fr ;
+  rdfs:comment "Emergency or general disconnect device."@en ;
+  dhc:designView "electrical" .
+
+dhc:Distribution
+  a owl:Class ;
+  rdfs:label "Distribution"@en ;
+  rdfs:label "Verteilung"@de ;
+  rdfs:label "Distribution"@fr ;
+  rdfs:comment "An intermediate distribution node (junction box, sub-distribution)."@en ;
+  dhc:designView "electrical" .
+
+# ── Electrical object properties ──
+
+dhc:hasCircuit
+  a owl:ObjectProperty ;
+  rdfs:label "has circuit"@en ;
+  rdfs:domain dhc:DistributionBoard ;
+  rdfs:range dhc:Circuit ;
+  dhc:designView "electrical" .
+
+dhc:hasProtection
+  a owl:ObjectProperty ;
+  rdfs:label "has protection"@en ;
+  rdfs:domain dhc:Circuit ;
+  rdfs:range dhc:ProtectionDevice ;
+  dhc:designView "electrical" .
+
+dhc:feedsEquipment
+  a owl:ObjectProperty ;
+  rdfs:label "feeds equipment"@en ;
+  rdfs:domain dhc:Circuit ;
+  rdfs:range dhc:Equipment ;
+  dhc:designView "electrical" .
+
+dhc:hasCircuitType
+  a owl:ObjectProperty ;
+  rdfs:label "has circuit type"@en ;
+  rdfs:domain dhc:Circuit ;
+  rdfs:range dhc:CircuitType ;
+  dhc:designView "electrical" .
+
+dhc:hasWiring
+  a owl:ObjectProperty ;
+  rdfs:label "has wiring"@en ;
+  rdfs:domain dhc:Circuit ;
+  rdfs:range dhc:WiringSegment ;
+  dhc:designView "electrical" .
+
+dhc:feeds
+  a owl:ObjectProperty ;
+  rdfs:label "feeds"@en ;
+  rdfs:label "speist"@de ;
+  rdfs:label "alimente"@fr ;
+  rdfs:comment "Generic upstream-to-downstream topology link in the electrical delivery chain."@en ;
+  dhc:designView "electrical" .
+
+dhc:locatedIn
+  a owl:ObjectProperty ;
+  rdfs:label "located in"@en ;
+  rdfs:label "befindet sich in"@de ;
+  rdfs:label "situé dans"@fr ;
+  rdfs:range dhc:Space ;
+  rdfs:comment "Physical location of a device or component within a space."@en ;
+  dhc:designView "electrical" .
+
+# ── Electrical data properties ──
+
+dhc:ratedCurrent
+  a owl:DatatypeProperty ;
+  rdfs:label "rated current (A)"@en ;
+  rdfs:domain dhc:ProtectionDevice ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "electrical" .
+
+dhc:crossSection
+  a owl:DatatypeProperty ;
+  rdfs:label "cross section (mm²)"@en ;
+  rdfs:domain dhc:WiringSegment ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "electrical" .
+
+dhc:maxPoints
+  a owl:DatatypeProperty ;
+  rdfs:label "max points on circuit"@en ;
+  rdfs:domain dhc:Circuit ;
+  rdfs:range xsd:integer ;
+  rdfs:comment "Maximum number of endpoints (governed by national standards)."@en ;
+  dhc:designView "electrical" .
+
+dhc:energyProviderName
+  a owl:DatatypeProperty ;
+  rdfs:label "energy provider name"@en ;
+  rdfs:label "Energieversorger"@de ;
+  rdfs:label "fournisseur d'énergie"@fr ;
+  rdfs:domain dhc:EnergyDelivery ;
+  rdfs:range xsd:string ;
+  dhc:designView "electrical" .
+
+dhc:currentType
+  a owl:DatatypeProperty ;
+  rdfs:label "current type"@en ;
+  rdfs:label "Stromart"@de ;
+  rdfs:label "type de courant"@fr ;
+  rdfs:domain dhc:EnergyDelivery ;
+  rdfs:range xsd:string ;
+  rdfs:comment "SinglePhase or ThreePhase."@en ;
+  dhc:designView "electrical" .
+
+dhc:neutralSystem
+  a owl:DatatypeProperty ;
+  rdfs:label "neutral system"@en ;
+  rdfs:label "Erdungssystem"@de ;
+  rdfs:label "régime de neutre"@fr ;
+  rdfs:domain dhc:EnergyDelivery ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Star (TT, TN-S, TN-C, IT)."@en ;
+  dhc:designView "electrical" .
+
+dhc:contractedPowerKVA
+  a owl:DatatypeProperty ;
+  rdfs:label "contracted power (kVA)"@en ;
+  rdfs:label "Vertragsleistung (kVA)"@de ;
+  rdfs:label "puissance souscrite (kVA)"@fr ;
+  rdfs:domain dhc:EnergyDelivery ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "electrical" .
+
+dhc:phase
+  a owl:DatatypeProperty ;
+  rdfs:label "phase"@en ;
+  rdfs:domain dhc:Circuit ;
+  rdfs:range xsd:integer ;
+  rdfs:comment "Phase assignment: 1, 2, or 3."@en ;
+  dhc:designView "electrical" .
+
+dhc:distributionBoardType
+  a owl:DatatypeProperty ;
+  rdfs:label "distribution board type"@en ;
+  rdfs:label "Verteilertyp"@de ;
+  rdfs:label "type de tableau"@fr ;
+  rdfs:domain dhc:DistributionBoard ;
+  rdfs:range xsd:string ;
+  rdfs:comment "ACBoard, DCBoard, or CommunicationBoard."@en ;
+  dhc:designView "electrical" .
+
+dhc:wiring
+  a owl:DatatypeProperty ;
+  rdfs:label "wiring"@en ;
+  rdfs:label "Verdrahtung"@de ;
+  rdfs:label "câblage"@fr ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Cable specification, e.g. 3G2.5, 5G6."@en ;
+  dhc:designView "electrical" .
+
+
+# ============================================================
+# DESIGN VIEW: Plumbing
+# Water supply, drainage, fixtures
+# ============================================================
+
+dhc:PlumbingSystem
+  a owl:Class ;
+  rdfs:label "Plumbing System"@en ;
+  rdfs:label "Sanitärsystem"@de ;
+  rdfs:label "Système de plomberie"@fr ;
+  rdfs:comment "A water supply or drainage system."@en ;
+  dhc:designView "plumbing" .
+
+dhc:WaterSupply
+  a owl:Class ;
+  rdfs:subClassOf dhc:PlumbingSystem ;
+  rdfs:label "Water Supply"@en ;
+  rdfs:comment "Cold or hot water supply network."@en ;
+  dhc:designView "plumbing" .
+
+dhc:Drainage
+  a owl:Class ;
+  rdfs:subClassOf dhc:PlumbingSystem ;
+  rdfs:label "Drainage"@en ;
+  rdfs:comment "Wastewater and rainwater drainage."@en ;
+  dhc:designView "plumbing" .
+
+dhc:PlumbingFixture
+  a owl:Class ;
+  rdfs:label "Plumbing Fixture"@en ;
+  rdfs:comment "Sink, toilet, shower, bathtub, washing machine connection."@en ;
+  dhc:designView "plumbing" .
+
+dhc:Pipe
+  a owl:Class ;
+  rdfs:label "Pipe"@en ;
+  rdfs:comment "A pipe segment (copper, PER, PVC, etc.)."@en ;
+  dhc:designView "plumbing" .
+
+dhc:Valve
+  a owl:Class ;
+  rdfs:label "Valve"@en ;
+  rdfs:comment "Shut-off valve, pressure reducer, check valve."@en ;
+  dhc:designView "plumbing" .
+
+# ── Plumbing object properties ──
+
+dhc:hasPlumbingSystem
+  a owl:ObjectProperty ;
+  rdfs:label "has plumbing system"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range dhc:PlumbingSystem ;
+  dhc:designView "plumbing" .
+
+dhc:hasFixture
+  a owl:ObjectProperty ;
+  rdfs:label "has fixture"@en ;
+  rdfs:domain dhc:Space ;
+  rdfs:range dhc:PlumbingFixture ;
+  dhc:designView "plumbing" .
+
+dhc:connectedVia
+  a owl:ObjectProperty ;
+  rdfs:label "connected via"@en ;
+  rdfs:domain dhc:PlumbingFixture ;
+  rdfs:range dhc:Pipe ;
+  dhc:designView "plumbing" .
+
+# ── Plumbing data properties ──
+
+dhc:pipeDiameter
+  a owl:DatatypeProperty ;
+  rdfs:label "pipe diameter (mm)"@en ;
+  rdfs:domain dhc:Pipe ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "plumbing" .
+
+dhc:pipeMaterial
+  a owl:DatatypeProperty ;
+  rdfs:label "pipe material"@en ;
+  rdfs:domain dhc:Pipe ;
+  rdfs:range xsd:string ;
+  dhc:designView "plumbing" .
+
+
+# ============================================================
+# DESIGN VIEW: Heating / HVAC
+# Heating, ventilation, air conditioning
+# ============================================================
+
+dhc:HVACSystem
+  a owl:Class ;
+  rdfs:label "HVAC System"@en ;
+  rdfs:label "Heizungs-/Klimaanlage"@de ;
+  rdfs:label "Système CVC"@fr ;
+  rdfs:comment "A heating, ventilation, or air conditioning system."@en ;
+  dhc:designView "heating" .
+
+dhc:HeatSource
+  a owl:Class ;
+  rdfs:subClassOf dhc:HVACSystem ;
+  rdfs:label "Heat Source"@en ;
+  rdfs:comment "Boiler, heat pump, solar thermal, wood stove."@en ;
+  dhc:designView "heating" .
+
+dhc:HeatEmitter
+  a owl:Class ;
+  rdfs:subClassOf dhc:HVACSystem ;
+  rdfs:label "Heat Emitter"@en ;
+  rdfs:comment "Radiator, underfloor heating, convector."@en ;
+  dhc:designView "heating" .
+
+dhc:Ventilation
+  a owl:Class ;
+  rdfs:subClassOf dhc:HVACSystem ;
+  rdfs:label "Ventilation"@en ;
+  rdfs:comment "VMC, ERV, HRV, extract fan."@en ;
+  dhc:designView "heating" .
+
+dhc:Thermostat
+  a owl:Class ;
+  rdfs:label "Thermostat"@en ;
+  rdfs:comment "Temperature control device, may be smart."@en ;
+  dhc:designView "heating" .
+
+# ── Heating object properties ──
+
+dhc:hasHVACSystem
+  a owl:ObjectProperty ;
+  rdfs:label "has HVAC system"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range dhc:HVACSystem ;
+  dhc:designView "heating" .
+
+dhc:heatsSpace
+  a owl:ObjectProperty ;
+  rdfs:label "heats space"@en ;
+  rdfs:domain dhc:HeatEmitter ;
+  rdfs:range dhc:Space ;
+  dhc:designView "heating" .
+
+dhc:controlledBy
+  a owl:ObjectProperty ;
+  rdfs:label "controlled by"@en ;
+  rdfs:domain dhc:HeatEmitter ;
+  rdfs:range dhc:Thermostat ;
+  dhc:designView "heating" .
+
+# ── Heating data properties ──
+
+dhc:heatingPower
+  a owl:DatatypeProperty ;
+  rdfs:label "heating power (kW)"@en ;
+  rdfs:domain dhc:HeatSource ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "heating" .
+
+dhc:setpointTemp
+  a owl:DatatypeProperty ;
+  rdfs:label "setpoint temperature (°C)"@en ;
+  rdfs:domain dhc:Thermostat ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "heating" .
+
+
+# ============================================================
+# DESIGN VIEW: Network
+# Data networks, home automation protocols
+# ============================================================
+
+dhc:NetworkSegment
+  a owl:Class ;
+  rdfs:label "Network Segment"@en ;
+  rdfs:comment "A logical or physical network segment."@en ;
+  dhc:designView "network" .
+
+dhc:EthernetSegment
+  a owl:Class ;
+  rdfs:subClassOf dhc:NetworkSegment ;
+  rdfs:label "Ethernet Segment"@en ;
+  dhc:designView "network" .
+
+dhc:WiFiAccessPoint
+  a owl:Class ;
+  rdfs:label "WiFi Access Point"@en ;
+  dhc:designView "network" .
+
+dhc:LANSwitch
+  a owl:Class ;
+  rdfs:label "LAN Switch"@en ;
+  dhc:designView "network" .
+
+dhc:Gateway
+  a owl:Class ;
+  rdfs:label "Gateway"@en ;
+  rdfs:comment "Router, internet gateway, home automation hub."@en ;
+  dhc:designView "network" .
+
+dhc:ZigBeeSegment
+  a owl:Class ;
+  rdfs:subClassOf dhc:NetworkSegment ;
+  rdfs:label "ZigBee Segment"@en ;
+  dhc:designView "network" .
+
+dhc:HomeMaticSegment
+  a owl:Class ;
+  rdfs:subClassOf dhc:NetworkSegment ;
+  rdfs:label "HomeMatic Segment"@en ;
+  dhc:designView "network" .
+
+dhc:BluetoothSegment
+  a owl:Class ;
+  rdfs:subClassOf dhc:NetworkSegment ;
+  rdfs:label "Bluetooth Segment"@en ;
+  dhc:designView "network" .
+
+# ── Network object properties ──
+
+dhc:hasNetworkSegment
+  a owl:ObjectProperty ;
+  rdfs:label "has network segment"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range dhc:NetworkSegment ;
+  dhc:designView "network" .
+
+dhc:connectedToNetwork
+  a owl:ObjectProperty ;
+  rdfs:label "connected to network"@en ;
+  rdfs:domain dhc:Equipment ;
+  rdfs:range dhc:NetworkSegment ;
+  dhc:designView "network" .
+
+
+# ============================================================
+# SHARED: Equipment
+# Physical devices — referenced across all views
+# ============================================================
+
+dhc:Equipment
+  a owl:Class ;
+  rdfs:label "Equipment"@en ;
+  rdfs:label "Gerät"@de ;
+  rdfs:label "Équipement"@fr ;
+  rdfs:comment "A physical device: sensor, actuator, appliance, fixture."@en .
+
+dhc:EquipmentType
+  a owl:Class ;
+  rdfs:label "Equipment Type"@en ;
+  rdfs:comment "Classification of equipment by category, brand, model."@en .
+
+# Common equipment subclasses
+dhc:Socket    a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Socket"@en ;    dhc:designView "electrical" .
+dhc:Switch    a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Switch"@en ;    dhc:designView "electrical" .
+dhc:Light     a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Light"@en ;     dhc:designView "electrical" .
+dhc:Heater    a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Heater"@en ;    dhc:designView "heating" .
+dhc:Sensor    a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Sensor"@en ;    dhc:designView "network" .
+dhc:Actor     a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Actor"@en ;     dhc:designView "network" .
+dhc:Controller a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Controller"@en ; dhc:designView "network" .
+
+# ── Equipment object properties ──
+
+dhc:hasEquipment
+  a owl:ObjectProperty ;
+  rdfs:label "has equipment"@en ;
+  rdfs:domain dhc:Space ;
+  rdfs:range dhc:Equipment .
+
+dhc:hasEquipmentType
+  a owl:ObjectProperty ;
+  rdfs:label "has equipment type"@en ;
+  rdfs:domain dhc:Equipment ;
+  rdfs:range dhc:EquipmentType .
+
+dhc:hasPart
+  a owl:ObjectProperty ;
+  rdfs:label "has part"@en ;
+  rdfs:comment "Composition: an assembly contains sub-equipment."@en ;
+  rdfs:domain dhc:Equipment ;
+  rdfs:range dhc:Equipment .
+
+# ── Equipment data properties ──
+
+dhc:brand
+  a owl:DatatypeProperty ;
+  rdfs:label "brand"@en ;
+  rdfs:domain dhc:EquipmentType ;
+  rdfs:range xsd:string .
+
+dhc:model
+  a owl:DatatypeProperty ;
+  rdfs:label "model"@en ;
+  rdfs:domain dhc:EquipmentType ;
+  rdfs:range xsd:string .
+
+dhc:powerRating
+  a owl:DatatypeProperty ;
+  rdfs:label "power rating (W)"@en ;
+  rdfs:domain dhc:Equipment ;
+  rdfs:range xsd:decimal .
+
+dhc:catalogRef
+  a owl:DatatypeProperty ;
+  rdfs:label "catalog reference"@en ;
+  rdfs:domain dhc:EquipmentType ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Reference to a product catalog entry (GraphQL ID or SKU)." .
+
+
+# ============================================================
+# SHARED: Automation
+# Groups, scenarios, sensors ↔ actors
+# ============================================================
+
+dhc:Group
+  a owl:Class ;
+  rdfs:label "Group"@en ;
+  rdfs:comment "Logical grouping of equipment for control (e.g. Night Lighting)."@en ;
+  dhc:designView "automation" .
+
+dhc:Scenario
+  a owl:Class ;
+  rdfs:label "Scenario"@en ;
+  rdfs:comment "Automation rule linking triggers (sensors) to actions (actors)."@en ;
+  dhc:designView "automation" .
+
+dhc:hasGroupMember
+  a owl:ObjectProperty ;
+  rdfs:label "has group member"@en ;
+  rdfs:domain dhc:Group ;
+  rdfs:range dhc:Equipment ;
+  dhc:designView "automation" .
+
+dhc:hasTrigger
+  a owl:ObjectProperty ;
+  rdfs:label "has trigger"@en ;
+  rdfs:domain dhc:Scenario ;
+  rdfs:range dhc:Sensor ;
+  dhc:designView "automation" .
+
+dhc:hasAction
+  a owl:ObjectProperty ;
+  rdfs:label "has action"@en ;
+  rdfs:domain dhc:Scenario ;
+  rdfs:range dhc:Actor ;
+  dhc:designView "automation" .
+
+
+# ============================================================
+# DESIGN VIEW: Governance
+# Stakeholders, roles, role assignments, projects
+# ============================================================
+
+dhc:Agent
+  a owl:Class ;
+  rdfs:label "Agent"@en ;
+  rdfs:label "Akteur"@de ;
+  rdfs:label "Agent"@fr ;
+  rdfs:comment "Something that can hold responsibility or perform actions (person or organization)."@en ;
+  dhc:designView "governance" .
+
+dhc:Person
+  a owl:Class ;
+  rdfs:subClassOf dhc:Agent ;
+  rdfs:label "Person"@en ;
+  rdfs:label "Person"@de ;
+  rdfs:label "Personne"@fr ;
+  rdfs:comment "A natural person. Avoid storing sensitive personal data; use identifiers/display names."@en ;
+  dhc:designView "governance" .
+
+dhc:Organization
+  a owl:Class ;
+  rdfs:subClassOf dhc:Agent ;
+  rdfs:label "Organization"@en ;
+  rdfs:label "Organisation"@de ;
+  rdfs:label "Organisation"@fr ;
+  rdfs:comment "Company, association, utility, contractor, architect office, property manager."@en ;
+  dhc:designView "governance" .
+
+dhc:Role
+  a owl:Class ;
+  rdfs:label "Role"@en ;
+  rdfs:label "Rolle"@de ;
+  rdfs:label "Rôle"@fr ;
+  rdfs:comment "A type of role (Owner, Operator, Installer, Maintainer, Occupant, etc.)."@en ;
+  dhc:designView "governance" .
+
+dhc:RoleAssignment
+  a owl:Class ;
+  rdfs:label "Role Assignment"@en ;
+  rdfs:label "Rollenzuweisung"@de ;
+  rdfs:label "Attribution de rôle"@fr ;
+  rdfs:comment "Agent X plays Role Y in Context Z (optionally during time window T)."@en ;
+  dhc:designView "governance" .
+
+dhc:Project
+  a owl:Class ;
+  rdfs:label "Project"@en ;
+  rdfs:label "Projekt"@de ;
+  rdfs:label "Projet"@fr ;
+  rdfs:comment "An engineering/design/build project, distinct from the as-operated asset twin."@en ;
+  dhc:designView "governance" .
+
+# ── Governance object properties: Role assignment pattern ──
+
+dhc:assignedAgent
+  a owl:ObjectProperty ;
+  rdfs:label "assigned agent"@en ;
+  rdfs:domain dhc:RoleAssignment ;
+  rdfs:range dhc:Agent ;
+  dhc:designView "governance" .
+
+dhc:assignedRole
+  a owl:ObjectProperty ;
+  rdfs:label "assigned role"@en ;
+  rdfs:domain dhc:RoleAssignment ;
+  rdfs:range dhc:Role ;
+  dhc:designView "governance" .
+
+dhc:assignmentContext
+  a owl:ObjectProperty ;
+  rdfs:label "assignment context"@en ;
+  rdfs:domain dhc:RoleAssignment ;
+  rdfs:comment "Context of the role: RealEstate, Project, Equipment, or a system (HVACSystem, PlumbingSystem, etc.)."@en ;
+  dhc:designView "governance" .
+
+# ── Governance object properties: Responsibility shortcuts ──
+
+dhc:owns
+  a owl:ObjectProperty ;
+  rdfs:label "owns"@en ;
+  rdfs:domain dhc:Agent ;
+  rdfs:comment "Ownership of a RealEstate or Equipment."@en ;
+  dhc:designView "governance" .
+
+dhc:operates
+  a owl:ObjectProperty ;
+  rdfs:label "operates"@en ;
+  rdfs:domain dhc:Agent ;
+  rdfs:comment "Operational responsibility for a RealEstate, system, or Equipment."@en ;
+  dhc:designView "governance" .
+
+dhc:maintains
+  a owl:ObjectProperty ;
+  rdfs:label "maintains"@en ;
+  rdfs:domain dhc:Agent ;
+  rdfs:comment "Maintenance responsibility for Equipment or a system."@en ;
+  dhc:designView "governance" .
+
+dhc:installedBy
+  a owl:ObjectProperty ;
+  rdfs:label "installed by"@en ;
+  rdfs:range dhc:Agent ;
+  rdfs:comment "The agent that installed Equipment or a system."@en ;
+  dhc:designView "governance" .
+
+# ── Governance data properties ──
+
+dhc:externalId
+  a owl:DatatypeProperty ;
+  rdfs:label "external ID"@en ;
+  rdfs:domain dhc:Agent ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Link to IAM/CRM/ERP identity key (Cognito subject, SAP BP, etc.)."@en ;
+  dhc:designView "governance" .
+
+dhc:validFrom
+  a owl:DatatypeProperty ;
+  rdfs:label "valid from"@en ;
+  rdfs:domain dhc:RoleAssignment ;
+  rdfs:range xsd:dateTime ;
+  dhc:designView "governance" .
+
+dhc:validTo
+  a owl:DatatypeProperty ;
+  rdfs:label "valid to"@en ;
+  rdfs:domain dhc:RoleAssignment ;
+  rdfs:range xsd:dateTime ;
+  dhc:designView "governance" .
+
+dhc:assignmentStatus
+  a owl:DatatypeProperty ;
+  rdfs:label "assignment status"@en ;
+  rdfs:domain dhc:RoleAssignment ;
+  rdfs:range xsd:string ;
+  rdfs:comment "One of: planned, active, ended."@en ;
+  dhc:designView "governance" .
+
+
+# ============================================================
+# SHARED: Compliance & Guidelines
+# ============================================================
+
+dhc:Guideline
+  a owl:Class ;
+  rdfs:label "Guideline"@en ;
+  rdfs:comment "A norm, standard, or best practice (e.g. NF C 15-100, DIN VDE 0100)."@en .
+
+dhc:guidelineCategory
+  a owl:DatatypeProperty ;
+  rdfs:label "category"@en ;
+  rdfs:domain dhc:Guideline ;
+  rdfs:range xsd:string ;
+  rdfs:comment "One of: Regulation, Standard, BestPractice."@en .
+
+dhc:guidelineWeight
+  a owl:DatatypeProperty ;
+  rdfs:label "weight"@en ;
+  rdfs:domain dhc:Guideline ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "1.0 = mandatory, 0.5 = recommended, 0.2 = optional."@en .
+
+dhc:governedBy
+  a owl:ObjectProperty ;
+  rdfs:label "governed by"@en ;
+  rdfs:domain dhc:Circuit ;
+  rdfs:range dhc:Guideline .
+
+
+# ============================================================
+# SHARED: E-Mobility
+# Electric vehicles and charging infrastructure
+# ============================================================
+
+dhc:ElectricVehicle
+  a owl:Class ;
+  rdfs:label "Electric Vehicle"@en ;
+  rdfs:label "Elektrofahrzeug"@de ;
+  rdfs:label "Véhicule électrique"@fr ;
+  rdfs:comment "An electrically powered vehicle associated with the property."@en .
+
+dhc:ChargingStation
+  a owl:Class ;
+  rdfs:label "Charging Station"@en ;
+  rdfs:label "Ladestation"@de ;
+  rdfs:label "Borne de recharge"@fr ;
+  rdfs:comment "A charging point for electric vehicles: wallbox, standard outlet, or public charger."@en .
+
+# ── E-Mobility object properties ──
+
+dhc:hasElectricVehicle
+  a owl:ObjectProperty ;
+  rdfs:label "has electric vehicle"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range dhc:ElectricVehicle .
+
+dhc:hasChargingStation
+  a owl:ObjectProperty ;
+  rdfs:label "has charging station"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range dhc:ChargingStation .
+
+dhc:chargedAt
+  a owl:ObjectProperty ;
+  rdfs:label "charged at"@en ;
+  rdfs:domain dhc:ElectricVehicle ;
+  rdfs:range dhc:ChargingStation ;
+  rdfs:comment "The charging station used by this vehicle."@en .
+
+# ── E-Mobility data properties ──
+
+dhc:vehicleType
+  a owl:DatatypeProperty ;
+  rdfs:label "vehicle type"@en ;
+  rdfs:label "Fahrzeugtyp"@de ;
+  rdfs:label "type de véhicule"@fr ;
+  rdfs:domain dhc:ElectricVehicle ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Type of electric vehicle: car, bicycle, scooter, etc. Instances are created in the A-Box."@en .
+
+dhc:batteryCapacity
+  a owl:DatatypeProperty ;
+  rdfs:label "battery capacity (kWh)"@en ;
+  rdfs:domain dhc:ElectricVehicle ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "Usable battery capacity in kilowatt-hours."@en .
+
+dhc:chargingPower
+  a owl:DatatypeProperty ;
+  rdfs:label "charging power (kW)"@en ;
+  rdfs:domain dhc:ChargingStation ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "Maximum charging power in kilowatts."@en .
+
+dhc:chargingType
+  a owl:DatatypeProperty ;
+  rdfs:label "charging type"@en ;
+  rdfs:domain dhc:ChargingStation ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Type of charger: 230V outlet, wallbox 11kW, wallbox 22kW, DC fast charger."@en .
+
+dhc:vehicleRange
+  a owl:DatatypeProperty ;
+  rdfs:label "range (km)"@en ;
+  rdfs:domain dhc:ElectricVehicle ;
+  rdfs:range xsd:decimal ;
+  rdfs:comment "Estimated range on a full charge in kilometers."@en .
+
+
+# ============================================================
+# ANNOTATION: designView
+# Used by the SmartHome Designer to group classes into toolboxes
+# ============================================================
+
+dhc:designView
+  a owl:AnnotationProperty ;
+  rdfs:label "design view"@en ;
+  rdfs:comment "Indicates which Designer view/toolbox this concept belongs to. Values: spatial, building, electrical, plumbing, heating, network, governance, automation."@en .
+
+
+# ============================================================
+# SHARED: Common data properties
+# ============================================================
+
+dhc:name
+  a owl:DatatypeProperty ;
+  rdfs:label "name"@en ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Human-readable display name for any instance."@en .
+
+dhc:description
+  a owl:DatatypeProperty ;
+  rdfs:label "description"@en ;
+  rdfs:range xsd:string .
+
+dhc:smartHomeId
+  a owl:DatatypeProperty ;
+  rdfs:label "SmartHome ID"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Tenant partition key. Format: {country}-{zip}-{street3}{number}-{nn} e.g. DE-80331-MAR12-01."@en .
+
+
+# ────────────────────────────────────────────────────────────
+# v1.2.0 — Postal address properties on RealEstate
+# Sourced from map provider (geocoded)
+# ────────────────────────────────────────────────────────────
+
+dhc:country
+  a owl:DatatypeProperty ;
+  rdfs:label "Country"@en ;
+  rdfs:label "Land"@de ;
+  rdfs:label "Pays"@fr ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "ISO 3166-1 alpha-2 country code."@en ;
+  dhc:designView "spatial" .
+
+dhc:postalCode
+  a owl:DatatypeProperty ;
+  rdfs:label "Postal code"@en ;
+  rdfs:label "Postleitzahl"@de ;
+  rdfs:label "Code postal"@fr ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  dhc:designView "spatial" .
+
+dhc:streetName
+  a owl:DatatypeProperty ;
+  rdfs:label "Street name"@en ;
+  rdfs:label "Straßenname"@de ;
+  rdfs:label "Nom de rue"@fr ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  dhc:designView "spatial" .
+
+dhc:streetNumber
+  a owl:DatatypeProperty ;
+  rdfs:label "Street number"@en ;
+  rdfs:label "Hausnummer"@de ;
+  rdfs:label "Numéro"@fr ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "String to accommodate '12a', '12-14', etc."@en ;
+  dhc:designView "spatial" .
+
+dhc:locality
+  a owl:DatatypeProperty ;
+  rdfs:label "Locality"@en ;
+  rdfs:label "Ort"@de ;
+  rdfs:label "Localité"@fr ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "City / town."@en ;
+  dhc:designView "spatial" .
+
+dhc:adminRegion
+  a owl:DatatypeProperty ;
+  rdfs:label "Administrative region"@en ;
+  rdfs:label "Verwaltungsregion"@de ;
+  rdfs:label "Région administrative"@fr ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "State, canton, Land, région."@en ;
+  dhc:designView "spatial" .
+
+dhc:formattedAddress
+  a owl:DatatypeProperty ;
+  rdfs:label "Formatted address"@en ;
+  rdfs:label "Formatierte Adresse"@de ;
+  rdfs:label "Adresse formatée"@fr ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Provider-canonical single-line address for display."@en ;
+  dhc:designView "spatial" .
+
+
+# ────────────────────────────────────────────────────────────
+# v1.2.0 — Geocoordinates (WGS84)
+# ────────────────────────────────────────────────────────────
+
+dhc:latitude
+  a owl:DatatypeProperty ;
+  rdfs:label "Latitude"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "spatial" .
+
+dhc:longitude
+  a owl:DatatypeProperty ;
+  rdfs:label "Longitude"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "spatial" .
+
+
+# ────────────────────────────────────────────────────────────
+# v1.2.0 — Provider-scoped external reference
+# ────────────────────────────────────────────────────────────
+
+dhc:placeId
+  a owl:DatatypeProperty ;
+  rdfs:label "Place ID"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Map provider's stable place identifier."@en ;
+  dhc:designView "spatial" .
+
+dhc:placeIdProvider
+  a owl:DatatypeProperty ;
+  rdfs:label "Place ID provider"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Provider: 'google' | 'amazon-location' | 'manual'."@en ;
+  dhc:designView "spatial" .
+
+dhc:geocodeVerified
+  a owl:DatatypeProperty ;
+  rdfs:label "Geocode verified"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:boolean ;
+  rdfs:comment "True if lat/lng come from a provider geocode call."@en ;
+  dhc:designView "spatial" .
+
+
+# ────────────────────────────────────────────────────────────
+# v1.2.0 — Lifecycle and flag properties
+# ────────────────────────────────────────────────────────────
+
+dhc:isDemo
+  a owl:DatatypeProperty ;
+  rdfs:label "Is demo"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:boolean .
+
+dhc:creationStatus
+  a owl:DatatypeProperty ;
+  rdfs:label "Creation status"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "One of: draft | active | archived."@en .
+
+dhc:createdAt
+  a owl:DatatypeProperty ;
+  rdfs:label "Created at"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:dateTime .
+
+dhc:updatedAt
+  a owl:DatatypeProperty ;
+  rdfs:label "Updated at"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:dateTime .
+
+dhc:createdBy
+  a owl:ObjectProperty ;
+  rdfs:label "Created by"@en ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range dhc:Agent .
+
+dhc:preferredLanguage
+  a owl:DatatypeProperty ;
+  rdfs:label "Preferred language"@en ;
+  rdfs:label "Bevorzugte Sprache"@de ;
+  rdfs:label "Langue préférée"@fr ;
+  rdfs:domain dhc:RealEstate ;
+  rdfs:range xsd:string ;
+  rdfs:comment "BCP-47 tag: 'en', 'de', 'fr'."@en .

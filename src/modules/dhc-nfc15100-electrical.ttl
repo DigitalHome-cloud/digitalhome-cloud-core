@@ -1,0 +1,242 @@
+@prefix dhc:          <https://digitalhome.cloud/ontology#> .
+@prefix dhc-nfc15100: <https://digitalhome.cloud/ontology/nfc15100#> .
+@prefix owl:          <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:          <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:         <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:          <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms:      <http://purl.org/dc/terms/> .
+
+# ============================================================
+# Module: NF C 15-100 — Electrical Installation (France)
+#
+# Defines the GTL (Gaine Technique Logement) and circuit
+# subclasses for residential electrical installations as
+# mandated by NF C 15-100 (Tableau n°3 and related clauses).
+#
+# All classes subclass Core classes — no new root concepts.
+# ============================================================
+
+<https://digitalhome.cloud/ontology/nfc15100>
+  a owl:Ontology ;
+  rdfs:label "DHC NF C 15-100 Electrical Installation Module"@en ;
+  rdfs:label "DHC NF C 15-100 Modul Elektroinstallation"@de ;
+  rdfs:label "DHC NF C 15-100 Module installation électrique"@fr ;
+  dcterms:description "Norm module for NF C 15-100 residential electrical installation in France."@en ;
+  owl:versionInfo "1.0.0" ;
+  owl:imports <https://digitalhome.cloud/ontology> .
+
+
+# ── GTL (Gaine Technique Logement) ──
+
+dhc-nfc15100:GTL
+  a owl:Class ;
+  rdfs:subClassOf dhc:ElectricalTechnicalSpace ;
+  rdfs:label "GTL"@en ;
+  rdfs:label "GTL"@de ;
+  rdfs:label "GTL (Gaine Technique Logement)"@fr ;
+  rdfs:comment "Gaine Technique Logement — mandatory technical enclosure per NF C 15-100."@en ;
+  dhc:designView "electrical" .
+
+
+# ── Lighting Circuits ──
+
+dhc-nfc15100:LightingCircuit
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Lighting Circuit"@en ;
+  rdfs:label "Beleuchtungsstromkreis"@de ;
+  rdfs:label "Circuit éclairage"@fr ;
+  rdfs:comment "Lighting circuit: max 8 points, 10A breaker, 1.5mm² wiring (3G1.5)."@en ;
+  dhc:designView "electrical" .
+
+
+# ── Socket Circuits ──
+
+dhc-nfc15100:SocketCircuit16A_8Sockets
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Socket Circuit 16A (8 sockets)"@en ;
+  rdfs:label "Steckdosenstromkreis 16A (8 Dosen)"@de ;
+  rdfs:label "Circuit prises 16A (8 prises)"@fr ;
+  rdfs:comment "Standard socket circuit: max 8 sockets, 16A breaker, 1.5mm² wiring."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:SocketCircuit20A_12Sockets
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Socket Circuit 20A (12 sockets)"@en ;
+  rdfs:label "Steckdosenstromkreis 20A (12 Dosen)"@de ;
+  rdfs:label "Circuit prises 20A (12 prises)"@fr ;
+  rdfs:comment "Extended socket circuit: max 12 sockets, 20A breaker, 2.5mm² wiring."@en ;
+  dhc:designView "electrical" .
+
+
+# ── Kitchen Socket Circuit ──
+
+dhc-nfc15100:KitchenSocketCircuit20A_6Sockets_Dedicated
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Kitchen Socket Circuit 20A (6 sockets, dedicated)"@en ;
+  rdfs:label "Küchensteckdosenstromkreis 20A (6 Dosen, dediziert)"@de ;
+  rdfs:label "Circuit prises cuisine 20A (6 prises, dédié)"@fr ;
+  rdfs:comment "Dedicated kitchen socket circuit: max 6 sockets, 20A breaker, 2.5mm² wiring."@en ;
+  dhc:designView "electrical" .
+
+
+# ── Specialized Appliance Circuits ──
+
+dhc-nfc15100:SpecializedApplianceCircuit20A_Dedicated
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Specialized Appliance Circuit 20A (dedicated)"@en ;
+  rdfs:label "Spezialisierter Gerätestromkreis 20A (dediziert)"@de ;
+  rdfs:label "Circuit spécialisé 20A (dédié)"@fr ;
+  rdfs:comment "Dedicated circuit for specialized appliances (dishwasher, dryer, freezer): 1 point, 20A breaker, 2.5mm²."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:WaterHeaterCircuit20A_Dedicated
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Water Heater Circuit 20A (dedicated)"@en ;
+  rdfs:label "Warmwasserbereiter-Stromkreis 20A (dediziert)"@de ;
+  rdfs:label "Circuit chauffe-eau 20A (dédié)"@fr ;
+  rdfs:comment "Dedicated water heater circuit: 1 point, 20A breaker, 2.5mm²."@en ;
+  dhc:designView "electrical" .
+
+
+# ── Cooking Circuits ──
+
+dhc-nfc15100:CookingCircuitMono32A_Dedicated
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Cooking Circuit Mono 32A (dedicated)"@en ;
+  rdfs:label "Kochstromkreis Mono 32A (dediziert)"@de ;
+  rdfs:label "Circuit cuisson mono 32A (dédié)"@fr ;
+  rdfs:comment "Dedicated single-phase cooking circuit: 1 point, 32A breaker, 6mm² (3G6)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:CookingCircuitTri20A_Dedicated
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Cooking Circuit Tri 20A (dedicated)"@en ;
+  rdfs:label "Kochstromkreis Tri 20A (dediziert)"@de ;
+  rdfs:label "Circuit cuisson tri 20A (dédié)"@fr ;
+  rdfs:comment "Dedicated three-phase cooking circuit: 1 point, 20A breaker, 2.5mm² (5G2.5)."@en ;
+  dhc:designView "electrical" .
+
+
+# ── Heating: Wall-Mounted Emitter Circuits ──
+
+dhc-nfc15100:HeatingWallEmitters3500W
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Heating Wall Emitters ≤3500W"@en ;
+  rdfs:label "Wandheizung ≤3500W"@de ;
+  rdfs:label "Chauffage mural ≤3500W"@fr ;
+  rdfs:comment "Wall emitter heating circuit ≤3500W: 16A breaker, 1.5mm² (3G1.5)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:HeatingWallEmitters4500W
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Heating Wall Emitters ≤4500W"@en ;
+  rdfs:label "Wandheizung ≤4500W"@de ;
+  rdfs:label "Chauffage mural ≤4500W"@fr ;
+  rdfs:comment "Wall emitter heating circuit ≤4500W: 20A breaker, 2.5mm² (3G2.5)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:HeatingWallEmitters5750W
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Heating Wall Emitters ≤5750W"@en ;
+  rdfs:label "Wandheizung ≤5750W"@de ;
+  rdfs:label "Chauffage mural ≤5750W"@fr ;
+  rdfs:comment "Wall emitter heating circuit ≤5750W: 25A breaker, 4mm² (3G4)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:HeatingWallEmitters7250W
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Heating Wall Emitters ≤7250W"@en ;
+  rdfs:label "Wandheizung ≤7250W"@de ;
+  rdfs:label "Chauffage mural ≤7250W"@fr ;
+  rdfs:comment "Wall emitter heating circuit ≤7250W: 32A breaker, 6mm² (3G6)."@en ;
+  dhc:designView "electrical" .
+
+
+# ── Heating: Floor Heating Circuits ──
+
+dhc-nfc15100:FloorHeating1700W
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Floor Heating ≤1700W"@en ;
+  rdfs:label "Fußbodenheizung ≤1700W"@de ;
+  rdfs:label "Plancher chauffant ≤1700W"@fr ;
+  rdfs:comment "Floor heating circuit ≤1700W: 16A breaker, 1.5mm² (3G1.5)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:FloorHeating3400W
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Floor Heating ≤3400W"@en ;
+  rdfs:label "Fußbodenheizung ≤3400W"@de ;
+  rdfs:label "Plancher chauffant ≤3400W"@fr ;
+  rdfs:comment "Floor heating circuit ≤3400W: 25A breaker, 4mm² (3G4)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:FloorHeating4200W
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Floor Heating ≤4200W"@en ;
+  rdfs:label "Fußbodenheizung ≤4200W"@de ;
+  rdfs:label "Plancher chauffant ≤4200W"@fr ;
+  rdfs:comment "Floor heating circuit ≤4200W: 32A breaker, 6mm² (3G6)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:FloorHeating5400W40ADedicated
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Floor Heating ≤5400W (40A, dedicated)"@en ;
+  rdfs:label "Fußbodenheizung ≤5400W (40A, dediziert)"@de ;
+  rdfs:label "Plancher chauffant ≤5400W (40A, dédié)"@fr ;
+  rdfs:comment "Floor heating circuit ≤5400W: 40A breaker, 6mm² (4G6), dedicated."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:FloorHeating7500W
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "Floor Heating ≤7500W"@en ;
+  rdfs:label "Fußbodenheizung ≤7500W"@de ;
+  rdfs:label "Plancher chauffant ≤7500W"@fr ;
+  rdfs:comment "Floor heating circuit ≤7500W: 40A breaker, 10mm² (3G10)."@en ;
+  dhc:designView "electrical" .
+
+
+# ── IRVE (Electric Vehicle Charging) Circuits ──
+
+dhc-nfc15100:IRVESocket16A
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "IRVE Socket 16A"@en ;
+  rdfs:label "IRVE Steckdose 16A"@de ;
+  rdfs:label "IRVE prise 16A"@fr ;
+  rdfs:comment "EV charging via standard 16A socket: 16A breaker, 2.5mm² (3G2.5)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:IRVE32AMono
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "IRVE 32A Mono"@en ;
+  rdfs:label "IRVE 32A Mono"@de ;
+  rdfs:label "IRVE 32A mono"@fr ;
+  rdfs:comment "EV charging wallbox single-phase 32A: 40A breaker, 10mm² (3G10)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc15100:IRVE32ATri
+  a owl:Class ;
+  rdfs:subClassOf dhc:Circuit ;
+  rdfs:label "IRVE 32A Tri"@en ;
+  rdfs:label "IRVE 32A Tri"@de ;
+  rdfs:label "IRVE 32A tri"@fr ;
+  rdfs:comment "EV charging wallbox three-phase 32A: 40A breaker, 10mm² (5G10)."@en ;
+  dhc:designView "electrical" .

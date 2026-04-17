@@ -1,0 +1,218 @@
+@prefix dhc:  <https://digitalhome.cloud/ontology#> .
+@prefix home: <https://digitalhome.cloud/instances/DE-DEMO-01#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# ============================================================
+# DE-DEMO-01 — Demo SmartHome instance (ABox)
+#
+# This file instantiates the DHC core ontology for a demo
+# German property. It shows how classes from the TBox become
+# concrete objects in a digital twin.
+# ============================================================
+
+# ── The property itself ──
+
+home:DE-DEMO-01
+  a dhc:RealEstate ;
+  dhc:smartHomeId "DE-DEMO-01" ;
+  dhc:name "Demo Haus Deutschland" ;
+  dhc:description "A demo German smart home for the DigitalHome.Cloud platform." ;
+  dhc:hasArea home:MainBuilding ;
+  dhc:hasArea home:Garden ;
+  dhc:hasHVACSystem home:HeatingSystem ;
+  dhc:hasPlumbingSystem home:WaterSystem ;
+  dhc:hasNetworkSegment home:HomeLAN ;
+  dhc:hasElectricVehicle home:FamilyCar ;
+  dhc:hasElectricVehicle home:EBike ;
+  dhc:hasChargingStation home:Wallbox .
+
+# ── Spatial: Areas & Floors ──
+
+home:MainBuilding
+  a dhc:Area ;
+  dhc:name "Main Building" ;
+  dhc:hasFloor home:GroundFloor ;
+  dhc:hasFloor home:FirstFloor .
+
+home:Garden
+  a dhc:Area ;
+  dhc:name "Garden" .
+
+home:GroundFloor
+  a dhc:Floor ;
+  dhc:name "Ground Floor" ;
+  dhc:floorLevel 0 ;
+  dhc:hasSpace home:LivingRoom ;
+  dhc:hasSpace home:Kitchen ;
+  dhc:hasSpace home:Hallway .
+
+home:FirstFloor
+  a dhc:Floor ;
+  dhc:name "First Floor" ;
+  dhc:floorLevel 1 ;
+  dhc:hasSpace home:MasterBedroom ;
+  dhc:hasSpace home:Bathroom .
+
+# ── Spatial: Spaces ──
+
+home:LivingRoom
+  a dhc:Space ;
+  dhc:name "Living Room" ;
+  dhc:areaM2 28.5 ;
+  dhc:hasEquipment home:LR_Light1 ;
+  dhc:hasEquipment home:LR_Socket1 ;
+  dhc:hasEquipment home:LR_Thermostat .
+
+home:Kitchen
+  a dhc:Space ;
+  dhc:name "Kitchen" ;
+  dhc:areaM2 14.0 ;
+  dhc:hasEquipment home:K_Light1 ;
+  dhc:hasEquipment home:K_Socket1 ;
+  dhc:hasFixture home:K_Sink .
+
+home:Hallway
+  a dhc:Space ;
+  dhc:name "Hallway" ;
+  dhc:areaM2 8.0 .
+
+home:MasterBedroom
+  a dhc:Space ;
+  dhc:name "Master Bedroom" ;
+  dhc:areaM2 18.0 ;
+  dhc:hasEquipment home:MB_Light1 ;
+  dhc:hasEquipment home:MB_Thermostat .
+
+home:Bathroom
+  a dhc:Space ;
+  dhc:name "Bathroom" ;
+  dhc:areaM2 9.0 ;
+  dhc:hasFixture home:B_Shower ;
+  dhc:hasFixture home:B_Toilet ;
+  dhc:hasFixture home:B_Sink .
+
+# ── Electrical: Distribution & Circuits ──
+
+home:MainPanel
+  a dhc:DistributionBoard ;
+  dhc:name "Main Distribution Panel" ;
+  dhc:hasCircuit home:LightingCircuit1 ;
+  dhc:hasCircuit home:SocketCircuit1 ;
+  dhc:hasCircuit home:KitchenCircuit .
+
+home:LightingCircuit1
+  a dhc:Circuit ;
+  dhc:name "Lighting Ground Floor" ;
+  dhc:maxPoints 8 ;
+  dhc:hasProtection home:CB_Lighting1 ;
+  dhc:feedsEquipment home:LR_Light1 ;
+  dhc:feedsEquipment home:K_Light1 .
+
+home:SocketCircuit1
+  a dhc:Circuit ;
+  dhc:name "Sockets Ground Floor" ;
+  dhc:maxPoints 8 ;
+  dhc:hasProtection home:CB_Sockets1 ;
+  dhc:feedsEquipment home:LR_Socket1 .
+
+home:KitchenCircuit
+  a dhc:Circuit ;
+  dhc:name "Kitchen Dedicated" ;
+  dhc:hasProtection home:CB_Kitchen ;
+  dhc:feedsEquipment home:K_Socket1 .
+
+home:CB_Lighting1
+  a dhc:ProtectionDevice ;
+  dhc:name "CB Lighting 10A" ;
+  dhc:ratedCurrent 10.0 .
+
+home:CB_Sockets1
+  a dhc:ProtectionDevice ;
+  dhc:name "CB Sockets 16A" ;
+  dhc:ratedCurrent 16.0 .
+
+home:CB_Kitchen
+  a dhc:ProtectionDevice ;
+  dhc:name "CB Kitchen 20A" ;
+  dhc:ratedCurrent 20.0 .
+
+# ── Equipment instances ──
+
+home:LR_Light1   a dhc:Light  ; dhc:name "Living Room Ceiling Light" ; dhc:powerRating 60.0 .
+home:LR_Socket1  a dhc:Socket ; dhc:name "Living Room Wall Socket" .
+home:K_Light1    a dhc:Light  ; dhc:name "Kitchen Ceiling Light" ; dhc:powerRating 40.0 .
+home:K_Socket1   a dhc:Socket ; dhc:name "Kitchen Counter Socket" .
+home:MB_Light1   a dhc:Light  ; dhc:name "Bedroom Ceiling Light" ; dhc:powerRating 40.0 .
+
+# ── Heating ──
+
+home:HeatingSystem
+  a dhc:HVACSystem ;
+  dhc:name "Central Gas Heating" .
+
+home:GasBoiler
+  a dhc:HeatSource ;
+  dhc:name "Gas Condensing Boiler" ;
+  dhc:heatingPower 24.0 .
+
+home:LR_Radiator
+  a dhc:HeatEmitter ;
+  dhc:name "Living Room Radiator" ;
+  dhc:heatsSpace home:LivingRoom ;
+  dhc:controlledBy home:LR_Thermostat .
+
+home:LR_Thermostat
+  a dhc:Thermostat ;
+  dhc:name "Living Room Thermostat" ;
+  dhc:setpointTemp 21.0 .
+
+home:MB_Thermostat
+  a dhc:Thermostat ;
+  dhc:name "Bedroom Thermostat" ;
+  dhc:setpointTemp 19.0 .
+
+# ── Plumbing ──
+
+home:WaterSystem
+  a dhc:WaterSupply ;
+  dhc:name "Municipal Water Supply" .
+
+home:K_Sink    a dhc:PlumbingFixture ; dhc:name "Kitchen Sink" .
+home:B_Shower  a dhc:PlumbingFixture ; dhc:name "Bathroom Shower" .
+home:B_Toilet  a dhc:PlumbingFixture ; dhc:name "Bathroom Toilet" .
+home:B_Sink    a dhc:PlumbingFixture ; dhc:name "Bathroom Sink" .
+
+# ── Network ──
+
+home:HomeLAN
+  a dhc:EthernetSegment ;
+  dhc:name "Home LAN" .
+
+home:WiFi
+  a dhc:WiFiAccessPoint ;
+  dhc:name "Home WiFi" .
+
+home:ZigBee
+  a dhc:ZigBeeSegment ;
+  dhc:name "ZigBee Mesh" .
+
+# ── E-Mobility ──
+
+home:Wallbox
+  a dhc:ChargingStation ;
+  dhc:name "Garage Wallbox" ;
+  dhc:chargingPower 11.0 ;
+  dhc:chargingType "wallbox 11kW" .
+
+home:FamilyCar
+  a dhc:ElectricCar ;
+  dhc:name "Family Electric Car" ;
+  dhc:batteryCapacity 77.0 ;
+  dhc:vehicleRange 510.0 ;
+  dhc:chargedAt home:Wallbox .
+
+home:EBike
+  a dhc:ElectricBicycle ;
+  dhc:name "E-Bike" ;
+  dhc:batteryCapacity 0.5 ;
+  dhc:vehicleRange 80.0 .

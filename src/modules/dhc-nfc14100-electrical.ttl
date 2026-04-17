@@ -1,0 +1,47 @@
+@prefix dhc:          <https://digitalhome.cloud/ontology#> .
+@prefix dhc-nfc14100: <https://digitalhome.cloud/ontology/nfc14100#> .
+@prefix owl:          <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:          <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:         <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:          <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms:      <http://purl.org/dc/terms/> .
+
+# ============================================================
+# Module: NF C 14-100 — Electrical Energy Delivery (France)
+#
+# Covers the upstream delivery chain from the energy provider
+# to the main distribution board: energy meter and emergency
+# disconnect device as mandated by NF C 14-100.
+#
+# All classes subclass Core classes — no new root concepts.
+# ============================================================
+
+<https://digitalhome.cloud/ontology/nfc14100>
+  a owl:Ontology ;
+  rdfs:label "DHC NF C 14-100 Electrical Delivery Module"@en ;
+  rdfs:label "DHC NF C 14-100 Modul Energieeinspeisung"@de ;
+  rdfs:label "DHC NF C 14-100 Module livraison électrique"@fr ;
+  dcterms:description "Norm module for NF C 14-100 electrical energy delivery in France."@en ;
+  owl:versionInfo "1.0.0" ;
+  owl:imports <https://digitalhome.cloud/ontology> .
+
+
+# ── Classes ──
+
+dhc-nfc14100:NF14EnergyMeter
+  a owl:Class ;
+  rdfs:subClassOf dhc:EnergyMeter ;
+  rdfs:label "NF14 Energy Meter"@en ;
+  rdfs:label "NF14 Stromzähler"@de ;
+  rdfs:label "Compteur NF14"@fr ;
+  rdfs:comment "Energy meter as defined by NF C 14-100 (compteur Enedis/EDF)."@en ;
+  dhc:designView "electrical" .
+
+dhc-nfc14100:NF14EmergencyDisconnect
+  a owl:Class ;
+  rdfs:subClassOf dhc:EmergencyDisconnect ;
+  rdfs:label "NF14 Emergency Disconnect"@en ;
+  rdfs:label "NF14 Notabschaltung"@de ;
+  rdfs:label "Coupure générale NF14"@fr ;
+  rdfs:comment "General emergency disconnect as defined by NF C 14-100 (AGCP / disjoncteur de branchement)."@en ;
+  dhc:designView "electrical" .

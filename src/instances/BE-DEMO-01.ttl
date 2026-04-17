@@ -1,0 +1,189 @@
+@prefix dhc:  <https://digitalhome.cloud/ontology#> .
+@prefix home: <https://digitalhome.cloud/instances/BE-DEMO-01#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# ============================================================
+# BE-DEMO-01 — Demo Belgian apartment (ABox)
+#
+# A Brussels apartment with compact single-floor layout,
+# gas condensing boiler, and Belgian electrical norms.
+# French-language naming (Brussels context).
+# ============================================================
+
+# ── The property itself ──
+
+home:BE-DEMO-01
+  a dhc:RealEstate ;
+  dhc:smartHomeId "BE-DEMO-01" ;
+  dhc:name "Demo Appartement Belgique" ;
+  dhc:description "Un appartement de démonstration bruxellois pour la plateforme DigitalHome.Cloud." ;
+  dhc:hasArea home:Appartement ;
+  dhc:hasHVACSystem home:ChauffageGaz ;
+  dhc:hasPlumbingSystem home:EauVille ;
+  dhc:hasNetworkSegment home:ReseauLocal ;
+  dhc:hasElectricVehicle home:TrottinetteElectrique ;
+  dhc:hasChargingStation home:PriseGarage .
+
+# ── Spatial: Areas & Floors ──
+
+home:Appartement
+  a dhc:Area ;
+  dhc:name "Appartement" ;
+  dhc:hasFloor home:NiveauUnique .
+
+home:NiveauUnique
+  a dhc:Floor ;
+  dhc:name "Niveau unique" ;
+  dhc:floorLevel 2 ;
+  dhc:hasSpace home:Sejour ;
+  dhc:hasSpace home:Cuisine ;
+  dhc:hasSpace home:Chambre ;
+  dhc:hasSpace home:SalleDeBains .
+
+# ── Spatial: Spaces ──
+
+home:Sejour
+  a dhc:Space ;
+  dhc:name "Séjour" ;
+  dhc:areaM2 24.0 ;
+  dhc:hasEquipment home:SEJ_Lumiere1 ;
+  dhc:hasEquipment home:SEJ_Prise1 ;
+  dhc:hasEquipment home:SEJ_Thermostat .
+
+home:Cuisine
+  a dhc:Space ;
+  dhc:name "Cuisine" ;
+  dhc:areaM2 10.0 ;
+  dhc:hasEquipment home:CUI_Lumiere1 ;
+  dhc:hasEquipment home:CUI_Prise1 ;
+  dhc:hasFixture home:CUI_Evier .
+
+home:Chambre
+  a dhc:Space ;
+  dhc:name "Chambre" ;
+  dhc:areaM2 14.0 ;
+  dhc:hasEquipment home:CH_Lumiere1 ;
+  dhc:hasEquipment home:CH_Thermostat .
+
+home:SalleDeBains
+  a dhc:Space ;
+  dhc:name "Salle de bains" ;
+  dhc:areaM2 6.0 ;
+  dhc:hasFixture home:SDB_Douche ;
+  dhc:hasFixture home:SDB_WC ;
+  dhc:hasFixture home:SDB_Lavabo .
+
+# ── Electrical: Distribution & Circuits ──
+
+home:CoffrePrincipal
+  a dhc:DistributionBoard ;
+  dhc:name "Coffret principal" ;
+  dhc:hasCircuit home:CircuitEclairage ;
+  dhc:hasCircuit home:CircuitPrises ;
+  dhc:hasCircuit home:CircuitCuisine .
+
+home:CircuitEclairage
+  a dhc:Circuit ;
+  dhc:name "Éclairage" ;
+  dhc:maxPoints 8 ;
+  dhc:hasProtection home:Diff_30mA ;
+  dhc:feedsEquipment home:SEJ_Lumiere1 ;
+  dhc:feedsEquipment home:CUI_Lumiere1 .
+
+home:CircuitPrises
+  a dhc:Circuit ;
+  dhc:name "Prises" ;
+  dhc:maxPoints 8 ;
+  dhc:hasProtection home:Disj_Prises ;
+  dhc:feedsEquipment home:SEJ_Prise1 .
+
+home:CircuitCuisine
+  a dhc:Circuit ;
+  dhc:name "Cuisine dédié" ;
+  dhc:hasProtection home:Disj_Cuisine ;
+  dhc:feedsEquipment home:CUI_Prise1 .
+
+home:Diff_30mA
+  a dhc:ProtectionDevice ;
+  dhc:name "Différentiel 30mA" ;
+  dhc:ratedCurrent 10.0 .
+
+home:Disj_Prises
+  a dhc:ProtectionDevice ;
+  dhc:name "Disjoncteur prises 16A" ;
+  dhc:ratedCurrent 16.0 .
+
+home:Disj_Cuisine
+  a dhc:ProtectionDevice ;
+  dhc:name "Disjoncteur cuisine 20A" ;
+  dhc:ratedCurrent 20.0 .
+
+# ── Equipment instances ──
+
+home:SEJ_Lumiere1  a dhc:Light  ; dhc:name "Plafonnier séjour" ; dhc:powerRating 60.0 .
+home:SEJ_Prise1    a dhc:Socket ; dhc:name "Prise séjour" .
+home:CUI_Lumiere1  a dhc:Light  ; dhc:name "Plafonnier cuisine" ; dhc:powerRating 40.0 .
+home:CUI_Prise1    a dhc:Socket ; dhc:name "Prise plan de travail" .
+home:CH_Lumiere1   a dhc:Light  ; dhc:name "Plafonnier chambre" ; dhc:powerRating 40.0 .
+
+# ── Heating (gas condensing boiler, Belgian norm) ──
+
+home:ChauffageGaz
+  a dhc:HVACSystem ;
+  dhc:name "Chauffage central gaz" .
+
+home:ChaudiereGaz
+  a dhc:HeatSource ;
+  dhc:name "Chaudière gaz à condensation" ;
+  dhc:heatingPower 20.0 .
+
+home:SEJ_Radiateur
+  a dhc:HeatEmitter ;
+  dhc:name "Radiateur séjour" ;
+  dhc:heatsSpace home:Sejour ;
+  dhc:controlledBy home:SEJ_Thermostat .
+
+home:SEJ_Thermostat
+  a dhc:Thermostat ;
+  dhc:name "Thermostat séjour" ;
+  dhc:setpointTemp 21.0 .
+
+home:CH_Thermostat
+  a dhc:Thermostat ;
+  dhc:name "Thermostat chambre" ;
+  dhc:setpointTemp 19.0 .
+
+# ── Plumbing ──
+
+home:EauVille
+  a dhc:WaterSupply ;
+  dhc:name "Alimentation eau de ville" .
+
+home:CUI_Evier   a dhc:PlumbingFixture ; dhc:name "Évier cuisine" .
+home:SDB_Douche  a dhc:PlumbingFixture ; dhc:name "Douche" .
+home:SDB_WC      a dhc:PlumbingFixture ; dhc:name "WC" .
+home:SDB_Lavabo  a dhc:PlumbingFixture ; dhc:name "Lavabo" .
+
+# ── Network ──
+
+home:ReseauLocal
+  a dhc:EthernetSegment ;
+  dhc:name "Réseau local" .
+
+home:WiFi
+  a dhc:WiFiAccessPoint ;
+  dhc:name "WiFi appartement" .
+
+# ── E-Mobilité ──
+
+home:PriseGarage
+  a dhc:ChargingStation ;
+  dhc:name "Prise garage 230V" ;
+  dhc:chargingPower 2.3 ;
+  dhc:chargingType "230V outlet" .
+
+home:TrottinetteElectrique
+  a dhc:ElectricScooter ;
+  dhc:name "Trottinette électrique" ;
+  dhc:batteryCapacity 0.4 ;
+  dhc:vehicleRange 40.0 .

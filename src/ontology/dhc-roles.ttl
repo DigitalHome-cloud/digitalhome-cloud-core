@@ -1,0 +1,55 @@
+@prefix dhc:  <https://digitalhome.cloud/ontology#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# ============================================================
+# DHC Role Catalog — Controlled vocabulary of Role instances
+#
+# These are instances of dhc:Role, not subclasses.
+# Treating roles as instances makes the catalog extensible
+# without schema changes.
+# ============================================================
+
+dhc:Role_Owner
+  a dhc:Role ;
+  dhc:name "Owner" ;
+  dhc:description "Property owner (propriétaire / Eigentümer)." .
+
+dhc:Role_MaitreOuvrage
+  a dhc:Role ;
+  dhc:name "Maître d'ouvrage" ;
+  dhc:description "Client/sponsor commissioning a project (Bauherr)." .
+
+dhc:Role_ProjectManager
+  a dhc:Role ;
+  dhc:name "Project Manager" ;
+  dhc:description "Chef de projet / Projektleiter." .
+
+dhc:Role_Designer
+  a dhc:Role ;
+  dhc:name "Designer / Architect" ;
+  dhc:description "Architect or designer responsible for plans (Planer / Architecte)." .
+
+dhc:Role_Installer
+  a dhc:Role ;
+  dhc:name "Installer" ;
+  dhc:description "Contractor performing installation (Installateur)." .
+
+dhc:Role_Maintainer
+  a dhc:Role ;
+  dhc:name "Maintainer" ;
+  dhc:description "Responsible for ongoing maintenance (Wartungsfirma / Mainteneur)." .
+
+dhc:Role_Operator
+  a dhc:Role ;
+  dhc:name "Operator" ;
+  dhc:description "Day-to-day operator of the property or system (Betreiber / Exploitant)." .
+
+dhc:Role_Occupant
+  a dhc:Role ;
+  dhc:name "Occupant" ;
+  dhc:description "Person living in or using the property (Bewohner / Occupant)." .
+
+dhc:Role_SafetyResponsible
+  a dhc:Role ;
+  dhc:name "Safety Responsible" ;
+  dhc:description "Person or organization responsible for safety compliance (Sicherheitsbeauftragter)." .
