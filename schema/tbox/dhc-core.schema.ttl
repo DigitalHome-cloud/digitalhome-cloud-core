@@ -6,13 +6,17 @@
 @prefix dcterms: <http://purl.org/dc/terms/> .
 
 # ============================================================
-# DigitalHome.Cloud Core Ontology — v1.2.0
+# DigitalHome.Cloud Core Ontology — v2.0.0
 #
-# This ontology defines the vocabulary for digital twins of
-# real estate properties. It covers spatial structure, building
-# envelope, electrical systems, plumbing, heating/HVAC,
-# data networks, equipment, automation scenarios, and
-# e-mobility (electric vehicles and charging infrastructure).
+# Multi-Box Architecture (DH-SPEC-200):
+#   - T-Box (this file): norm-agnostic domain vocabulary
+#   - C-Box (schema/cbox/): per-norm SHACL constraint profiles
+#   - A-Box: instance data, not in this repo
+#
+# Norms (NF C 14-100, NF C 15-100, DIN VDE 0100, AREI/RGIE,
+# BS 7671, …) are NOT encoded as subclasses here. They appear
+# as dhc:Norm instances referenced from A-Box via dhc:governedBy,
+# with enforceable constraints living in C-Box shape files.
 #
 # Design views (for the SmartHome Designer toolbox):
 #   - Spatial:    RealEstate → Area → Space hierarchy
@@ -23,6 +27,7 @@
 #   - Network:    LAN, WiFi, ZigBee, automation protocols
 #   - Governance: Agents, roles, role assignments, projects
 #   - Automation: Groups, scenarios, sensors, actors
+#   - Compliance: Norms and governed-by relationships (v2.0.0+)
 # ============================================================
 
 
@@ -33,8 +38,10 @@
 <https://digitalhome.cloud/ontology>
   a owl:Ontology ;
   rdfs:label "DigitalHome.Cloud Core Ontology"@en ;
-  dcterms:description "Semantic foundation for digital twins of real estate properties."@en ;
-  owl:versionInfo "1.2.0" ;
+  rdfs:label "DigitalHome.Cloud Kern-Ontologie"@de ;
+  rdfs:label "Ontologie centrale DigitalHome.Cloud"@fr ;
+  dcterms:description "Semantic foundation for digital twins of real estate properties. Multi-Box T-Box layer."@en ;
+  owl:versionInfo "2.0.0" ;
   dcterms:creator "D-LAB-5 / DigitalHome.Cloud" ;
   dcterms:license <https://opensource.org/licenses/MIT> .
 
@@ -330,15 +337,25 @@ dhc:hasWiring
   dhc:designView "electrical" .
 
 dhc:feeds
-  a owl:ObjectProperty ;
+  a owl:ObjectProperty, owl:TransitiveProperty ;
   rdfs:label "feeds"@en ;
   rdfs:label "speist"@de ;
   rdfs:label "alimente"@fr ;
-  rdfs:comment "Generic upstream-to-downstream topology link in the electrical delivery chain."@en ;
+  rdfs:comment "Generic upstream-to-downstream topology link in the electrical delivery chain. Transitive."@en ;
   dhc:designView "electrical" .
+
+# R-Box: generic containment inverse, enables dhc:locatedIn owl:inverseOf dhc:contains
+dhc:contains
+  a owl:ObjectProperty ;
+  rdfs:label "contains"@en ;
+  rdfs:label "enthält"@de ;
+  rdfs:label "contient"@fr ;
+  rdfs:comment "Generic containment: inverse of dhc:locatedIn. A space contains devices; an area contains spaces."@en ;
+  dhc:designView "spatial" .
 
 dhc:locatedIn
   a owl:ObjectProperty ;
+  owl:inverseOf dhc:contains ;
   rdfs:label "located in"@en ;
   rdfs:label "befindet sich in"@de ;
   rdfs:label "situé dans"@fr ;
@@ -351,6 +368,8 @@ dhc:locatedIn
 dhc:ratedCurrent
   a owl:DatatypeProperty ;
   rdfs:label "rated current (A)"@en ;
+  rdfs:label "Nennstrom (A)"@de ;
+  rdfs:label "courant assigné (A)"@fr ;
   rdfs:domain dhc:ProtectionDevice ;
   rdfs:range xsd:decimal ;
   dhc:designView "electrical" .
@@ -358,6 +377,8 @@ dhc:ratedCurrent
 dhc:crossSection
   a owl:DatatypeProperty ;
   rdfs:label "cross section (mm²)"@en ;
+  rdfs:label "Leiterquerschnitt (mm²)"@de ;
+  rdfs:label "section (mm²)"@fr ;
   rdfs:domain dhc:WiringSegment ;
   rdfs:range xsd:decimal ;
   dhc:designView "electrical" .
@@ -365,9 +386,21 @@ dhc:crossSection
 dhc:maxPoints
   a owl:DatatypeProperty ;
   rdfs:label "max points on circuit"@en ;
+  rdfs:label "max. Punkte pro Stromkreis"@de ;
+  rdfs:label "points max. par circuit"@fr ;
   rdfs:domain dhc:Circuit ;
   rdfs:range xsd:integer ;
-  rdfs:comment "Maximum number of endpoints (governed by national standards)."@en ;
+  rdfs:comment "Maximum number of endpoints (governed by national standards via C-Box)."@en ;
+  dhc:designView "electrical" .
+
+dhc:dedicated
+  a owl:DatatypeProperty ;
+  rdfs:label "dedicated"@en ;
+  rdfs:label "dediziert"@de ;
+  rdfs:label "dédié"@fr ;
+  rdfs:domain dhc:Circuit ;
+  rdfs:range xsd:boolean ;
+  rdfs:comment "True if this circuit is dedicated to a single appliance or kitchen/specialized zone."@en ;
   dhc:designView "electrical" .
 
 dhc:energyProviderName
@@ -411,9 +444,11 @@ dhc:contractedPowerKVA
 dhc:phase
   a owl:DatatypeProperty ;
   rdfs:label "phase"@en ;
+  rdfs:label "Phase"@de ;
+  rdfs:label "phase"@fr ;
   rdfs:domain dhc:Circuit ;
   rdfs:range xsd:integer ;
-  rdfs:comment "Phase assignment: 1, 2, or 3."@en ;
+  rdfs:comment "Phase count: 1 for single-phase, 3 for three-phase."@en ;
   dhc:designView "electrical" .
 
 dhc:distributionBoardType
@@ -433,6 +468,68 @@ dhc:wiring
   rdfs:label "câblage"@fr ;
   rdfs:range xsd:string ;
   rdfs:comment "Cable specification, e.g. 3G2.5, 5G6."@en ;
+  dhc:designView "electrical" .
+
+
+# ── CircuitType enum instances (v2.0.0) ──
+# Universal, norm-agnostic functional categories for circuits.
+# National norms (NF C 15-100, DIN VDE 0100, etc.) attach
+# per-type constraints via C-Box SHACL shapes — NOT via subclasses.
+
+dhc:CircuitType_Lighting
+  a dhc:CircuitType ;
+  rdfs:label "Lighting"@en ;
+  rdfs:label "Beleuchtung"@de ;
+  rdfs:label "Éclairage"@fr ;
+  dhc:designView "electrical" .
+
+dhc:CircuitType_Socket
+  a dhc:CircuitType ;
+  rdfs:label "Socket"@en ;
+  rdfs:label "Steckdose"@de ;
+  rdfs:label "Prise de courant"@fr ;
+  dhc:designView "electrical" .
+
+dhc:CircuitType_DedicatedAppliance
+  a dhc:CircuitType ;
+  rdfs:label "Dedicated Appliance"@en ;
+  rdfs:label "Spezialisiertes Gerät"@de ;
+  rdfs:label "Appareil spécialisé"@fr ;
+  dhc:designView "electrical" .
+
+dhc:CircuitType_Cooking
+  a dhc:CircuitType ;
+  rdfs:label "Cooking"@en ;
+  rdfs:label "Kochen"@de ;
+  rdfs:label "Cuisson"@fr ;
+  dhc:designView "electrical" .
+
+dhc:CircuitType_Heating
+  a dhc:CircuitType ;
+  rdfs:label "Heating"@en ;
+  rdfs:label "Heizung"@de ;
+  rdfs:label "Chauffage"@fr ;
+  dhc:designView "electrical" .
+
+dhc:CircuitType_WaterHeater
+  a dhc:CircuitType ;
+  rdfs:label "Water Heater"@en ;
+  rdfs:label "Warmwasserbereiter"@de ;
+  rdfs:label "Chauffe-eau"@fr ;
+  dhc:designView "electrical" .
+
+dhc:CircuitType_IRVE
+  a dhc:CircuitType ;
+  rdfs:label "EV Charging (IRVE)"@en ;
+  rdfs:label "Elektrofahrzeug-Ladung (IRVE)"@de ;
+  rdfs:label "Recharge véhicule électrique (IRVE)"@fr ;
+  dhc:designView "electrical" .
+
+dhc:CircuitType_FloorHeating
+  a dhc:CircuitType ;
+  rdfs:label "Floor Heating"@en ;
+  rdfs:label "Fußbodenheizung"@de ;
+  rdfs:label "Plancher chauffant"@fr ;
   dhc:designView "electrical" .
 
 
@@ -925,33 +1022,163 @@ dhc:assignmentStatus
 
 
 # ============================================================
-# SHARED: Compliance & Guidelines
+# DESIGN VIEW: Compliance (v2.0.0)
+# Norms as first-class citizens; constraints live in C-Box
+# SHACL profiles at schema/cbox/<domain>/<norm-id>.shapes.ttl
 # ============================================================
 
-dhc:Guideline
+dhc:Norm
   a owl:Class ;
-  rdfs:label "Guideline"@en ;
-  rdfs:comment "A norm, standard, or best practice (e.g. NF C 15-100, DIN VDE 0100)."@en .
+  rdfs:label "Norm"@en ;
+  rdfs:label "Norm"@de ;
+  rdfs:label "Norme"@fr ;
+  rdfs:comment "A national standard, regulation, or best practice. Referenced from A-Box via dhc:governedBy. Enforceable constraints live in C-Box SHACL shape files."@en ;
+  dhc:designView "compliance" .
 
-dhc:guidelineCategory
+dhc:normId
   a owl:DatatypeProperty ;
-  rdfs:label "category"@en ;
-  rdfs:domain dhc:Guideline ;
+  rdfs:label "norm ID"@en ;
+  rdfs:label "Norm-ID"@de ;
+  rdfs:label "identifiant de norme"@fr ;
+  rdfs:domain dhc:Norm ;
   rdfs:range xsd:string ;
-  rdfs:comment "One of: Regulation, Standard, BestPractice."@en .
+  rdfs:comment "Short stable identifier matching the C-Box file stem (e.g. 'nfc15100')."@en ;
+  dhc:designView "compliance" .
 
-dhc:guidelineWeight
+dhc:normCountry
   a owl:DatatypeProperty ;
-  rdfs:label "weight"@en ;
-  rdfs:domain dhc:Guideline ;
+  rdfs:label "norm country"@en ;
+  rdfs:label "Norm-Land"@de ;
+  rdfs:label "pays de la norme"@fr ;
+  rdfs:domain dhc:Norm ;
+  rdfs:range xsd:string ;
+  rdfs:comment "ISO 3166-1 alpha-2 country code (e.g. 'FR', 'DE', 'BE', 'GB')."@en ;
+  dhc:designView "compliance" .
+
+dhc:normDomain
+  a owl:DatatypeProperty ;
+  rdfs:label "norm domain"@en ;
+  rdfs:label "Norm-Domäne"@de ;
+  rdfs:label "domaine de la norme"@fr ;
+  rdfs:domain dhc:Norm ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Technical domain: electrical, plumbing, heating, building."@en ;
+  dhc:designView "compliance" .
+
+dhc:normVersion
+  a owl:DatatypeProperty ;
+  rdfs:label "norm version"@en ;
+  rdfs:label "Norm-Version"@de ;
+  rdfs:label "version de la norme"@fr ;
+  rdfs:domain dhc:Norm ;
+  rdfs:range xsd:string ;
+  rdfs:comment "Norm revision year or version identifier."@en ;
+  dhc:designView "compliance" .
+
+dhc:normCategory
+  a owl:DatatypeProperty ;
+  rdfs:label "norm category"@en ;
+  rdfs:label "Norm-Kategorie"@de ;
+  rdfs:label "catégorie de norme"@fr ;
+  rdfs:domain dhc:Norm ;
+  rdfs:range xsd:string ;
+  rdfs:comment "One of: Regulation, Standard, BestPractice."@en ;
+  dhc:designView "compliance" .
+
+dhc:normWeight
+  a owl:DatatypeProperty ;
+  rdfs:label "norm weight"@en ;
+  rdfs:label "Norm-Gewichtung"@de ;
+  rdfs:label "poids de la norme"@fr ;
+  rdfs:domain dhc:Norm ;
   rdfs:range xsd:decimal ;
-  rdfs:comment "1.0 = mandatory, 0.5 = recommended, 0.2 = optional."@en .
+  rdfs:comment "1.0 = mandatory, 0.5 = recommended, 0.2 = optional."@en ;
+  dhc:designView "compliance" .
 
 dhc:governedBy
   a owl:ObjectProperty ;
   rdfs:label "governed by"@en ;
+  rdfs:label "geregelt durch"@de ;
+  rdfs:label "régi par"@fr ;
   rdfs:domain dhc:Circuit ;
-  rdfs:range dhc:Guideline .
+  rdfs:range dhc:Norm ;
+  rdfs:comment "Attaches a circuit (or other compliant entity) to one or more norms. Multi-valued; composability is intentional."@en ;
+  dhc:designView "compliance" .
+
+
+# ── Norm instances (v2.0.0) ──
+# Each C-Box shape file references one of these as its
+# authoritative norm via dhc:normId + dhc:governedBy.
+
+dhc:Norm_NFC14100
+  a dhc:Norm ;
+  rdfs:label "NF C 14-100"@en ;
+  rdfs:label "NF C 14-100"@de ;
+  rdfs:label "NF C 14-100"@fr ;
+  dhc:normId "nfc14100" ;
+  dhc:normCountry "FR" ;
+  dhc:normDomain "electrical" ;
+  dhc:normVersion "2021" ;
+  dhc:normCategory "Regulation" ;
+  dhc:normWeight 1.0 ;
+  rdfs:comment "Energy delivery from provider to main board (France)."@en ;
+  dhc:designView "compliance" .
+
+dhc:Norm_NFC15100
+  a dhc:Norm ;
+  rdfs:label "NF C 15-100"@en ;
+  rdfs:label "NF C 15-100"@de ;
+  rdfs:label "NF C 15-100"@fr ;
+  dhc:normId "nfc15100" ;
+  dhc:normCountry "FR" ;
+  dhc:normDomain "electrical" ;
+  dhc:normVersion "2024" ;
+  dhc:normCategory "Regulation" ;
+  dhc:normWeight 1.0 ;
+  rdfs:comment "Residential electrical installation (France)."@en ;
+  dhc:designView "compliance" .
+
+dhc:Norm_DINVDE0100
+  a dhc:Norm ;
+  rdfs:label "DIN VDE 0100"@en ;
+  rdfs:label "DIN VDE 0100"@de ;
+  rdfs:label "DIN VDE 0100"@fr ;
+  dhc:normId "din-vde-0100" ;
+  dhc:normCountry "DE" ;
+  dhc:normDomain "electrical" ;
+  dhc:normVersion "2024" ;
+  dhc:normCategory "Standard" ;
+  dhc:normWeight 1.0 ;
+  rdfs:comment "Errichten von Niederspannungsanlagen (Germany)."@en ;
+  dhc:designView "compliance" .
+
+dhc:Norm_AREI_RGIE
+  a dhc:Norm ;
+  rdfs:label "AREI/RGIE"@en ;
+  rdfs:label "AREI/RGIE"@de ;
+  rdfs:label "AREI/RGIE"@fr ;
+  dhc:normId "arei-rgie" ;
+  dhc:normCountry "BE" ;
+  dhc:normDomain "electrical" ;
+  dhc:normVersion "2023" ;
+  dhc:normCategory "Regulation" ;
+  dhc:normWeight 1.0 ;
+  rdfs:comment "General regulation on electrical installations (Belgium)."@en ;
+  dhc:designView "compliance" .
+
+dhc:Norm_BS7671
+  a dhc:Norm ;
+  rdfs:label "BS 7671"@en ;
+  rdfs:label "BS 7671"@de ;
+  rdfs:label "BS 7671"@fr ;
+  dhc:normId "bs7671" ;
+  dhc:normCountry "GB" ;
+  dhc:normDomain "electrical" ;
+  dhc:normVersion "2024" ;
+  dhc:normCategory "Standard" ;
+  dhc:normWeight 1.0 ;
+  rdfs:comment "IET Wiring Regulations (United Kingdom)."@en ;
+  dhc:designView "compliance" .
 
 
 # ============================================================
@@ -1042,7 +1269,9 @@ dhc:vehicleRange
 dhc:designView
   a owl:AnnotationProperty ;
   rdfs:label "design view"@en ;
-  rdfs:comment "Indicates which Designer view/toolbox this concept belongs to. Values: spatial, building, electrical, plumbing, heating, network, governance, automation."@en .
+  rdfs:label "Entwurfsansicht"@de ;
+  rdfs:label "vue de conception"@fr ;
+  rdfs:comment "Indicates which Designer view/toolbox this concept belongs to. Values: spatial, building, electrical, plumbing, heating, network, governance, automation, compliance."@en .
 
 
 # ============================================================
