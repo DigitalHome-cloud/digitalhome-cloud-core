@@ -1,0 +1,216 @@
+{
+  "kind": "categoryToolbox",
+  "contents": [
+    {
+      "kind": "category",
+      "name": "Spatial",
+      "colour": 142,
+      "contents": [
+        {
+          "kind": "block",
+          "type": "dhc_real_estate"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_area"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_floor"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_space"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_zone"
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Electrical",
+      "colour": 220,
+      "contents": [
+        {
+          "kind": "block",
+          "type": "dhc_circuit"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_circuit_type"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_distribution_board"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_protection_device"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_wiring_segment"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_electrical_technical_space"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_energy_delivery"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_energy_meter"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_emergency_disconnect"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_distribution"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_socket"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_switch"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_light"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_heater"
+        },
+        {
+          "kind": "category",
+          "name": "NFC 14-100 Delivery",
+          "colour": 220,
+          "contents": [
+            {
+              "kind": "block",
+              "type": "dhc_nfc14100_nf14_energy_meter"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc14100_nf14_emergency_disconnect"
+            }
+          ]
+        },
+        {
+          "kind": "category",
+          "name": "NFC 15-100 Circuits",
+          "colour": 220,
+          "contents": [
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_gtl"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_lighting_circuit"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_socket_circuit16_a_8_sockets"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_socket_circuit20_a_12_sockets"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_kitchen_socket_circuit20_a_6_sockets_dedicated"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_specialized_appliance_circuit20_a_dedicated"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_water_heater_circuit20_a_dedicated"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_cooking_circuit_mono32_a_dedicated"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_cooking_circuit_tri20_a_dedicated"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_heating_wall_emitters3500_w"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_heating_wall_emitters4500_w"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_heating_wall_emitters5750_w"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_heating_wall_emitters7250_w"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_floor_heating1700_w"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_floor_heating3400_w"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_floor_heating4200_w"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_floor_heating5400_w40_a_dedicated"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_floor_heating7500_w"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_irve_socket16_a"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_irve32_a_mono"
+            },
+            {
+              "kind": "block",
+              "type": "dhc_nfc15100_irve32_a_tri"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Shared",
+      "colour": 230,
+      "contents": [
+        {
+          "kind": "block",
+          "type": "dhc_equipment"
+        },
+        {
+          "kind": "block",
+          "type": "dhc_equipment_type"
+        }
+      ]
+    }
+  ]
+}

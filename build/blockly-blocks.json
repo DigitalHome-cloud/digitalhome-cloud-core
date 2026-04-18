@@ -1,0 +1,3203 @@
+[
+  {
+    "type": "dhc_real_estate",
+    "ontologyClass": "dhc:RealEstate",
+    "designView": "spatial",
+    "colour": 142,
+    "message0": "Real Estate %1\nSmartHome ID %2\nCountry %3\nPostal code %4\nStreet name %5\nStreet number %6\nLocality %7\nAdministrative region %8\nFormatted address %9\nLatitude %10\nLongitude %11\nPlace ID %12\nPlace ID provider %13\nGeocode verified %14\nIs demo %15\nCreation status %16\nCreated at %17\nUpdated at %18\nPreferred language %19",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Real Estate"
+      },
+      {
+        "type": "field_input",
+        "name": "SMART_HOME_ID",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "COUNTRY",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "POSTAL_CODE",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "STREET_NAME",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "STREET_NUMBER",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "LOCALITY",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "ADMIN_REGION",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "FORMATTED_ADDRESS",
+        "text": ""
+      },
+      {
+        "type": "field_number",
+        "name": "LATITUDE",
+        "value": 0
+      },
+      {
+        "type": "field_number",
+        "name": "LONGITUDE",
+        "value": 0
+      },
+      {
+        "type": "field_input",
+        "name": "PLACE_ID",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "PLACE_ID_PROVIDER",
+        "text": ""
+      },
+      {
+        "type": "field_checkbox",
+        "name": "GEOCODE_VERIFIED",
+        "checked": false
+      },
+      {
+        "type": "field_checkbox",
+        "name": "IS_DEMO",
+        "checked": false
+      },
+      {
+        "type": "field_input",
+        "name": "CREATION_STATUS",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "CREATED_AT",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "UPDATED_AT",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "PREFERRED_LANGUAGE",
+        "text": ""
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A physical property: house, apartment, land with buildings.",
+    "message1": "has area %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "HASAREA",
+        "check": "dhc_Area"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_real_estate"
+  },
+  {
+    "type": "dhc_area",
+    "ontologyClass": "dhc:Area",
+    "designView": "spatial",
+    "colour": 142,
+    "message0": "Area %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Area"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A major subdivision of a property (e.g. main building, annex, garden).",
+    "message1": "has floor %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "HASFLOOR",
+        "check": "dhc_Floor"
+      }
+    ],
+    "message2": "has space %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASSPACE",
+        "check": "dhc_Space"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_area"
+  },
+  {
+    "type": "dhc_floor",
+    "ontologyClass": "dhc:Floor",
+    "designView": "spatial",
+    "colour": 142,
+    "message0": "Floor %1\nfloor level %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Floor"
+      },
+      {
+        "type": "field_number",
+        "name": "FLOOR_LEVEL",
+        "value": 0,
+        "precision": 1
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A storey / level within a building.",
+    "nextStatement": null,
+    "previousStatement": "dhc_floor"
+  },
+  {
+    "type": "dhc_space",
+    "ontologyClass": "dhc:Space",
+    "designView": "spatial",
+    "colour": 142,
+    "message0": "Space %1\narea (m²) %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Space"
+      },
+      {
+        "type": "field_number",
+        "name": "AREA_M2",
+        "value": 0
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A specific room or enclosed area (e.g. kitchen, bedroom, garage).",
+    "message1": "has building element %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "HASBUILDINGELEMENT",
+        "check": "dhc_BuildingElement"
+      }
+    ],
+    "message2": "has equipment %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message3": "belongs to zone %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "BELONGSTOZONE",
+        "check": "dhc_Zone"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_space"
+  },
+  {
+    "type": "dhc_zone",
+    "ontologyClass": "dhc:Zone",
+    "designView": "spatial",
+    "colour": 142,
+    "message0": "Zone %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Zone"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A logical zone spanning one or more spaces (e.g. thermal zone, fire compartment).",
+    "nextStatement": null,
+    "previousStatement": "dhc_zone"
+  },
+  {
+    "type": "dhc_circuit",
+    "ontologyClass": "dhc:Circuit",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Circuit %1\nmax points on circuit %2\nphase %3",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Circuit"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 8,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "An electrical circuit connecting equipment to a distribution board.",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_circuit"
+  },
+  {
+    "type": "dhc_circuit_type",
+    "ontologyClass": "dhc:CircuitType",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Circuit Type %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Circuit Type"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Classification: lighting, sockets, dedicated, etc.",
+    "nextStatement": null,
+    "previousStatement": "dhc_circuit_type"
+  },
+  {
+    "type": "dhc_distribution_board",
+    "ontologyClass": "dhc:DistributionBoard",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Distribution Board %1\ndistribution board type %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Distribution Board"
+      },
+      {
+        "type": "field_dropdown",
+        "name": "DISTRIBUTION_BOARD_TYPE",
+        "options": [
+          [
+            "AC Board",
+            "ACBoard"
+          ],
+          [
+            "DC Board",
+            "DCBoard"
+          ],
+          [
+            "Communication Board",
+            "CommunicationBoard"
+          ]
+        ]
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Main or sub distribution panel.",
+    "message1": "has circuit %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "HASCIRCUIT",
+        "check": "dhc_Circuit"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_distribution_board"
+  },
+  {
+    "type": "dhc_protection_device",
+    "ontologyClass": "dhc:ProtectionDevice",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Protection Device %1\nrated current (A) %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Protection Device"
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ]
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Circuit breaker, RCD, fuse, surge protector.",
+    "nextStatement": null,
+    "previousStatement": "dhc_protection_device"
+  },
+  {
+    "type": "dhc_wiring_segment",
+    "ontologyClass": "dhc:WiringSegment",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Wiring Segment %1\ncross section (mm²) %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Wiring Segment"
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 0
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A run of cable between two points.",
+    "nextStatement": null,
+    "previousStatement": "dhc_wiring_segment"
+  },
+  {
+    "type": "dhc_electrical_technical_space",
+    "ontologyClass": "dhc:ElectricalTechnicalSpace",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Electrical Technical Space %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Electrical Technical Space"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A generic technical space for electrical installation (e.g. GTL, electrical closet).",
+    "nextStatement": null,
+    "previousStatement": "dhc_electrical_technical_space"
+  },
+  {
+    "type": "dhc_energy_delivery",
+    "ontologyClass": "dhc:EnergyDelivery",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Energy Delivery %1\nenergy provider name %2\ncurrent type %3\nneutral system %4\ncontracted power (kVA) %5",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Energy Delivery"
+      },
+      {
+        "type": "field_input",
+        "name": "ENERGY_PROVIDER_NAME",
+        "text": ""
+      },
+      {
+        "type": "field_dropdown",
+        "name": "CURRENT_TYPE",
+        "options": [
+          [
+            "Single Phase",
+            "SinglePhase"
+          ],
+          [
+            "Three Phase",
+            "ThreePhase"
+          ]
+        ]
+      },
+      {
+        "type": "field_dropdown",
+        "name": "NEUTRAL_SYSTEM",
+        "options": [
+          [
+            "TT (Star)",
+            "TT"
+          ],
+          [
+            "TN-S",
+            "TN-S"
+          ],
+          [
+            "TN-C",
+            "TN-C"
+          ],
+          [
+            "IT",
+            "IT"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CONTRACTED_POWER_K_V_A",
+        "value": 6
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Root entry point: contractual and physical energy supply to the property.",
+    "nextStatement": null,
+    "previousStatement": "dhc_energy_delivery"
+  },
+  {
+    "type": "dhc_energy_meter",
+    "ontologyClass": "dhc:EnergyMeter",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Energy Meter %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Energy Meter"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A metering device measuring energy consumption.",
+    "nextStatement": null,
+    "previousStatement": "dhc_energy_meter"
+  },
+  {
+    "type": "dhc_emergency_disconnect",
+    "ontologyClass": "dhc:EmergencyDisconnect",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Emergency Disconnect %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Emergency Disconnect"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Emergency or general disconnect device.",
+    "nextStatement": null,
+    "previousStatement": "dhc_emergency_disconnect"
+  },
+  {
+    "type": "dhc_distribution",
+    "ontologyClass": "dhc:Distribution",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Distribution %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Distribution"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "An intermediate distribution node (junction box, sub-distribution).",
+    "nextStatement": null,
+    "previousStatement": "dhc_distribution"
+  },
+  {
+    "type": "dhc_equipment",
+    "ontologyClass": "dhc:Equipment",
+    "designView": "shared",
+    "colour": 230,
+    "message0": "Equipment %1\npower rating (W) %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Equipment"
+      },
+      {
+        "type": "field_number",
+        "name": "POWER_RATING",
+        "value": 0
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "A physical device: sensor, actuator, appliance, fixture.",
+    "message1": "connected to network %1",
+    "args1": [
+      {
+        "type": "input_value",
+        "name": "CONNECTEDTONETWORK",
+        "check": "dhc_NetworkSegment"
+      }
+    ],
+    "message2": "has equipment type %1",
+    "args2": [
+      {
+        "type": "input_value",
+        "name": "HASEQUIPMENTTYPE",
+        "check": "dhc_EquipmentType"
+      }
+    ],
+    "message3": "has part %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPART",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Equipment"
+  },
+  {
+    "type": "dhc_equipment_type",
+    "ontologyClass": "dhc:EquipmentType",
+    "designView": "shared",
+    "colour": 230,
+    "message0": "Equipment Type %1\nbrand %2\nmodel %3\ncatalog reference %4",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Equipment Type"
+      },
+      {
+        "type": "field_input",
+        "name": "BRAND",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "MODEL",
+        "text": ""
+      },
+      {
+        "type": "field_input",
+        "name": "CATALOG_REF",
+        "text": ""
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Classification of equipment by category, brand, model.",
+    "nextStatement": null,
+    "previousStatement": "dhc_equipment_type"
+  },
+  {
+    "type": "dhc_socket",
+    "ontologyClass": "dhc:Socket",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Socket %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Socket"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Socket",
+    "nextStatement": null,
+    "previousStatement": "dhc_Equipment"
+  },
+  {
+    "type": "dhc_switch",
+    "ontologyClass": "dhc:Switch",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Switch %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Switch"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Switch",
+    "nextStatement": null,
+    "previousStatement": "dhc_Equipment"
+  },
+  {
+    "type": "dhc_light",
+    "ontologyClass": "dhc:Light",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Light %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Light"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Light",
+    "nextStatement": null,
+    "previousStatement": "dhc_Equipment"
+  },
+  {
+    "type": "dhc_heater",
+    "ontologyClass": "dhc:Heater",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Heater %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Heater"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Heater",
+    "nextStatement": null,
+    "previousStatement": "dhc_Equipment"
+  },
+  {
+    "type": "dhc_nfc14100_nf14_energy_meter",
+    "ontologyClass": "dhc-nfc14100:NF14EnergyMeter",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "NF14 Energy Meter %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "NF14 Energy Meter"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Energy meter as defined by NF C 14-100 (compteur Enedis/EDF).",
+    "nextStatement": null,
+    "previousStatement": "dhc_nfc14100_nf14_energy_meter"
+  },
+  {
+    "type": "dhc_nfc14100_nf14_emergency_disconnect",
+    "ontologyClass": "dhc-nfc14100:NF14EmergencyDisconnect",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "NF14 Emergency Disconnect %1",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "NF14 Emergency Disconnect"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "General emergency disconnect as defined by NF C 14-100 (AGCP / disjoncteur de branchement).",
+    "nextStatement": null,
+    "previousStatement": "dhc_nfc14100_nf14_emergency_disconnect"
+  },
+  {
+    "type": "dhc_nfc15100_gtl",
+    "ontologyClass": "dhc-nfc15100:GTL",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "GTL (Gaine Technique Logement) %1\narea (m²) %2",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "GTL (Gaine Technique Logement)"
+      },
+      {
+        "type": "field_number",
+        "name": "AREA_M2",
+        "value": 0
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Gaine Technique Logement — mandatory technical enclosure per NF C 15-100.",
+    "message1": "has building element %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "HASBUILDINGELEMENT",
+        "check": "dhc_BuildingElement"
+      }
+    ],
+    "message2": "has equipment %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message3": "belongs to zone %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "BELONGSTOZONE",
+        "check": "dhc_Zone"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_electrical_technical_space"
+  },
+  {
+    "type": "dhc_nfc15100_lighting_circuit",
+    "ontologyClass": "dhc-nfc15100:LightingCircuit",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Lighting Circuit %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Lighting Circuit"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 8,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 1.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "16"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G1.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Lighting circuit: max 8 points, 10A breaker, 1.5mm² wiring (3G1.5).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_socket_circuit16_a_8_sockets",
+    "ontologyClass": "dhc-nfc15100:SocketCircuit16A_8Sockets",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Socket Circuit 16A (8 sockets) %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Socket Circuit 16A (8 sockets)"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 8,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 1.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "16"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G1.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Standard socket circuit: max 8 sockets, 16A breaker, 1.5mm² wiring.",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_socket_circuit20_a_12_sockets",
+    "ontologyClass": "dhc-nfc15100:SocketCircuit20A_12Sockets",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Socket Circuit 20A (12 sockets) %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Socket Circuit 20A (12 sockets)"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 12,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 2.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "20"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G2.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Extended socket circuit: max 12 sockets, 20A breaker, 2.5mm² wiring.",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_kitchen_socket_circuit20_a_6_sockets_dedicated",
+    "ontologyClass": "dhc-nfc15100:KitchenSocketCircuit20A_6Sockets_Dedicated",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Kitchen Socket Circuit 20A (6 sockets, dedicated) %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Kitchen Socket Circuit 20A (6 sockets, dedicated)"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 6,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 2.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "20"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G2.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Dedicated kitchen socket circuit: max 6 sockets, 20A breaker, 2.5mm² wiring.",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_specialized_appliance_circuit20_a_dedicated",
+    "ontologyClass": "dhc-nfc15100:SpecializedApplianceCircuit20A_Dedicated",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Specialized Appliance Circuit 20A (dedicated) %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Specialized Appliance Circuit 20A (dedicated)"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 2.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "20"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G2.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Dedicated circuit for specialized appliances (dishwasher, dryer, freezer): 1 point, 20A breaker, 2.5mm².",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_water_heater_circuit20_a_dedicated",
+    "ontologyClass": "dhc-nfc15100:WaterHeaterCircuit20A_Dedicated",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Water Heater Circuit 20A (dedicated) %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Water Heater Circuit 20A (dedicated)"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 2.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "20"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G2.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Dedicated water heater circuit: 1 point, 20A breaker, 2.5mm².",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_cooking_circuit_mono32_a_dedicated",
+    "ontologyClass": "dhc-nfc15100:CookingCircuitMono32A_Dedicated",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Cooking Circuit Mono 32A (dedicated) %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Cooking Circuit Mono 32A (dedicated)"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 6
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "32"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G6"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Dedicated single-phase cooking circuit: 1 point, 32A breaker, 6mm² (3G6).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_cooking_circuit_tri20_a_dedicated",
+    "ontologyClass": "dhc-nfc15100:CookingCircuitTri20A_Dedicated",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Cooking Circuit Tri 20A (dedicated) %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Cooking Circuit Tri 20A (dedicated)"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 2.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "20"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "5G2.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Dedicated three-phase cooking circuit: 1 point, 20A breaker, 2.5mm² (5G2.5).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_heating_wall_emitters3500_w",
+    "ontologyClass": "dhc-nfc15100:HeatingWallEmitters3500W",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Heating Wall Emitters ≤3500W %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Heating Wall Emitters ≤3500W"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 1.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "16"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G1.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Wall emitter heating circuit ≤3500W: 16A breaker, 1.5mm² (3G1.5).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_heating_wall_emitters4500_w",
+    "ontologyClass": "dhc-nfc15100:HeatingWallEmitters4500W",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Heating Wall Emitters ≤4500W %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Heating Wall Emitters ≤4500W"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 2.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "20"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G2.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Wall emitter heating circuit ≤4500W: 20A breaker, 2.5mm² (3G2.5).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_heating_wall_emitters5750_w",
+    "ontologyClass": "dhc-nfc15100:HeatingWallEmitters5750W",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Heating Wall Emitters ≤5750W %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Heating Wall Emitters ≤5750W"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 4
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "25"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G4"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Wall emitter heating circuit ≤5750W: 25A breaker, 4mm² (3G4).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_heating_wall_emitters7250_w",
+    "ontologyClass": "dhc-nfc15100:HeatingWallEmitters7250W",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Heating Wall Emitters ≤7250W %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Heating Wall Emitters ≤7250W"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 6
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "32"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G6"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Wall emitter heating circuit ≤7250W: 32A breaker, 6mm² (3G6).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_floor_heating1700_w",
+    "ontologyClass": "dhc-nfc15100:FloorHeating1700W",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Floor Heating ≤1700W %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Floor Heating ≤1700W"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 1.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "16"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G1.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Floor heating circuit ≤1700W: 16A breaker, 1.5mm² (3G1.5).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_floor_heating3400_w",
+    "ontologyClass": "dhc-nfc15100:FloorHeating3400W",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Floor Heating ≤3400W %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Floor Heating ≤3400W"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 4
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "25"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G4"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Floor heating circuit ≤3400W: 25A breaker, 4mm² (3G4).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_floor_heating4200_w",
+    "ontologyClass": "dhc-nfc15100:FloorHeating4200W",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Floor Heating ≤4200W %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Floor Heating ≤4200W"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 6
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "32"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G6"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Floor heating circuit ≤4200W: 32A breaker, 6mm² (3G6).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_floor_heating5400_w40_a_dedicated",
+    "ontologyClass": "dhc-nfc15100:FloorHeating5400W40ADedicated",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Floor Heating ≤5400W (40A, dedicated) %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Floor Heating ≤5400W (40A, dedicated)"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 6
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "40"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "4G6"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Floor heating circuit ≤5400W: 40A breaker, 6mm² (4G6), dedicated.",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_floor_heating7500_w",
+    "ontologyClass": "dhc-nfc15100:FloorHeating7500W",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "Floor Heating ≤7500W %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "Floor Heating ≤7500W"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 10
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "40"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G10"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "Floor heating circuit ≤7500W: 40A breaker, 10mm² (3G10).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_irve_socket16_a",
+    "ontologyClass": "dhc-nfc15100:IRVESocket16A",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "IRVE Socket 16A %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "IRVE Socket 16A"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 2.5
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "16"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G2.5"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "EV charging via standard 16A socket: 16A breaker, 2.5mm² (3G2.5).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_irve32_a_mono",
+    "ontologyClass": "dhc-nfc15100:IRVE32AMono",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "IRVE 32A Mono %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "IRVE 32A Mono"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 10
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "40"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "3G10"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "EV charging wallbox single-phase 32A: 40A breaker, 10mm² (3G10).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  },
+  {
+    "type": "dhc_nfc15100_irve32_a_tri",
+    "ontologyClass": "dhc-nfc15100:IRVE32ATri",
+    "designView": "electrical",
+    "colour": 220,
+    "message0": "IRVE 32A Tri %1\nmax points on circuit %2\nphase %3\ncross section (mm²) %4\nrated current (A) %5\nwiring %6",
+    "args0": [
+      {
+        "type": "field_input",
+        "name": "LABEL",
+        "text": "IRVE 32A Tri"
+      },
+      {
+        "type": "field_number",
+        "name": "MAX_POINTS",
+        "value": 1,
+        "precision": 1
+      },
+      {
+        "type": "field_dropdown",
+        "name": "PHASE",
+        "options": [
+          [
+            "Phase 1",
+            "1"
+          ],
+          [
+            "Phase 2",
+            "2"
+          ],
+          [
+            "Phase 3",
+            "3"
+          ]
+        ]
+      },
+      {
+        "type": "field_number",
+        "name": "CROSS_SECTION",
+        "value": 10
+      },
+      {
+        "type": "field_dropdown",
+        "name": "RATED_CURRENT",
+        "options": [
+          [
+            "10 A",
+            "10"
+          ],
+          [
+            "16 A",
+            "16"
+          ],
+          [
+            "20 A",
+            "20"
+          ],
+          [
+            "25 A",
+            "25"
+          ],
+          [
+            "32 A",
+            "32"
+          ],
+          [
+            "40 A",
+            "40"
+          ],
+          [
+            "50 A",
+            "50"
+          ]
+        ],
+        "default": "40"
+      },
+      {
+        "type": "field_input",
+        "name": "WIRING",
+        "text": "5G10"
+      }
+    ],
+    "inputsInline": false,
+    "tooltip": "EV charging wallbox three-phase 32A: 40A breaker, 10mm² (5G10).",
+    "message1": "feeds equipment %1",
+    "args1": [
+      {
+        "type": "input_statement",
+        "name": "FEEDSEQUIPMENT",
+        "check": "dhc_Equipment"
+      }
+    ],
+    "message2": "has wiring %1",
+    "args2": [
+      {
+        "type": "input_statement",
+        "name": "HASWIRING",
+        "check": "dhc_WiringSegment"
+      }
+    ],
+    "message3": "has protection %1",
+    "args3": [
+      {
+        "type": "input_value",
+        "name": "HASPROTECTION",
+        "check": "dhc_ProtectionDevice"
+      }
+    ],
+    "message4": "has circuit type %1",
+    "args4": [
+      {
+        "type": "input_value",
+        "name": "HASCIRCUITTYPE",
+        "check": "dhc_CircuitType"
+      }
+    ],
+    "nextStatement": null,
+    "previousStatement": "dhc_Circuit"
+  }
+]
