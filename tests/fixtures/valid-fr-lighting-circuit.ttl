@@ -1,0 +1,10 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+ex:fr-lighting-1 a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Lighting ;
+  dhc:governedBy     dhc:Norm_NFC15100 ;
+  dhc:maxPoints      "8"^^xsd:integer ;
+  dhc:ratedCurrent   "10"^^xsd:decimal ;
+  dhc:crossSection   "1.5"^^xsd:decimal .

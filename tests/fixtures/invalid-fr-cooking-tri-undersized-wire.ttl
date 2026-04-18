@@ -1,0 +1,11 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+ex:fr-cooking-bad a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Cooking ;
+  dhc:governedBy     dhc:Norm_NFC15100 ;
+  dhc:phase          "3"^^xsd:integer ;
+  dhc:maxPoints      "1"^^xsd:integer ;
+  dhc:ratedCurrent   "20"^^xsd:decimal ;
+  dhc:crossSection   "1.5"^^xsd:decimal .

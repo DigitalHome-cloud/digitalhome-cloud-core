@@ -1,0 +1,573 @@
+@prefix dhc:     <https://digitalhome.cloud/ontology#> .
+@prefix sh:      <http://www.w3.org/ns/shacl#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix nfc15100: <https://digitalhome.cloud/cbox/nfc15100#> .
+
+# ═══════════════════════════════════════════════════════════════════════
+#  C-Box SHACL profile: NF C 15-100 (France — Low-voltage installations)
+#  Binds to: dhc:Norm_NFC15100
+#  Activation pattern: P3 sh:or guard (rdf-validate-shacl@0.6.0 compatible)
+#  See repos/core/CLAUDE.md § SHACL activation pattern.
+# ═══════════════════════════════════════════════════════════════════════
+
+nfc15100:Profile
+  a owl:Ontology ;
+  rdfs:label "NF C 15-100 C-Box profile"@en ;
+  rdfs:label "NF C 15-100 C-Box-Profil"@de ;
+  rdfs:label "Profil C-Box NF C 15-100"@fr ;
+  owl:versionInfo "2.0.0" ;
+  dhc:normId       "nfc15100" ;
+  dhc:normCountry  "FR" ;
+  dhc:normVersion  "2015-A5" ;
+  dhc:normDomain   "electrical" .
+
+# ── Shape 1/22: Lighting circuit ────────────────────────────────────────
+
+nfc15100:LightingCircuitShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Lighting circuit (NF C 15-100)"@en ;
+  rdfs:label "Lichtstromkreis (NF C 15-100)"@de ;
+  rdfs:label "Circuit d'éclairage (NF C 15-100)"@fr ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Lighting ] ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 8 ;
+        sh:message "NF C 15-100: lighting circuit must not exceed 8 points."@en ;
+        sh:message "NF C 15-100: Lichtstromkreis darf höchstens 8 Punkte haben."@de ;
+        sh:message "NF C 15-100 : un circuit d'éclairage ne doit pas dépasser 8 points."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 16 ;
+        sh:message "NF C 15-100: lighting circuit rated current must be ≤ 16 A."@en ;
+        sh:message "NF C 15-100: Bemessungsstrom Lichtstromkreis ≤ 16 A."@de ;
+        sh:message "NF C 15-100 : courant assigné du circuit d'éclairage ≤ 16 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 1.5 ;
+        sh:message "NF C 15-100: lighting circuit wire cross-section must be ≥ 1.5 mm²."@en ;
+        sh:message "NF C 15-100: Aderquerschnitt Lichtstromkreis ≥ 1,5 mm²."@de ;
+        sh:message "NF C 15-100 : section des conducteurs du circuit d'éclairage ≥ 1,5 mm²."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 2/22: Socket 16 A (non-dedicated) ─────────────────────────────
+
+nfc15100:SocketCircuit16AShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Socket circuit 16 A (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Socket ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 16 ] ] ]
+    [ sh:property [ sh:path dhc:dedicated ; sh:hasValue true ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 8 ;
+        sh:message "NF C 15-100: 16 A socket circuit must not exceed 8 sockets."@en ;
+        sh:message "NF C 15-100: 16-A-Steckdosenstromkreis darf höchstens 8 Steckdosen haben."@de ;
+        sh:message "NF C 15-100 : circuit prise 16 A ≤ 8 socles."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 1.5 ;
+        sh:message "NF C 15-100: 16 A socket circuit wire cross-section ≥ 1.5 mm²."@en ;
+        sh:message "NF C 15-100: Aderquerschnitt 16-A-Steckdosenstromkreis ≥ 1,5 mm²."@de ;
+        sh:message "NF C 15-100 : section conducteurs circuit prise 16 A ≥ 1,5 mm²."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 3/22: Socket 20 A (non-dedicated) ─────────────────────────────
+
+nfc15100:SocketCircuit20AShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Socket circuit 20 A (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Socket ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:minExclusive 16 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 20 ] ] ]
+    [ sh:property [ sh:path dhc:dedicated ; sh:hasValue true ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 12 ;
+        sh:message "NF C 15-100: 20 A socket circuit must not exceed 12 sockets."@en ;
+        sh:message "NF C 15-100: 20-A-Steckdosenstromkreis darf höchstens 12 Steckdosen haben."@de ;
+        sh:message "NF C 15-100 : circuit prise 20 A ≤ 12 socles."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "NF C 15-100: 20 A socket circuit wire cross-section ≥ 2.5 mm²."@en ;
+        sh:message "NF C 15-100: Aderquerschnitt 20-A-Steckdosenstromkreis ≥ 2,5 mm²."@de ;
+        sh:message "NF C 15-100 : section conducteurs circuit prise 20 A ≥ 2,5 mm²."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 4/22: Kitchen / dedicated socket circuit ──────────────────────
+
+nfc15100:KitchenSocketCircuitShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Kitchen (dedicated) socket circuit (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Socket ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:dedicated ; sh:hasValue true ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 20 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 6 ;
+        sh:message "NF C 15-100: dedicated kitchen socket circuit ≤ 6 sockets."@en ;
+        sh:message "NF C 15-100: Dedizierter Küchen-Steckdosenstromkreis ≤ 6 Steckdosen."@de ;
+        sh:message "NF C 15-100 : circuit prise dédié cuisine ≤ 6 socles."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "NF C 15-100: dedicated kitchen socket wire cross-section ≥ 2.5 mm²."@en ;
+        sh:message "NF C 15-100: Querschnitt dedizierter Küchenstromkreis ≥ 2,5 mm²."@de ;
+        sh:message "NF C 15-100 : section conducteurs circuit prise dédié ≥ 2,5 mm²."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 5/22: Specialized dedicated appliance circuit ─────────────────
+
+nfc15100:SpecializedApplianceShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Specialized appliance circuit (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_DedicatedAppliance ] ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 1 ;
+        sh:message "NF C 15-100: specialized-appliance circuit must serve exactly one point."@en ;
+        sh:message "NF C 15-100: Spezialgerätestromkreis darf nur einen Punkt versorgen."@de ;
+        sh:message "NF C 15-100 : circuit spécialisé doit alimenter un seul point."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 20 ;
+        sh:message "NF C 15-100: specialized-appliance rated current ≤ 20 A."@en ;
+        sh:message "NF C 15-100: Bemessungsstrom Spezialgerät ≤ 20 A."@de ;
+        sh:message "NF C 15-100 : courant assigné circuit spécialisé ≤ 20 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "NF C 15-100: specialized-appliance wire cross-section ≥ 2.5 mm²."@en ;
+        sh:message "NF C 15-100: Aderquerschnitt Spezialgerät ≥ 2,5 mm²."@de ;
+        sh:message "NF C 15-100 : section conducteurs circuit spécialisé ≥ 2,5 mm²."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 6/22: Water heater circuit ────────────────────────────────────
+
+nfc15100:WaterHeaterShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Water heater circuit (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_WaterHeater ] ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 1 ;
+        sh:message "NF C 15-100: water-heater circuit must serve exactly one point."@en ;
+        sh:message "NF C 15-100: Warmwasserbereiter-Stromkreis nur ein Punkt."@de ;
+        sh:message "NF C 15-100 : circuit chauffe-eau — un seul point."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 20 ;
+        sh:message "NF C 15-100: water-heater rated current ≤ 20 A."@en ;
+        sh:message "NF C 15-100: Bemessungsstrom Warmwasserbereiter ≤ 20 A."@de ;
+        sh:message "NF C 15-100 : courant assigné chauffe-eau ≤ 20 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "NF C 15-100: water-heater wire cross-section ≥ 2.5 mm²."@en ;
+        sh:message "NF C 15-100: Aderquerschnitt Warmwasserbereiter ≥ 2,5 mm²."@de ;
+        sh:message "NF C 15-100 : section conducteurs chauffe-eau ≥ 2,5 mm²."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 7/22: Cooking — single-phase ──────────────────────────────────
+
+nfc15100:CookingMonoShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Single-phase cooking circuit (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Cooking ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:phase ; sh:hasValue 1 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 1 ;
+        sh:message "NF C 15-100: cooking circuit serves a single point."@en ;
+        sh:message "NF C 15-100: Kochstromkreis nur ein Punkt."@de ;
+        sh:message "NF C 15-100 : circuit cuisson — un seul point."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 32 ;
+        sh:message "NF C 15-100: single-phase cooking rated current ≤ 32 A."@en ;
+        sh:message "NF C 15-100: Bemessungsstrom Kochen 1-phasig ≤ 32 A."@de ;
+        sh:message "NF C 15-100 : courant assigné cuisson monophasé ≤ 32 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 6.0 ;
+        sh:message "NF C 15-100: single-phase cooking wire cross-section ≥ 6 mm²."@en ;
+        sh:message "NF C 15-100: Aderquerschnitt Kochen 1-phasig ≥ 6 mm²."@de ;
+        sh:message "NF C 15-100 : section conducteurs cuisson monophasé ≥ 6 mm²."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 8/22: Cooking — three-phase ───────────────────────────────────
+
+nfc15100:CookingTriShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Three-phase cooking circuit (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Cooking ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:phase ; sh:hasValue 3 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 1 ;
+        sh:message "NF C 15-100: three-phase cooking serves one point."@en ;
+        sh:message "NF C 15-100: Kochstromkreis 3-phasig nur ein Punkt."@de ;
+        sh:message "NF C 15-100 : cuisson triphasé — un seul point."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 20 ;
+        sh:message "NF C 15-100: three-phase cooking rated current ≤ 20 A per phase."@en ;
+        sh:message "NF C 15-100: Bemessungsstrom Kochen 3-phasig ≤ 20 A je Phase."@de ;
+        sh:message "NF C 15-100 : courant assigné cuisson triphasé ≤ 20 A par phase."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "NF C 15-100: three-phase cooking wire cross-section ≥ 2.5 mm² (5G2.5)."@en ;
+        sh:message "NF C 15-100: Aderquerschnitt Kochen 3-phasig ≥ 2,5 mm² (5G2,5)."@de ;
+        sh:message "NF C 15-100 : section conducteurs cuisson triphasé ≥ 2,5 mm² (5G2,5)."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shapes 9–12/22: Heating wall (per ampacity tier) ────────────────────
+
+nfc15100:HeatingWall16AShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Wall heating circuit — 16 A tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Heating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 16 ] ] ]
+    [ sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 1.5 ;
+        sh:message "NF C 15-100: wall heating ≤ 16 A requires cross-section ≥ 1.5 mm²."@en ;
+        sh:message "NF C 15-100: Wandheizung ≤ 16 A benötigt Querschnitt ≥ 1,5 mm²."@de ;
+        sh:message "NF C 15-100 : chauffage mural ≤ 16 A — section ≥ 1,5 mm²."@fr ;
+      ] ]
+  ) .
+
+nfc15100:HeatingWall20AShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Wall heating circuit — 20 A tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Heating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:minExclusive 16 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 20 ] ] ]
+    [ sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "NF C 15-100: wall heating 16–20 A requires cross-section ≥ 2.5 mm²."@en ;
+        sh:message "NF C 15-100: Wandheizung 16–20 A benötigt Querschnitt ≥ 2,5 mm²."@de ;
+        sh:message "NF C 15-100 : chauffage mural 16–20 A — section ≥ 2,5 mm²."@fr ;
+      ] ]
+  ) .
+
+nfc15100:HeatingWall25AShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Wall heating circuit — 25 A tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Heating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:minExclusive 20 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 25 ] ] ]
+    [ sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 4.0 ;
+        sh:message "NF C 15-100: wall heating 20–25 A requires cross-section ≥ 4 mm²."@en ;
+        sh:message "NF C 15-100: Wandheizung 20–25 A benötigt Querschnitt ≥ 4 mm²."@de ;
+        sh:message "NF C 15-100 : chauffage mural 20–25 A — section ≥ 4 mm²."@fr ;
+      ] ]
+  ) .
+
+nfc15100:HeatingWall32AShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Wall heating circuit — 32 A tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Heating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:minExclusive 25 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 32 ] ] ]
+    [ sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 6.0 ;
+        sh:message "NF C 15-100: wall heating 25–32 A requires cross-section ≥ 6 mm²."@en ;
+        sh:message "NF C 15-100: Wandheizung 25–32 A benötigt Querschnitt ≥ 6 mm²."@de ;
+        sh:message "NF C 15-100 : chauffage mural 25–32 A — section ≥ 6 mm²."@fr ;
+      ] ]
+  ) .
+
+# ── Shapes 13–17/22: Floor heating (per power tier) ─────────────────────
+
+nfc15100:FloorHeating1700WShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Floor heating — ≤ 1700 W tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_FloorHeating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:maxInclusive 1700 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 16 ;
+        sh:message "NF C 15-100: floor heating ≤ 1700 W — rated current ≤ 16 A."@en ;
+        sh:message "NF C 15-100: Fußbodenheizung ≤ 1700 W — Bemessungsstrom ≤ 16 A."@de ;
+        sh:message "NF C 15-100 : plancher chauffant ≤ 1700 W — courant assigné ≤ 16 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 1.5 ;
+        sh:message "NF C 15-100: floor heating ≤ 1700 W — cross-section ≥ 1.5 mm²."@en ;
+      ]
+    ]
+  ) .
+
+nfc15100:FloorHeating3400WShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Floor heating — 1700–3400 W tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_FloorHeating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:minExclusive 1700 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:maxInclusive 3400 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 20 ;
+        sh:message "NF C 15-100: floor heating 1700–3400 W — rated current ≤ 20 A."@en ;
+        sh:message "NF C 15-100: Fußbodenheizung 1700–3400 W — Bemessungsstrom ≤ 20 A."@de ;
+        sh:message "NF C 15-100 : plancher chauffant 1700–3400 W — courant assigné ≤ 20 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "NF C 15-100: floor heating 1700–3400 W — cross-section ≥ 2.5 mm²."@en ;
+      ]
+    ]
+  ) .
+
+nfc15100:FloorHeating4200WShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Floor heating — 3400–4200 W tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_FloorHeating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:minExclusive 3400 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:maxInclusive 4200 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 25 ;
+        sh:message "NF C 15-100: floor heating 3400–4200 W — rated current ≤ 25 A."@en ;
+        sh:message "NF C 15-100: Fußbodenheizung 3400–4200 W — Bemessungsstrom ≤ 25 A."@de ;
+        sh:message "NF C 15-100 : plancher chauffant 3400–4200 W — courant assigné ≤ 25 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 4.0 ;
+        sh:message "NF C 15-100: floor heating 3400–4200 W — cross-section ≥ 4 mm²."@en ;
+      ]
+    ]
+  ) .
+
+nfc15100:FloorHeating5400WShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Floor heating — 4200–5400 W tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_FloorHeating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:minExclusive 4200 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:maxInclusive 5400 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 32 ;
+        sh:message "NF C 15-100: floor heating 4200–5400 W — rated current ≤ 32 A."@en ;
+        sh:message "NF C 15-100: Fußbodenheizung 4200–5400 W — Bemessungsstrom ≤ 32 A."@de ;
+        sh:message "NF C 15-100 : plancher chauffant 4200–5400 W — courant assigné ≤ 32 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 6.0 ;
+        sh:message "NF C 15-100: floor heating 4200–5400 W — cross-section ≥ 6 mm²."@en ;
+      ]
+    ]
+  ) .
+
+nfc15100:FloorHeating7500WShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Floor heating — 5400–7500 W tier (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_FloorHeating ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:minExclusive 5400 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:powerRating ; sh:maxInclusive 7500 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 40 ;
+        sh:message "NF C 15-100: floor heating 5400–7500 W — rated current ≤ 40 A."@en ;
+        sh:message "NF C 15-100: Fußbodenheizung 5400–7500 W — Bemessungsstrom ≤ 40 A."@de ;
+        sh:message "NF C 15-100 : plancher chauffant 5400–7500 W — courant assigné ≤ 40 A."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 10.0 ;
+        sh:message "NF C 15-100: floor heating 5400–7500 W — cross-section ≥ 10 mm²."@en ;
+      ]
+    ]
+  ) .
+
+# ── Shapes 18–20/22: IRVE (EV charging station circuits) ────────────────
+
+nfc15100:IRVE16AShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "IRVE EV charging — 16 A (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_IRVE ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 16 ] ] ]
+    [ sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "NF C 15-100: IRVE 16 A — cross-section ≥ 2.5 mm²."@en ;
+        sh:message "NF C 15-100: IRVE 16 A — Querschnitt ≥ 2,5 mm²."@de ;
+        sh:message "NF C 15-100 : IRVE 16 A — section ≥ 2,5 mm²."@fr ;
+      ] ]
+  ) .
+
+nfc15100:IRVE32AMonoShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "IRVE EV charging — 32 A single-phase (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_IRVE ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:hasValue 32 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:phase ; sh:hasValue 1 ] ] ]
+    [ sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 10.0 ;
+        sh:message "NF C 15-100: IRVE 32 A single-phase — cross-section ≥ 10 mm²."@en ;
+        sh:message "NF C 15-100: IRVE 32 A einphasig — Querschnitt ≥ 10 mm²."@de ;
+        sh:message "NF C 15-100 : IRVE 32 A monophasé — section ≥ 10 mm²."@fr ;
+      ] ]
+  ) .
+
+nfc15100:IRVE32ATriShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "IRVE EV charging — 32 A three-phase (NF C 15-100)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_IRVE ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:hasValue 32 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:phase ; sh:hasValue 3 ] ] ]
+    [ sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 6.0 ;
+        sh:message "NF C 15-100: IRVE 32 A three-phase — cross-section ≥ 6 mm²."@en ;
+        sh:message "NF C 15-100: IRVE 32 A dreiphasig — Querschnitt ≥ 6 mm²."@de ;
+        sh:message "NF C 15-100 : IRVE 32 A triphasé — section ≥ 6 mm²."@fr ;
+      ] ]
+  ) .
+
+# ── Shape 21/22: GTL — electrical technical space must colocate a board ─
+
+nfc15100:GTLShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:ElectricalTechnicalSpace ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "GTL — electrical technical space houses ≥1 DistributionBoard"@en ;
+  sh:property [
+    sh:path dhc:contains ;
+    sh:qualifiedValueShape [ sh:class dhc:DistributionBoard ] ;
+    sh:qualifiedMinCount 1 ;
+    sh:message "NF C 15-100: GTL (electrical technical space) must contain at least one DistributionBoard."@en ;
+    sh:message "NF C 15-100: GTL (Elektro-Technikraum) muss mindestens einen Verteilerkasten enthalten."@de ;
+    sh:message "NF C 15-100 : la GTL doit contenir au moins un tableau électrique."@fr ;
+  ] .
+
+# ── Shape 22/22: Every Circuit must be governed by at least one norm ────
+
+nfc15100:NormGovernanceShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Every Circuit must declare at least one governing norm"@en ;
+  sh:property [
+    sh:path dhc:governedBy ;
+    sh:minCount 1 ;
+    sh:class dhc:Norm ;
+    sh:message "Every Circuit must reference at least one dhc:Norm via dhc:governedBy."@en ;
+    sh:message "Jeder Stromkreis muss über dhc:governedBy mindestens eine dhc:Norm referenzieren."@de ;
+    sh:message "Chaque circuit doit référencer au moins une dhc:Norm via dhc:governedBy."@fr ;
+  ] .

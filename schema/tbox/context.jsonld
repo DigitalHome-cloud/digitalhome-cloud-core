@@ -62,7 +62,8 @@
 
     "Group": "dhc:Group",
     "Scenario": "dhc:Scenario",
-    "Guideline": "dhc:Guideline",
+
+    "Norm": "dhc:Norm",
 
     "ElectricVehicle": "dhc:ElectricVehicle",
     "ElectricCar": "dhc:ElectricCar",
@@ -87,6 +88,23 @@
     "hasGroupMember": { "@id": "dhc:hasGroupMember", "@type": "@id" },
     "hasTrigger": { "@id": "dhc:hasTrigger", "@type": "@id" },
     "hasAction": { "@id": "dhc:hasAction", "@type": "@id" },
+
+    "hasCircuitType": { "@id": "dhc:hasCircuitType", "@type": "@id" },
+    "governedBy": { "@id": "dhc:governedBy", "@type": "@id" },
+    "contains": { "@id": "dhc:contains", "@type": "@id" },
+    "locatedIn": { "@id": "dhc:locatedIn", "@type": "@id" },
+    "feeds": { "@id": "dhc:feeds", "@type": "@id" },
+    "hasWiring": { "@id": "dhc:hasWiring", "@type": "@id" },
+
+    "normId": "dhc:normId",
+    "normCountry": "dhc:normCountry",
+    "normDomain": "dhc:normDomain",
+    "normVersion": "dhc:normVersion",
+    "normCategory": "dhc:normCategory",
+    "normWeight": { "@id": "dhc:normWeight", "@type": "xsd:decimal" },
+    "dedicated": { "@id": "dhc:dedicated", "@type": "xsd:boolean" },
+    "phase": { "@id": "dhc:phase", "@type": "xsd:integer" },
+    "wiring": "dhc:wiring",
 
     "areaM2": { "@id": "dhc:areaM2", "@type": "xsd:decimal" },
     "floorLevel": { "@id": "dhc:floorLevel", "@type": "xsd:integer" },

@@ -1,0 +1,86 @@
+@prefix dhc:      <https://digitalhome.cloud/ontology#> .
+@prefix sh:       <http://www.w3.org/ns/shacl#> .
+@prefix xsd:      <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:      <http://www.w3.org/2002/07/owl#> .
+@prefix nfc14100: <https://digitalhome.cloud/cbox/nfc14100#> .
+
+# ═══════════════════════════════════════════════════════════════════════
+#  C-Box SHACL profile: NF C 14-100 (France — Energy delivery installations)
+#  Binds to: dhc:Norm_NFC14100
+#  Activation pattern: P3 sh:or guard
+# ═══════════════════════════════════════════════════════════════════════
+
+nfc14100:Profile
+  a owl:Ontology ;
+  rdfs:label "NF C 14-100 C-Box profile"@en ;
+  owl:versionInfo "2.0.0" ;
+  dhc:normId       "nfc14100" ;
+  dhc:normCountry  "FR" ;
+  dhc:normVersion  "2008" ;
+  dhc:normDomain   "electrical" .
+
+# ── Shape 1/3: Energy meter must live in an electrical technical space ──
+
+nfc14100:EnergyMeterGovernanceShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:EnergyMeter ;
+  dhc:normId "nfc14100" ;
+  rdfs:label "Energy meter must be located in an ElectricalTechnicalSpace"@en ;
+  sh:property [
+    sh:path dhc:locatedIn ;
+    sh:minCount 1 ;
+    sh:class dhc:ElectricalTechnicalSpace ;
+    sh:message "NF C 14-100: EnergyMeter must be located in an ElectricalTechnicalSpace."@en ;
+    sh:message "NF C 14-100: Stromzähler muss in einem Elektro-Technikraum platziert sein."@de ;
+    sh:message "NF C 14-100 : le compteur d'énergie doit être situé dans un espace technique électrique."@fr ;
+  ] ;
+  sh:property [
+    sh:path dhc:governedBy ;
+    sh:hasValue dhc:Norm_NFC14100 ;
+    sh:message "NF C 14-100: EnergyMeter must be governed by Norm_NFC14100."@en ;
+    sh:message "NF C 14-100: Stromzähler muss durch Norm_NFC14100 geregelt sein."@de ;
+    sh:message "NF C 14-100 : le compteur d'énergie doit être régi par Norm_NFC14100."@fr ;
+  ] .
+
+# ── Shape 2/3: Emergency disconnect must declare rated current ──────────
+
+nfc14100:EmergencyDisconnectShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:EmergencyDisconnect ;
+  dhc:normId "nfc14100" ;
+  rdfs:label "Emergency disconnect must declare rated current"@en ;
+  sh:property [
+    sh:path dhc:ratedCurrent ;
+    sh:minCount 1 ;
+    sh:datatype xsd:decimal ;
+    sh:message "NF C 14-100: EmergencyDisconnect must declare dhc:ratedCurrent."@en ;
+    sh:message "NF C 14-100: Notabschaltung muss dhc:ratedCurrent deklarieren."@de ;
+    sh:message "NF C 14-100 : la coupure d'urgence doit déclarer dhc:ratedCurrent."@fr ;
+  ] .
+
+# ── Shape 3/3: Energy delivery contract + current type ──────────────────
+
+nfc14100:EnergyDeliveryShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:EnergyDelivery ;
+  dhc:normId "nfc14100" ;
+  rdfs:label "EnergyDelivery must declare contracted power and current type"@en ;
+  sh:property [
+    sh:path dhc:contractedPowerKVA ;
+    sh:minCount 1 ;
+    sh:datatype xsd:decimal ;
+    sh:minInclusive 3.0 ;
+    sh:message "NF C 14-100: EnergyDelivery must declare contracted power (kVA) ≥ 3."@en ;
+    sh:message "NF C 14-100: Energieeinspeisung muss Vertragsleistung (kVA) ≥ 3 deklarieren."@de ;
+    sh:message "NF C 14-100 : la livraison d'énergie doit déclarer la puissance souscrite (kVA) ≥ 3."@fr ;
+  ] ;
+  sh:property [
+    sh:path dhc:currentType ;
+    sh:minCount 1 ;
+    sh:in ( "SinglePhase" "ThreePhase" ) ;
+    sh:message "NF C 14-100: EnergyDelivery currentType must be SinglePhase or ThreePhase."@en ;
+    sh:message "NF C 14-100: Stromart der Energieeinspeisung muss SinglePhase oder ThreePhase sein."@de ;
+    sh:message "NF C 14-100 : le type de courant doit être SinglePhase ou ThreePhase."@fr ;
+  ] .

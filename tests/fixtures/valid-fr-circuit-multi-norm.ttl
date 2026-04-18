@@ -1,0 +1,12 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+# A circuit bound to both NF C 14-100 (delivery) and NF C 15-100 (install).
+# Demonstrates the composability benefit of C-Box over subclass modelling.
+ex:multi-norm-circuit a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Lighting ;
+  dhc:governedBy     dhc:Norm_NFC14100 , dhc:Norm_NFC15100 ;
+  dhc:maxPoints      "6"^^xsd:integer ;
+  dhc:ratedCurrent   "10"^^xsd:decimal ;
+  dhc:crossSection   "1.5"^^xsd:decimal .
