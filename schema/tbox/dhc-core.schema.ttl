@@ -149,6 +149,8 @@ dhc:areaM2
 dhc:BuildingElement
   a owl:Class ;
   rdfs:label "Building Element"@en ;
+  rdfs:label "Bauelement"@de ;
+  rdfs:label "Élément de construction"@fr ;
   rdfs:comment "Abstract base for structural/envelope components."@en ;
   dhc:designView "building" .
 
@@ -235,6 +237,8 @@ dhc:Circuit
 dhc:CircuitType
   a owl:Class ;
   rdfs:label "Circuit Type"@en ;
+  rdfs:label "Stromkreistyp"@de ;
+  rdfs:label "Type de circuit"@fr ;
   rdfs:comment "Classification: lighting, sockets, dedicated, etc."@en ;
   dhc:designView "electrical" .
 
@@ -249,12 +253,16 @@ dhc:DistributionBoard
 dhc:ProtectionDevice
   a owl:Class ;
   rdfs:label "Protection Device"@en ;
+  rdfs:label "Schutzeinrichtung"@de ;
+  rdfs:label "Dispositif de protection"@fr ;
   rdfs:comment "Circuit breaker, RCD, fuse, surge protector."@en ;
   dhc:designView "electrical" .
 
 dhc:WiringSegment
   a owl:Class ;
   rdfs:label "Wiring Segment"@en ;
+  rdfs:label "Leitungsabschnitt"@de ;
+  rdfs:label "Segment de câblage"@fr ;
   rdfs:comment "A run of cable between two points."@en ;
   dhc:designView "electrical" .
 
@@ -550,6 +558,8 @@ dhc:WaterSupply
   a owl:Class ;
   rdfs:subClassOf dhc:PlumbingSystem ;
   rdfs:label "Water Supply"@en ;
+  rdfs:label "Wasserversorgung"@de ;
+  rdfs:label "Alimentation en eau"@fr ;
   rdfs:comment "Cold or hot water supply network."@en ;
   dhc:designView "plumbing" .
 
@@ -557,24 +567,32 @@ dhc:Drainage
   a owl:Class ;
   rdfs:subClassOf dhc:PlumbingSystem ;
   rdfs:label "Drainage"@en ;
+  rdfs:label "Entwässerung"@de ;
+  rdfs:label "Évacuation"@fr ;
   rdfs:comment "Wastewater and rainwater drainage."@en ;
   dhc:designView "plumbing" .
 
 dhc:PlumbingFixture
   a owl:Class ;
   rdfs:label "Plumbing Fixture"@en ;
+  rdfs:label "Sanitärobjekt"@de ;
+  rdfs:label "Équipement sanitaire"@fr ;
   rdfs:comment "Sink, toilet, shower, bathtub, washing machine connection."@en ;
   dhc:designView "plumbing" .
 
 dhc:Pipe
   a owl:Class ;
   rdfs:label "Pipe"@en ;
+  rdfs:label "Rohr"@de ;
+  rdfs:label "Tuyau"@fr ;
   rdfs:comment "A pipe segment (copper, PER, PVC, etc.)."@en ;
   dhc:designView "plumbing" .
 
 dhc:Valve
   a owl:Class ;
   rdfs:label "Valve"@en ;
+  rdfs:label "Ventil"@de ;
+  rdfs:label "Vanne"@fr ;
   rdfs:comment "Shut-off valve, pressure reducer, check valve."@en ;
   dhc:designView "plumbing" .
 
@@ -635,6 +653,8 @@ dhc:HeatSource
   a owl:Class ;
   rdfs:subClassOf dhc:HVACSystem ;
   rdfs:label "Heat Source"@en ;
+  rdfs:label "Wärmeerzeuger"@de ;
+  rdfs:label "Source de chaleur"@fr ;
   rdfs:comment "Boiler, heat pump, solar thermal, wood stove."@en ;
   dhc:designView "heating" .
 
@@ -642,6 +662,8 @@ dhc:HeatEmitter
   a owl:Class ;
   rdfs:subClassOf dhc:HVACSystem ;
   rdfs:label "Heat Emitter"@en ;
+  rdfs:label "Wärmeabgabe"@de ;
+  rdfs:label "Émetteur de chaleur"@fr ;
   rdfs:comment "Radiator, underfloor heating, convector."@en ;
   dhc:designView "heating" .
 
@@ -649,12 +671,16 @@ dhc:Ventilation
   a owl:Class ;
   rdfs:subClassOf dhc:HVACSystem ;
   rdfs:label "Ventilation"@en ;
+  rdfs:label "Lüftung"@de ;
+  rdfs:label "Ventilation"@fr ;
   rdfs:comment "VMC, ERV, HRV, extract fan."@en ;
   dhc:designView "heating" .
 
 dhc:Thermostat
   a owl:Class ;
   rdfs:label "Thermostat"@en ;
+  rdfs:label "Thermostat"@de ;
+  rdfs:label "Thermostat"@fr ;
   rdfs:comment "Temperature control device, may be smart."@en ;
   dhc:designView "heating" .
 
@@ -706,6 +732,8 @@ dhc:setpointTemp
 dhc:NetworkSegment
   a owl:Class ;
   rdfs:label "Network Segment"@en ;
+  rdfs:label "Netzwerksegment"@de ;
+  rdfs:label "Segment réseau"@fr ;
   rdfs:comment "A logical or physical network segment."@en ;
   dhc:designView "network" .
 
@@ -713,21 +741,29 @@ dhc:EthernetSegment
   a owl:Class ;
   rdfs:subClassOf dhc:NetworkSegment ;
   rdfs:label "Ethernet Segment"@en ;
+  rdfs:label "Ethernet-Segment"@de ;
+  rdfs:label "Segment Ethernet"@fr ;
   dhc:designView "network" .
 
 dhc:WiFiAccessPoint
   a owl:Class ;
   rdfs:label "WiFi Access Point"@en ;
+  rdfs:label "WLAN-Zugangspunkt"@de ;
+  rdfs:label "Point d'accès Wi-Fi"@fr ;
   dhc:designView "network" .
 
 dhc:LANSwitch
   a owl:Class ;
   rdfs:label "LAN Switch"@en ;
+  rdfs:label "LAN-Switch"@de ;
+  rdfs:label "Commutateur LAN"@fr ;
   dhc:designView "network" .
 
 dhc:Gateway
   a owl:Class ;
   rdfs:label "Gateway"@en ;
+  rdfs:label "Gateway"@de ;
+  rdfs:label "Passerelle"@fr ;
   rdfs:comment "Router, internet gateway, home automation hub."@en ;
   dhc:designView "network" .
 
@@ -735,18 +771,24 @@ dhc:ZigBeeSegment
   a owl:Class ;
   rdfs:subClassOf dhc:NetworkSegment ;
   rdfs:label "ZigBee Segment"@en ;
+  rdfs:label "ZigBee-Segment"@de ;
+  rdfs:label "Segment ZigBee"@fr ;
   dhc:designView "network" .
 
 dhc:HomeMaticSegment
   a owl:Class ;
   rdfs:subClassOf dhc:NetworkSegment ;
   rdfs:label "HomeMatic Segment"@en ;
+  rdfs:label "HomeMatic-Segment"@de ;
+  rdfs:label "Segment HomeMatic"@fr ;
   dhc:designView "network" .
 
 dhc:BluetoothSegment
   a owl:Class ;
   rdfs:subClassOf dhc:NetworkSegment ;
   rdfs:label "Bluetooth Segment"@en ;
+  rdfs:label "Bluetooth-Segment"@de ;
+  rdfs:label "Segment Bluetooth"@fr ;
   dhc:designView "network" .
 
 # ── Network object properties ──
@@ -781,16 +823,66 @@ dhc:Equipment
 dhc:EquipmentType
   a owl:Class ;
   rdfs:label "Equipment Type"@en ;
+  rdfs:label "Gerätetyp"@de ;
+  rdfs:label "Type d'équipement"@fr ;
   rdfs:comment "Classification of equipment by category, brand, model."@en .
 
 # Common equipment subclasses
-dhc:Socket    a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Socket"@en ;    dhc:designView "electrical" .
-dhc:Switch    a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Switch"@en ;    dhc:designView "electrical" .
-dhc:Light     a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Light"@en ;     dhc:designView "electrical" .
-dhc:Heater    a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Heater"@en ;    dhc:designView "heating" .
-dhc:Sensor    a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Sensor"@en ;    dhc:designView "network" .
-dhc:Actor     a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Actor"@en ;     dhc:designView "network" .
-dhc:Controller a owl:Class ; rdfs:subClassOf dhc:Equipment ; rdfs:label "Controller"@en ; dhc:designView "network" .
+dhc:Socket
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;
+  rdfs:label "Socket"@en ;
+  rdfs:label "Steckdose"@de ;
+  rdfs:label "Prise"@fr ;
+  dhc:designView "electrical" .
+
+dhc:Switch
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;
+  rdfs:label "Switch"@en ;
+  rdfs:label "Schalter"@de ;
+  rdfs:label "Interrupteur"@fr ;
+  dhc:designView "electrical" .
+
+dhc:Light
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;
+  rdfs:label "Light"@en ;
+  rdfs:label "Leuchte"@de ;
+  rdfs:label "Luminaire"@fr ;
+  dhc:designView "electrical" .
+
+dhc:Heater
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;
+  rdfs:label "Heater"@en ;
+  rdfs:label "Heizgerät"@de ;
+  rdfs:label "Chauffage"@fr ;
+  dhc:designView "heating" .
+
+dhc:Sensor
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;
+  rdfs:label "Sensor"@en ;
+  rdfs:label "Sensor"@de ;
+  rdfs:label "Capteur"@fr ;
+  dhc:designView "network" .
+
+dhc:Actor
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;
+  rdfs:label "Actor"@en ;
+  rdfs:label "Aktor"@de ;
+  rdfs:label "Actionneur"@fr ;
+  dhc:designView "network" .
+
+dhc:Controller
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;
+  rdfs:label "Controller"@en ;
+  rdfs:label "Steuerung"@de ;
+  rdfs:label "Contrôleur"@fr ;
+  dhc:designView "network" .
 
 # ── Equipment object properties ──
 
@@ -849,12 +941,16 @@ dhc:catalogRef
 dhc:Group
   a owl:Class ;
   rdfs:label "Group"@en ;
+  rdfs:label "Gruppe"@de ;
+  rdfs:label "Groupe"@fr ;
   rdfs:comment "Logical grouping of equipment for control (e.g. Night Lighting)."@en ;
   dhc:designView "automation" .
 
 dhc:Scenario
   a owl:Class ;
   rdfs:label "Scenario"@en ;
+  rdfs:label "Szenario"@de ;
+  rdfs:label "Scénario"@fr ;
   rdfs:comment "Automation rule linking triggers (sensors) to actions (actors)."@en ;
   dhc:designView "automation" .
 

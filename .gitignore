@@ -1,4 +1,4 @@
-# Build outputs (generated from src/ by scripts/)
+# Build outputs (legacy; retained defensively)
 build/
 
 # Node
