@@ -1,71 +1,146 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working in this repository.
 
 ## Project Overview
 
-DigitalHome.Cloud Core — the ontology, norm modules, demo instances, and build tooling that underpin the entire DigitalHome.Cloud platform. This repo is the single source of truth for the domain vocabulary used by the Modeler, Designer, and Portal apps.
+`@dhc/digitalhome-cloud-core` is the **schema-only** source of truth for the
+DigitalHome.Cloud platform, restructured in v2.0.0 to follow the **Multi-Box
+Model** (DH-SPEC-200):
+
+| Box   | Content                                                | Location in repo                 |
+|-------|--------------------------------------------------------|----------------------------------|
+| T-Box | Domain vocabulary (classes, properties, R-Box axioms, enum instances) | `schema/tbox/*.ttl` |
+| C-Box | Norm profiles as SHACL shapes — one file per national standard        | `schema/cbox/<domain>/*.shapes.ttl` |
+| A-Box | Instance data per Digital Home                         | **Not in this repo.** Created by the Designer app, stored in S3. |
+
+No build scripts, no generated artifacts, no demo instances — just schema and
+tests. Downstream apps (Modeler, Designer) parse these files directly at build
+or runtime.
+
+## Repository Layout
+
+```
+schema/
+  tbox/
+    dhc-core.schema.ttl       ← Classes, properties, R-Box axioms, enum instances
+    dhc-roles.ttl             ← Role instances (Owner, Designer, Installer, …)
+    context.jsonld            ← JSON-LD context for A-Box serialization
+  cbox/
+    cbox-manifest.json        ← Registry of published norm profiles
+    electrical/
+      nfc14100.shapes.ttl     ← NF C 14-100 (FR — energy delivery)
+      nfc15100.shapes.ttl     ← NF C 15-100 (FR — installation)
+      din-vde-0100.shapes.ttl ← DIN VDE 0100 (DE)
+      arei-rgie.shapes.ttl    ← AREI/RGIE (BE)
+      bs7671.shapes.ttl       ← BS 7671 (UK)
+tests/
+  _helpers/loadGraph.js       ← Shared n3/SHACL test utilities
+  tbox/                       ← T-Box structural tests
+  cbox/                       ← C-Box parse + conformance tests per norm
+  fixtures/                   ← Valid/invalid A-Box fragments used by tests
+```
 
 ## Commands
 
-- `yarn build` — Parse ontology + generate Blockly toolbox (outputs to `build/`)
-- `yarn parse-ontology` — Parse TTL → `build/ontology-graph.json`
-- `yarn generate-blockly-toolbox` — Parse TTL → `build/blockly-blocks.json` + `build/blockly-toolbox.json`
-- `yarn publish-ontology` — Upload `build/` artifacts to S3 (requires AWS credentials)
-
-## Structure
-
-```
-src/
-  ontology/           ← Core T-Box: classes, properties, design views, context
-  modules/            ← Norm extension modules (NF C 14-100, NF C 15-100)
-  instances/          ← Demo A-Box instance data (DE-DEMO, FR-DEMO, BE-DEMO)
-scripts/              ← Build scripts (parse, generate, publish)
-build/                ← Generated artifacts (gitignored)
+```bash
+npm install        # once
+npm test           # vitest run — all T-Box + C-Box tests
+npm run test:watch # iterative authoring
 ```
 
-## Key Files
+There is no `yarn build`, no `publish-ontology`, no codegen in this repo. Block
+generation and ontology-graph assembly live in the Modeler.
 
-### Source (src/)
+## Conventions
 
-| File | What it defines |
-|------|----------------|
-| `src/ontology/dhc-core.schema.ttl` | Core ontology — ~76 classes, ~91 properties across 8 design views |
-| `src/ontology/dhc-roles.ttl` | Role and agent definitions (Owner, Designer, Installer, etc.) |
-| `src/ontology/context.jsonld` | JSON-LD context for runtime A-Box serialization |
-| `src/modules/module-manifest.json` | Module discovery config (id, file, category, countries) |
-| `src/modules/dhc-nfc14100-electrical.ttl` | NF C 14-100 energy delivery module (France) |
-| `src/modules/dhc-nfc15100-electrical.ttl` | NF C 15-100 electrical installation module (France) |
+### Naming
 
-### Build scripts (scripts/)
+| Kind                        | Pattern                       | Example                          |
+|-----------------------------|-------------------------------|----------------------------------|
+| T-Box class                 | PascalCase                    | `dhc:DistributionBoard`          |
+| T-Box property              | camelCase                     | `dhc:hasCircuit`                 |
+| T-Box enum instance         | `{ClassName}_{Value}`         | `dhc:CircuitType_Lighting`       |
+| Norm instance               | `Norm_{id uppercased}`        | `dhc:Norm_NFC15100`              |
+| C-Box shape                 | `{Concept}Shape`              | `nfc15100:LightingCircuitShape`  |
+| C-Box file                  | `{norm-id}.shapes.ttl`        | `schema/cbox/electrical/bs7671.shapes.ttl` |
 
-| Script | Input | Output |
-|--------|-------|--------|
-| `parse-ontology.js` | Core TTL + module TTLs | `build/ontology-graph.json` (nodes, links, meta) |
-| `generate-blockly-toolbox.js` | Core TTL + module TTLs + overrides | `build/blockly-blocks.json` + `build/blockly-toolbox.json` |
-| `publish-ontology.js` | `build/` artifacts + `src/ontology/context.jsonld` | S3 uploads to `public/ontology/v{VERSION}/` and `latest/` |
-| `blockly-overrides.json` | — | Hand-maintained: dropdown values, module defaults, view overrides |
+### Required annotations
 
-## Ontology Conventions
+- **Trilingual labels**: every class, property, enum instance, norm, and SHACL
+  shape message carries `rdfs:label` (or `sh:message`) in `@en`, `@de`, `@fr`.
+- **Design view**: every T-Box class and property carries a `dhc:designView`
+  value. `compliance` is reserved for `dhc:Norm`.
 
-- All classes use `dhc:` prefix (core) or `dhc-nfc14100:`/`dhc-nfc15100:` (modules)
-- Design views: spatial, building, electrical, plumbing, heating, network, governance, automation, shared
-- Version tracked via `owl:versionInfo` in the ontology header
-- Non-breaking additions only between minor versions; breaking changes require a major bump
+### Versioning
 
-## Consumers
+- `owl:versionInfo` in `dhc-core.schema.ttl` and `version` in `package.json`
+  move together.
+- T-Box breaking changes → major bump (new `vX.0.0` branch, never merged
+  directly to `main`/`stage` until the whole platform cuts over).
+- T-Box additive changes → minor bump.
+- C-Box revisions → patch or minor per the norm profile's own version field in
+  `cbox-manifest.json`.
 
-The Modeler and Designer apps import build artifacts. After running `yarn build`, copy outputs:
-- `build/ontology-graph.json` → `repos/modeler/src/data/ontology-graph.json`
-- `build/blockly-blocks.json` → `repos/designer/src/data/blockly-blocks.json`
-- `build/blockly-toolbox.json` → `repos/designer/src/data/blockly-toolbox.json`
+## SHACL activation pattern (P3 `sh:or` guard)
 
-Or publish to S3 via `yarn publish-ontology` and let apps fetch at runtime.
+C-Box shapes must only fire when their guard condition matches. `sh:condition`
+on a NodeShape is non-standard and was shown not to fire in
+`rdf-validate-shacl@0.6.0`; `sh:SPARQLTarget` was likewise unreliable in the
+spike. The pattern that works across our validator stack is **P3 — `sh:or`
+guard**:
 
-## Multi-Repo Ecosystem
+```turtle
+nfc15100:LightingCircuitShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  sh:or (
+    # Guard: shape is a no-op unless the circuit is a Lighting circuit
+    [ sh:not [ sh:property [
+        sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Lighting ] ] ]
+    # Real constraints, gathered in one branch
+    [ sh:property [ sh:path dhc:maxPoints   ; sh:maxInclusive 8 ;   ... ] ;
+      sh:property [ sh:path dhc:ratedCurrent; sh:maxInclusive 16 ;  ... ] ;
+      sh:property [ sh:path dhc:crossSection; sh:minInclusive 1.5 ; ... ] ]
+  ) .
+```
 
-| App | Repo | Consumes |
-|-----|------|----------|
-| Portal | `repos/portal/` | `src/ontology/context.jsonld` |
-| Designer | `repos/designer/` | `build/blockly-blocks.json`, `build/blockly-toolbox.json` |
-| Modeler | `repos/modeler/` | `build/ontology-graph.json` |
+Consequences to remember when writing tests:
+
+- When an `sh:or` fails, the validator reports only the **outer** shape
+  violation — the per-branch `sh:message` values are not surfaced. Tests assert
+  on `result.sourceShape` (e.g. `/LightingCircuitShape/`), not on `message`.
+- T-Box type triples (e.g. `dhc:Norm_NFC15100 a dhc:Norm`) must be present in
+  the **data graph** being validated, not in the shapes graph. The
+  `withTbox(fixture)` helper in `tests/_helpers/loadGraph.js` prepends the
+  T-Box to each fixture for this reason.
+
+## Test protocol
+
+Before committing any schema change:
+
+1. `npm test` — all 50+ tests must pass.
+2. When adding a class/property: extend `tests/tbox/core-schema.test.js` so the
+   test catalog stays in sync.
+3. When adding a C-Box shape: add a valid + invalid fixture pair under
+   `tests/fixtures/` and assert both conformance outcomes in the norm's
+   `tests/cbox/<norm>.test.js`.
+4. When adding a new norm profile: create `schema/cbox/<domain>/<norm>.shapes.ttl`,
+   register it in `schema/cbox/cbox-manifest.json`, declare the `dhc:Norm_<ID>`
+   instance in the T-Box, and author `tests/cbox/<norm>.test.js`.
+
+## What this repo does NOT do
+
+- **No A-Box data.** Demo homes (`DE-DEMO-01`, `FR-DEMO-01`, `BE-DEMO-01`) were
+  removed in v2.0.0. A-Box lives in S3 under the Designer's control.
+- **No build artifacts.** `build/` is legacy and gitignored defensively.
+- **No S3 publish.** The Modeler owns publication of `ontology-graph.json`,
+  `blockly-blocks.json`, and `cbox-registry.json` in v2.
+
+## Related specs
+
+- `docs/specs/DH-SPEC-200-ontology-v2-multibox-architecture.md` — Multi-Box
+  architecture, the design driver for v2.0.0.
+- `docs/adr/0007-*.md` — core ontology ownership.
+- `docs/adr/0012-*.md` — modular norm architecture (superseded by DH-SPEC-200).
