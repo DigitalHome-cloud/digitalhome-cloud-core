@@ -18,10 +18,10 @@ describe('T-Box — dhc-core.schema.ttl', () => {
     expect(store.size).toBeGreaterThan(500);
   });
 
-  it('declares version 2.0.0', () => {
+  it('declares version 2.1.0', () => {
     const versions = [...store.match(null, namedNode(`${OWL}versionInfo`), null)]
       .map(q => q.object.value);
-    expect(versions).toContain('2.0.0');
+    expect(versions).toContain('2.1.0');
   });
 
   it('contains no v1 module URIs (dhc-nfc15100:, dhc-nfc14100:)', () => {

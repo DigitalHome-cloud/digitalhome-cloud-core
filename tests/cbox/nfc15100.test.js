@@ -37,6 +37,15 @@ describe('C-Box — nfc15100.shapes.ttl', () => {
     }
   });
 
+  it('defines dhc:defaultValue on at least 4 property blank nodes', () => {
+    const defaults = [...store.match(null, namedNode(`${DHC}defaultValue`), null)];
+    expect(defaults.length, 'expected ≥ 4 defaultValue attachments').toBeGreaterThanOrEqual(4);
+    for (const q of defaults) {
+      const pathQuads = [...store.match(q.subject, namedNode(`${SHACL}path`), null)];
+      expect(pathQuads.length, `default at ${q.subject.value} lacks sh:path`).toBeGreaterThan(0);
+    }
+  });
+
   describe('validation', () => {
     it('conforms for valid lighting circuit', async () => {
       const data = readTtl('tests/fixtures/valid-fr-lighting-circuit.ttl');

@@ -10,8 +10,8 @@ const tboxTtl = readTtl('schema/tbox/dhc-core.schema.ttl');
 const tboxStore = parseToStore(tboxTtl);
 
 describe('C-Box manifest', () => {
-  it('declares version 2.0.0 and ≥1 profile', () => {
-    expect(manifest.version).toBe('2.0.0');
+  it('declares version 2.1.0 and ≥1 profile', () => {
+    expect(manifest.version).toBe('2.1.0');
     expect(manifest.profiles.length).toBeGreaterThan(0);
   });
 

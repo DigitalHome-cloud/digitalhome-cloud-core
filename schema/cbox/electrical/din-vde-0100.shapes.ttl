@@ -37,6 +37,7 @@ vde:LightingCircuitShape_DE
       sh:property [
         sh:path dhc:ratedCurrent ;
         sh:maxInclusive 16 ;
+        dhc:defaultValue 16 ;
         sh:message "DIN VDE 0100: lighting circuit rated current ≤ 16 A."@en ;
         sh:message "DIN VDE 0100: Bemessungsstrom Lichtstromkreis ≤ 16 A."@de ;
         sh:message "DIN VDE 0100 : courant assigné du circuit d'éclairage ≤ 16 A."@fr ;
@@ -44,6 +45,7 @@ vde:LightingCircuitShape_DE
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 1.5 ;
+        dhc:defaultValue 1.5 ;
         sh:message "DIN VDE 0100: lighting circuit wire cross-section ≥ 1.5 mm²."@en ;
         sh:message "DIN VDE 0100: Aderquerschnitt Lichtstromkreis ≥ 1,5 mm²."@de ;
         sh:message "DIN VDE 0100 : section conducteurs circuit d'éclairage ≥ 1,5 mm²."@fr ;
