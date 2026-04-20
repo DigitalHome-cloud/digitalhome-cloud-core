@@ -72,6 +72,7 @@ nfc14100:EnergyDeliveryShape
     sh:minCount 1 ;
     sh:datatype xsd:decimal ;
     sh:minInclusive 3.0 ;
+    dhc:defaultValue 6.0 ;
     sh:message "NF C 14-100: EnergyDelivery must declare contracted power (kVA) ≥ 3."@en ;
     sh:message "NF C 14-100: Energieeinspeisung muss Vertragsleistung (kVA) ≥ 3 deklarieren."@de ;
     sh:message "NF C 14-100 : la livraison d'énergie doit déclarer la puissance souscrite (kVA) ≥ 3."@fr ;

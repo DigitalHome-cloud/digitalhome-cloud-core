@@ -39,6 +39,7 @@ nfc15100:LightingCircuitShape
       sh:property [
         sh:path dhc:maxPoints ;
         sh:maxInclusive 8 ;
+        dhc:defaultValue 8 ;
         sh:message "NF C 15-100: lighting circuit must not exceed 8 points."@en ;
         sh:message "NF C 15-100: Lichtstromkreis darf höchstens 8 Punkte haben."@de ;
         sh:message "NF C 15-100 : un circuit d'éclairage ne doit pas dépasser 8 points."@fr ;
@@ -46,6 +47,7 @@ nfc15100:LightingCircuitShape
       sh:property [
         sh:path dhc:ratedCurrent ;
         sh:maxInclusive 16 ;
+        dhc:defaultValue 10 ;
         sh:message "NF C 15-100: lighting circuit rated current must be ≤ 16 A."@en ;
         sh:message "NF C 15-100: Bemessungsstrom Lichtstromkreis ≤ 16 A."@de ;
         sh:message "NF C 15-100 : courant assigné du circuit d'éclairage ≤ 16 A."@fr ;
@@ -53,6 +55,7 @@ nfc15100:LightingCircuitShape
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 1.5 ;
+        dhc:defaultValue 1.5 ;
         sh:message "NF C 15-100: lighting circuit wire cross-section must be ≥ 1.5 mm²."@en ;
         sh:message "NF C 15-100: Aderquerschnitt Lichtstromkreis ≥ 1,5 mm²."@de ;
         sh:message "NF C 15-100 : section des conducteurs du circuit d'éclairage ≥ 1,5 mm²."@fr ;
@@ -75,6 +78,7 @@ nfc15100:SocketCircuit16AShape
       sh:property [
         sh:path dhc:maxPoints ;
         sh:maxInclusive 8 ;
+        dhc:defaultValue 8 ;
         sh:message "NF C 15-100: 16 A socket circuit must not exceed 8 sockets."@en ;
         sh:message "NF C 15-100: 16-A-Steckdosenstromkreis darf höchstens 8 Steckdosen haben."@de ;
         sh:message "NF C 15-100 : circuit prise 16 A ≤ 8 socles."@fr ;
@@ -82,6 +86,7 @@ nfc15100:SocketCircuit16AShape
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 1.5 ;
+        dhc:defaultValue 2.5 ;
         sh:message "NF C 15-100: 16 A socket circuit wire cross-section ≥ 1.5 mm²."@en ;
         sh:message "NF C 15-100: Aderquerschnitt 16-A-Steckdosenstromkreis ≥ 1,5 mm²."@de ;
         sh:message "NF C 15-100 : section conducteurs circuit prise 16 A ≥ 1,5 mm²."@fr ;
@@ -105,6 +110,7 @@ nfc15100:SocketCircuit20AShape
       sh:property [
         sh:path dhc:maxPoints ;
         sh:maxInclusive 12 ;
+        dhc:defaultValue 12 ;
         sh:message "NF C 15-100: 20 A socket circuit must not exceed 12 sockets."@en ;
         sh:message "NF C 15-100: 20-A-Steckdosenstromkreis darf höchstens 12 Steckdosen haben."@de ;
         sh:message "NF C 15-100 : circuit prise 20 A ≤ 12 socles."@fr ;
@@ -112,6 +118,7 @@ nfc15100:SocketCircuit20AShape
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 2.5 ;
+        dhc:defaultValue 2.5 ;
         sh:message "NF C 15-100: 20 A socket circuit wire cross-section ≥ 2.5 mm²."@en ;
         sh:message "NF C 15-100: Aderquerschnitt 20-A-Steckdosenstromkreis ≥ 2,5 mm²."@de ;
         sh:message "NF C 15-100 : section conducteurs circuit prise 20 A ≥ 2,5 mm²."@fr ;
@@ -134,6 +141,7 @@ nfc15100:KitchenSocketCircuitShape
       sh:property [
         sh:path dhc:maxPoints ;
         sh:maxInclusive 6 ;
+        dhc:defaultValue 6 ;
         sh:message "NF C 15-100: dedicated kitchen socket circuit ≤ 6 sockets."@en ;
         sh:message "NF C 15-100: Dedizierter Küchen-Steckdosenstromkreis ≤ 6 Steckdosen."@de ;
         sh:message "NF C 15-100 : circuit prise dédié cuisine ≤ 6 socles."@fr ;
@@ -141,6 +149,7 @@ nfc15100:KitchenSocketCircuitShape
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 2.5 ;
+        dhc:defaultValue 2.5 ;
         sh:message "NF C 15-100: dedicated kitchen socket wire cross-section ≥ 2.5 mm²."@en ;
         sh:message "NF C 15-100: Querschnitt dedizierter Küchenstromkreis ≥ 2,5 mm²."@de ;
         sh:message "NF C 15-100 : section conducteurs circuit prise dédié ≥ 2,5 mm²."@fr ;

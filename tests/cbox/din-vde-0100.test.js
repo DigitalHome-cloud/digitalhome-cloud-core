@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { readTtl, parseToStore, validateAgainst } from '../_helpers/loadGraph.js';
+import { readTtl, parseToStore, validateAgainst, namedNode } from '../_helpers/loadGraph.js';
+
+const DHC = 'https://digitalhome.cloud/ontology#';
 
 const shapesTtl = readTtl('schema/cbox/electrical/din-vde-0100.shapes.ttl');
 const tboxTtl = readTtl('schema/tbox/dhc-core.schema.ttl');
@@ -9,6 +11,12 @@ describe('C-Box — din-vde-0100.shapes.ttl', () => {
   it('parses cleanly', () => {
     const store = parseToStore(shapesTtl);
     expect(store.size).toBeGreaterThan(20);
+  });
+
+  it('defines at least 2 dhc:defaultValue attachments', () => {
+    const store = parseToStore(shapesTtl);
+    const defaults = [...store.match(null, namedNode(`${DHC}defaultValue`), null)];
+    expect(defaults.length).toBeGreaterThanOrEqual(2);
   });
 
   it('conforms for valid DE lighting circuit (16 A acceptable)', async () => {

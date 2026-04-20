@@ -36,6 +36,7 @@ arei:LightingCircuitShape_BE
       sh:property [
         sh:path dhc:maxPoints ;
         sh:maxInclusive 20 ;
+        dhc:defaultValue 20 ;
         sh:message "AREI/RGIE: lighting circuit ≤ 20 points."@en ;
         sh:message "AREI/RGIE: Lichtstromkreis ≤ 20 Punkte."@de ;
         sh:message "AREI/RGIE : circuit d'éclairage ≤ 20 points."@fr ;
@@ -43,6 +44,7 @@ arei:LightingCircuitShape_BE
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 1.5 ;
+        dhc:defaultValue 1.5 ;
         sh:message "AREI/RGIE: lighting circuit cross-section ≥ 1.5 mm²."@en ;
       ]
     ]
@@ -68,6 +70,7 @@ arei:SocketCircuitShape_BE
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 2.5 ;
+        dhc:defaultValue 2.5 ;
         sh:message "AREI/RGIE: socket circuit cross-section ≥ 2.5 mm² (stricter than FR/DE)."@en ;
         sh:message "AREI/RGIE: Aderquerschnitt Steckdosenstromkreis ≥ 2,5 mm² (strenger als FR/DE)."@de ;
         sh:message "AREI/RGIE : section conducteurs circuit prise ≥ 2,5 mm² (plus strict que FR/DE)."@fr ;
