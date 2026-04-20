@@ -1,0 +1,13 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+ex:de-lighting a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Lighting ;
+  dhc:governedBy     dhc:Norm_DINVDE0100 ;
+  dhc:maxPoints      "10"^^xsd:integer ;
+  dhc:ratedCurrent   "16"^^xsd:decimal ;
+  dhc:crossSection   "1.5"^^xsd:decimal ;
+  dhc:hasProtection  ex:rcd-1 .
+
+ex:rcd-1 a dhc:ProtectionDevice .

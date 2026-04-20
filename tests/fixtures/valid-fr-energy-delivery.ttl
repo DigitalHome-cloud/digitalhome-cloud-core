@@ -1,0 +1,25 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+ex:fr-gtl a dhc:ElectricalTechnicalSpace ;
+  dhc:governedBy  dhc:Norm_NFC14100 ;
+  dhc:contains    ex:fr-main-board .
+
+ex:fr-main-board a dhc:DistributionBoard ;
+  dhc:locatedIn   ex:fr-gtl ;
+  dhc:governedBy  dhc:Norm_NFC14100 .
+
+ex:fr-meter a dhc:EnergyMeter ;
+  dhc:locatedIn   ex:fr-gtl ;
+  dhc:governedBy  dhc:Norm_NFC14100 .
+
+ex:fr-emergency a dhc:EmergencyDisconnect ;
+  dhc:governedBy  dhc:Norm_NFC14100 ;
+  dhc:ratedCurrent "63"^^xsd:decimal .
+
+ex:fr-delivery a dhc:EnergyDelivery ;
+  dhc:governedBy         dhc:Norm_NFC14100 ;
+  dhc:contractedPowerKVA "9"^^xsd:decimal ;
+  dhc:currentType        "SinglePhase" ;
+  dhc:neutralSystem      "TT" .

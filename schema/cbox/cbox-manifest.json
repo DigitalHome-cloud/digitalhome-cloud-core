@@ -1,0 +1,77 @@
+{
+  "$schema": "https://digitalhome.cloud/schema/cbox-manifest.schema.json",
+  "version": "2.0.0",
+  "description": "Registry of C-Box norm profiles. Each entry points to a SHACL shapes file that binds to a dhc:Norm instance in the T-Box.",
+  "profiles": [
+    {
+      "id": "nfc15100",
+      "label": {
+        "en": "NF C 15-100 — Low-voltage electrical installations (France)",
+        "de": "NF C 15-100 — Niederspannungsinstallationen (Frankreich)",
+        "fr": "NF C 15-100 — Installations électriques basse tension (France)"
+      },
+      "country": "FR",
+      "domain": "electrical",
+      "version": "2015-A5",
+      "norm": "dhc:Norm_NFC15100",
+      "file": "electrical/nfc15100.shapes.ttl",
+      "requires": []
+    },
+    {
+      "id": "nfc14100",
+      "label": {
+        "en": "NF C 14-100 — Energy delivery installations (France)",
+        "de": "NF C 14-100 — Energieeinspeisungen (Frankreich)",
+        "fr": "NF C 14-100 — Installations de livraison d'énergie (France)"
+      },
+      "country": "FR",
+      "domain": "electrical",
+      "version": "2008",
+      "norm": "dhc:Norm_NFC14100",
+      "file": "electrical/nfc14100.shapes.ttl",
+      "requires": []
+    },
+    {
+      "id": "din-vde-0100",
+      "label": {
+        "en": "DIN VDE 0100 — Low-voltage electrical installations (Germany)",
+        "de": "DIN VDE 0100 — Niederspannungs-Elektroinstallationen (Deutschland)",
+        "fr": "DIN VDE 0100 — Installations électriques basse tension (Allemagne)"
+      },
+      "country": "DE",
+      "domain": "electrical",
+      "version": "2018",
+      "norm": "dhc:Norm_DINVDE0100",
+      "file": "electrical/din-vde-0100.shapes.ttl",
+      "requires": []
+    },
+    {
+      "id": "arei-rgie",
+      "label": {
+        "en": "AREI/RGIE — General Regulations for Electrical Installations (Belgium)",
+        "de": "AREI/RGIE — Allgemeine Elektroinstallationsvorschriften (Belgien)",
+        "fr": "AREI/RGIE — Règlement général des installations électriques (Belgique)"
+      },
+      "country": "BE",
+      "domain": "electrical",
+      "version": "2020",
+      "norm": "dhc:Norm_AREI_RGIE",
+      "file": "electrical/arei-rgie.shapes.ttl",
+      "requires": []
+    },
+    {
+      "id": "bs7671",
+      "label": {
+        "en": "BS 7671 — Requirements for Electrical Installations / IET Wiring Regs (UK)",
+        "de": "BS 7671 — Anforderungen an elektrische Anlagen / IET-Verdrahtungsvorschriften (UK)",
+        "fr": "BS 7671 — Exigences pour les installations électriques / IET Wiring Regs (Royaume-Uni)"
+      },
+      "country": "GB",
+      "domain": "electrical",
+      "version": "18th-2018+A2",
+      "norm": "dhc:Norm_BS7671",
+      "file": "electrical/bs7671.shapes.ttl",
+      "requires": []
+    }
+  ]
+}

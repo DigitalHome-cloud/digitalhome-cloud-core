@@ -1,0 +1,93 @@
+@prefix dhc:  <https://digitalhome.cloud/ontology#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix bs:   <https://digitalhome.cloud/cbox/bs7671#> .
+
+# ═══════════════════════════════════════════════════════════════════════
+#  C-Box SHACL profile: BS 7671 (UK — Wiring Regulations / IET 18th Ed.)
+#  Binds to: dhc:Norm_BS7671
+#  Activation pattern: P3 sh:or guard
+#  Distinct from continental norms: the UK uses ring-final circuits (rare
+#  elsewhere), radial finals, and distinct shower circuit sizing rules.
+# ═══════════════════════════════════════════════════════════════════════
+
+bs:Profile
+  a owl:Ontology ;
+  rdfs:label "BS 7671 C-Box profile"@en ;
+  owl:versionInfo "2.0.0" ;
+  dhc:normId       "bs7671" ;
+  dhc:normCountry  "GB" ;
+  dhc:normVersion  "18th-2018+A2" ;
+  dhc:normDomain   "electrical" .
+
+# ── Shape 1/3: Ring final circuit (32 A, uniquely UK) ───────────────────
+
+bs:RingFinalCircuitShape_GB
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "bs7671" ;
+  rdfs:label "Ring final circuit (BS 7671)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Socket ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:hasValue 32 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "BS 7671: ring final circuit (32 A) cross-section ≥ 2.5 mm²."@en ;
+        sh:message "BS 7671: Ringendstromkreis (32 A) Querschnitt ≥ 2,5 mm²."@de ;
+        sh:message "BS 7671 : circuit final en anneau (32 A) section ≥ 2,5 mm²."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:hasProtection ;
+        sh:minCount 1 ;
+        sh:class dhc:ProtectionDevice ;
+        sh:message "BS 7671: ring final circuit must have a protection device."@en ;
+      ]
+    ]
+  ) .
+
+# ── Shape 2/3: Radial final circuit (≤ 20 A) ────────────────────────────
+
+bs:RadialFinalCircuitShape_GB
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "bs7671" ;
+  rdfs:label "Radial final circuit (BS 7671)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Socket ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:maxInclusive 20 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "BS 7671: radial final (≤ 20 A) cross-section ≥ 2.5 mm²."@en ;
+        sh:message "BS 7671: Radialendstromkreis (≤ 20 A) Querschnitt ≥ 2,5 mm²."@de ;
+        sh:message "BS 7671 : circuit final radial (≤ 20 A) section ≥ 2,5 mm²."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 3/3: Shower circuit sizing ────────────────────────────────────
+
+bs:ShowerCircuitShape_GB
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "bs7671" ;
+  rdfs:label "Shower circuit (BS 7671)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_DedicatedAppliance ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:minInclusive 30 ] ] ]
+    [
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 6.0 ;
+        sh:message "BS 7671: shower circuit (≥ 30 A) cross-section ≥ 6 mm²."@en ;
+        sh:message "BS 7671: Duschstromkreis (≥ 30 A) Querschnitt ≥ 6 mm²."@de ;
+        sh:message "BS 7671 : circuit douche (≥ 30 A) section ≥ 6 mm²."@fr ;
+      ]
+    ]
+  ) .

@@ -1,0 +1,23 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+ex:be-lighting a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Lighting ;
+  dhc:governedBy     dhc:Norm_AREI_RGIE ;
+  dhc:maxPoints      "18"^^xsd:integer ;
+  dhc:ratedCurrent   "16"^^xsd:decimal ;
+  dhc:crossSection   "1.5"^^xsd:decimal .
+
+ex:be-socket a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Socket ;
+  dhc:governedBy     dhc:Norm_AREI_RGIE ;
+  dhc:maxPoints      "6"^^xsd:integer ;
+  dhc:ratedCurrent   "16"^^xsd:decimal ;
+  dhc:crossSection   "2.5"^^xsd:decimal .
+
+ex:be-delivery a dhc:EnergyDelivery ;
+  dhc:governedBy     dhc:Norm_AREI_RGIE ;
+  dhc:contractedPowerKVA "9"^^xsd:decimal ;
+  dhc:currentType    "SinglePhase" ;
+  dhc:neutralSystem  "TT" .

@@ -1,0 +1,92 @@
+@prefix dhc:   <https://digitalhome.cloud/ontology#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix arei:  <https://digitalhome.cloud/cbox/arei-rgie#> .
+
+# ═══════════════════════════════════════════════════════════════════════
+#  C-Box SHACL profile: AREI/RGIE (Belgium — General Electrical Installation Regs)
+#  Binds to: dhc:Norm_AREI_RGIE
+#  Activation pattern: P3 sh:or guard
+#  Intentional contrast with FR/DE: BE allows up to 20 lighting points per
+#  circuit but mandates 2.5 mm² on socket circuits regardless of current.
+# ═══════════════════════════════════════════════════════════════════════
+
+arei:Profile
+  a owl:Ontology ;
+  rdfs:label "AREI/RGIE C-Box profile"@en ;
+  owl:versionInfo "2.0.0" ;
+  dhc:normId       "arei-rgie" ;
+  dhc:normCountry  "BE" ;
+  dhc:normVersion  "2020" ;
+  dhc:normDomain   "electrical" .
+
+# ── Shape 1/3: Belgian lighting circuit (up to 20 points) ───────────────
+
+arei:LightingCircuitShape_BE
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "arei-rgie" ;
+  rdfs:label "Lighting circuit (AREI/RGIE)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Lighting ] ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 20 ;
+        sh:message "AREI/RGIE: lighting circuit ≤ 20 points."@en ;
+        sh:message "AREI/RGIE: Lichtstromkreis ≤ 20 Punkte."@de ;
+        sh:message "AREI/RGIE : circuit d'éclairage ≤ 20 points."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 1.5 ;
+        sh:message "AREI/RGIE: lighting circuit cross-section ≥ 1.5 mm²."@en ;
+      ]
+    ]
+  ) .
+
+# ── Shape 2/3: Belgian socket circuit (2.5 mm² mandatory) ───────────────
+
+arei:SocketCircuitShape_BE
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "arei-rgie" ;
+  rdfs:label "Socket circuit (AREI/RGIE)"@en ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Socket ] ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 8 ;
+        sh:message "AREI/RGIE: socket circuit ≤ 8 sockets."@en ;
+        sh:message "AREI/RGIE: Steckdosenstromkreis ≤ 8 Steckdosen."@de ;
+        sh:message "AREI/RGIE : circuit prise ≤ 8 socles."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "AREI/RGIE: socket circuit cross-section ≥ 2.5 mm² (stricter than FR/DE)."@en ;
+        sh:message "AREI/RGIE: Aderquerschnitt Steckdosenstromkreis ≥ 2,5 mm² (strenger als FR/DE)."@de ;
+        sh:message "AREI/RGIE : section conducteurs circuit prise ≥ 2,5 mm² (plus strict que FR/DE)."@fr ;
+      ]
+    ]
+  ) .
+
+# ── Shape 3/3: Earthing system (TT required for residential) ────────────
+
+arei:EarthingShape_BE
+  a sh:NodeShape ;
+  sh:targetClass dhc:EnergyDelivery ;
+  dhc:normId "arei-rgie" ;
+  rdfs:label "Energy delivery must declare TT earthing system"@en ;
+  sh:property [
+    sh:path dhc:neutralSystem ;
+    sh:minCount 1 ;
+    sh:in ( "TT" "TN-S" ) ;
+    sh:message "AREI/RGIE: residential energy delivery must use TT (or TN-S) earthing."@en ;
+    sh:message "AREI/RGIE: Energieeinspeisung muss Erdungssystem TT (oder TN-S) verwenden."@de ;
+    sh:message "AREI/RGIE : la livraison d'énergie doit utiliser un régime TT (ou TN-S)."@fr ;
+  ] .
