@@ -287,7 +287,7 @@ dhc:DistributionBoard
   dhc:designView "electrical" .
 
 dhc:ProtectionDevice
-  a dch:Equipment ;
+  a dhc:Equipment ;
   rdfs:label "Protection Device"@en ;
   rdfs:label "Schutzeinrichtung"@de ;
   rdfs:label "Dispositif de protection"@fr ;
@@ -857,9 +857,17 @@ dhc:Equipment
   rdfs:label "Equipment"@en ;
   rdfs:label "Gerät"@de ;
   rdfs:label "Équipement"@fr ;
-  rdfs:comment "The "Top level" for all physical assets. It contains common properties "@en ;
+  rdfs:comment "The Top level for all physical assets. It contains common properties "@en ;
   dhc:designView "electrical" ;
   dhc:blocklyDisposition "excluded" .
+
+dhc:EquipmentType
+  a owl:Class ;
+  rdfs:label "Equipment Type"@en ;
+  rdfs:label "Gerätetyp"@de ;
+  rdfs:label "Type d'équipement"@fr ;
+  rdfs:comment "Classification of equipment by category, brand, model."@en ;
+  dhc:designView "electrical" .
 
 dhc:Assembly
   a owl:Class ;
@@ -1477,7 +1485,7 @@ dhc:defaultValue
   rdfs:label "Standardwert"@de ;
   rdfs:label "valeur par défaut"@fr ;
   rdfs:comment "Suggested default for a SHACL property, consumed by the Modeler when emitting Blockly field defaults."@en ;
-  "compliance" .
+  dhc:designView "compliance" .
 
 
 # ============================================================
