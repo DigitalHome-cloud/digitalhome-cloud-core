@@ -59,8 +59,18 @@ dhc:RealEstate
   rdfs:comment "A physical property: house, apartment, land with buildings."@en ;
   dhc:designView "spatial" .
 
+  dhc:SpatialUnit
+  a owl:Class ;
+  rdfs:label "Spatial Unit"@en ;
+  rdfs:label "Räumliche Einheit"@de ;
+  rdfs:label "Unité spatiale"@fr ;
+  rdfs:comment "A generic base class for any physical or conceptual division of space within the property hierarchy (e.g., Area, Floor, Space)."@en ;
+  dhc:designView "spatial" ;
+  dhc:blocklyDisposition "excluded" .
+
 dhc:Area
   a owl:Class ;
+  rdfs:subClassOf dhc:SpatialUnit;
   rdfs:label "Area"@en ;
   rdfs:label "Bereich"@de ;
   rdfs:label "Zone"@fr ;
@@ -69,7 +79,7 @@ dhc:Area
 
 dhc:Floor
   a owl:Class ;
-  rdfs:subClassOf dhc:Area ;
+  rdfs:subClassOf dhc:SpatialUnit;
   rdfs:label "Floor"@en ;
   rdfs:label "Stockwerk"@de ;
   rdfs:label "Étage"@fr ;
@@ -78,6 +88,7 @@ dhc:Floor
 
 dhc:Space
   a owl:Class ;
+  rdfs:subClassOf dhc:SpatialUnit;
   rdfs:label "Space"@en ;
   rdfs:label "Raum"@de ;
   rdfs:label "Espace"@fr ;
@@ -89,7 +100,7 @@ dhc:Zone
   rdfs:label "Zone"@en ;
   rdfs:label "Zone"@de ;
   rdfs:label "Zone"@fr ;
-  rdfs:comment "A logical zone spanning one or more spaces (e.g. thermal zone, fire compartment)."@en ;
+  rdfs:comment "A logical zone spanning one or more spaces."@en ;
   dhc:designView "spatial" .
 
 
@@ -119,7 +130,7 @@ dhc:hasSpace
 dhc:belongsToZone
   a owl:ObjectProperty ;
   rdfs:label "belongs to zone"@en ;
-  rdfs:domain dhc:Space ;
+  rdfs:domain dhc:SpatialUnit;
   rdfs:range dhc:Zone ;
   dhc:designView "spatial" .
 
@@ -133,13 +144,34 @@ dhc:floorLevel
   rdfs:comment "Numeric level (0 = ground, -1 = basement, 1 = first, ...)."@en ;
   dhc:designView "spatial" .
 
-dhc:areaM2
+dhc:height_M
   a owl:DatatypeProperty ;
-  rdfs:label "area (m²)"@en ;
-  rdfs:domain dhc:Space ;
+  rdfs:label "Height (m)"@en ;
+  rdfs:label "Höhe (m)"@de ;
+  rdfs:label "Hauteur (m)"@fr ;
+  rdfs:comment "The vertical height of the spatial unit measured in meters."@en ;
+  rdfs:domain dhc:SpatialUnit ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "spatial" ;
+  dhc:blocklyDisposition "excluded" .
+
+dhc:area_M2
+  a owl:DatatypeProperty ;
+  rdfs:label "Area (m²)"@en ;
+  rdfs:label "Fläche (m²)"@de ;
+  rdfs:label "Surface (m²)"@fr ;
+  rdfs:domain dhc:SpatialUnit ;
   rdfs:range xsd:decimal ;
   dhc:designView "spatial" .
 
+dhc:volume_M3
+  a owl:DatatypeProperty ;
+  rdfs:label "Volume (m³)"@en ;
+  rdfs:label "Volumen (m³)"@de ;
+  rdfs:label "Volume (m³)"@fr ;
+  rdfs:domain dhc:SpatialUnit ;
+  rdfs:range xsd:decimal ;
+  dhc:designView "spatial" .
 
 # ============================================================
 # DESIGN VIEW: Building
@@ -255,7 +287,7 @@ dhc:DistributionBoard
   dhc:designView "electrical" .
 
 dhc:ProtectionDevice
-  a owl:Class ;
+  a dch:Equipment ;
   rdfs:label "Protection Device"@en ;
   rdfs:label "Schutzeinrichtung"@de ;
   rdfs:label "Dispositif de protection"@fr ;
@@ -271,7 +303,7 @@ dhc:WiringSegment
   dhc:designView "electrical" .
 
 dhc:ElectricalTechnicalSpace
-  a owl:Class ;
+  a dhc:Space ;
   rdfs:subClassOf dhc:Space ;
   rdfs:label "Electrical Technical Space"@en ;
   rdfs:label "Elektro-Technikraum"@de ;
@@ -288,7 +320,7 @@ dhc:EnergyDelivery
   dhc:designView "electrical" .
 
 dhc:EnergyMeter
-  a owl:Class ;
+  a dhc:Equipment;
   rdfs:label "Energy Meter"@en ;
   rdfs:label "Stromzähler"@de ;
   rdfs:label "Compteur d'énergie"@fr ;
@@ -814,10 +846,10 @@ dhc:connectedToNetwork
   rdfs:range dhc:NetworkSegment ;
   dhc:designView "network" .
 
-
 # ============================================================
 # SHARED: Equipment
 # Physical devices — referenced across all views
+# 
 # ============================================================
 
 dhc:Equipment
@@ -825,23 +857,34 @@ dhc:Equipment
   rdfs:label "Equipment"@en ;
   rdfs:label "Gerät"@de ;
   rdfs:label "Équipement"@fr ;
+  rdfs:comment "The "Top level" for all physical assets. It contains common properties "@en ;
+  dhc:designView "electrical" ;
+  dhc:blocklyDisposition "excluded" .
+
+dhc:Assembly
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;  
+  rdfs:label "Assembly"@en ;
+  rdfs:label "Baugruppe"@de ;
+  rdfs:label "Ensemble"@fr ;
+  rdfs:comment "Equipment composed of multiple integrated parts/devices."@en ;
+  dhc:designView "electrical" ;
+  dhc:blocklyDisposition "excluded" .
+
+dhc:Device
+  a owl:Class ;
+  rdfs:subClassOf dhc:Equipment ;  
+  rdfs:label "Device"@en ;
+  rdfs:label "Gerät"@de ;
+  rdfs:label "Dispositif"@fr ;
   rdfs:comment "A physical device: sensor, actuator, appliance, fixture. Abstract base; subclasses are the concrete blocks."@en ;
   dhc:designView "electrical" ;
   dhc:blocklyDisposition "excluded" .
 
-dhc:EquipmentType
-  a owl:Class ;
-  rdfs:label "Equipment Type"@en ;
-  rdfs:label "Gerätetyp"@de ;
-  rdfs:label "Type d'équipement"@fr ;
-  rdfs:comment "Classification of equipment by category, brand, model. Instances are used as dropdown values."@en ;
-  dhc:designView "electrical" ;
-  dhc:blocklyDisposition "excluded" .
-
-# Common equipment subclasses
+# Common Device subclasses
 dhc:Socket
   a owl:Class ;
-  rdfs:subClassOf dhc:Equipment ;
+  rdfs:subClassOf dhc:Device ;
   rdfs:label "Socket"@en ;
   rdfs:label "Steckdose"@de ;
   rdfs:label "Prise"@fr ;
@@ -849,7 +892,7 @@ dhc:Socket
 
 dhc:Switch
   a owl:Class ;
-  rdfs:subClassOf dhc:Equipment ;
+  rdfs:subClassOf dhc:Device ;
   rdfs:label "Switch"@en ;
   rdfs:label "Schalter"@de ;
   rdfs:label "Interrupteur"@fr ;
@@ -857,7 +900,7 @@ dhc:Switch
 
 dhc:Light
   a owl:Class ;
-  rdfs:subClassOf dhc:Equipment ;
+  rdfs:subClassOf dhc:Device ;
   rdfs:label "Light"@en ;
   rdfs:label "Leuchte"@de ;
   rdfs:label "Luminaire"@fr ;
@@ -865,7 +908,7 @@ dhc:Light
 
 dhc:Heater
   a owl:Class ;
-  rdfs:subClassOf dhc:Equipment ;
+  rdfs:subClassOf dhc:Device ;
   rdfs:label "Heater"@en ;
   rdfs:label "Heizgerät"@de ;
   rdfs:label "Chauffage"@fr ;
@@ -873,7 +916,7 @@ dhc:Heater
 
 dhc:Sensor
   a owl:Class ;
-  rdfs:subClassOf dhc:Equipment ;
+  rdfs:subClassOf dhc:Device ;
   rdfs:label "Sensor"@en ;
   rdfs:label "Sensor"@de ;
   rdfs:label "Capteur"@fr ;
@@ -881,7 +924,7 @@ dhc:Sensor
 
 dhc:Actor
   a owl:Class ;
-  rdfs:subClassOf dhc:Equipment ;
+  rdfs:subClassOf dhc:Device ;
   rdfs:label "Actor"@en ;
   rdfs:label "Aktor"@de ;
   rdfs:label "Actionneur"@fr ;
@@ -889,7 +932,7 @@ dhc:Actor
 
 dhc:Controller
   a owl:Class ;
-  rdfs:subClassOf dhc:Equipment ;
+  rdfs:subClassOf dhc:Device ;
   rdfs:label "Controller"@en ;
   rdfs:label "Steuerung"@de ;
   rdfs:label "Contrôleur"@fr ;
@@ -918,6 +961,14 @@ dhc:hasPart
 
 # ── Equipment data properties ──
 
+dhc:powerRating
+  a owl:DatatypeProperty ;
+  rdfs:label "power rating (W)"@en ;
+  rdfs:domain dhc:Equipment ;
+  rdfs:range xsd:decimal .
+
+# ── Equipment Type data properties ──
+
 dhc:brand
   a owl:DatatypeProperty ;
   rdfs:label "brand"@en ;
@@ -930,19 +981,12 @@ dhc:model
   rdfs:domain dhc:EquipmentType ;
   rdfs:range xsd:string .
 
-dhc:powerRating
-  a owl:DatatypeProperty ;
-  rdfs:label "power rating (W)"@en ;
-  rdfs:domain dhc:Equipment ;
-  rdfs:range xsd:decimal .
-
 dhc:catalogRef
   a owl:DatatypeProperty ;
   rdfs:label "catalog reference"@en ;
   rdfs:domain dhc:EquipmentType ;
   rdfs:range xsd:string ;
   rdfs:comment "Reference to a product catalog entry (GraphQL ID or SKU)." .
-
 
 # ============================================================
 # SHARED: Automation
@@ -1433,7 +1477,7 @@ dhc:defaultValue
   rdfs:label "Standardwert"@de ;
   rdfs:label "valeur par défaut"@fr ;
   rdfs:comment "Suggested default for a SHACL property, consumed by the Modeler when emitting Blockly field defaults."@en ;
-  dhc:designView "compliance" .
+  "compliance" .
 
 
 # ============================================================
