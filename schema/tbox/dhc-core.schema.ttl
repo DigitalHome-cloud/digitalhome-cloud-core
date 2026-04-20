@@ -41,7 +41,7 @@
   rdfs:label "DigitalHome.Cloud Kern-Ontologie"@de ;
   rdfs:label "Ontologie centrale DigitalHome.Cloud"@fr ;
   dcterms:description "Semantic foundation for digital twins of real estate properties. Multi-Box T-Box layer."@en ;
-  owl:versionInfo "2.0.0" ;
+  owl:versionInfo "2.1.0" ;
   dcterms:creator "D-LAB-5 / DigitalHome.Cloud" ;
   dcterms:license <https://opensource.org/licenses/MIT> .
 
@@ -152,7 +152,8 @@ dhc:BuildingElement
   rdfs:label "Bauelement"@de ;
   rdfs:label "Élément de construction"@fr ;
   rdfs:comment "Abstract base for structural/envelope components."@en ;
-  dhc:designView "building" .
+  dhc:designView "building" ;
+  dhc:blocklyDisposition "excluded" .
 
 dhc:Wall
   a owl:Class ;
@@ -232,15 +233,18 @@ dhc:Circuit
   rdfs:label "Stromkreis"@de ;
   rdfs:label "Circuit"@fr ;
   rdfs:comment "An electrical circuit connecting equipment to a distribution board."@en ;
-  dhc:designView "electrical" .
+  dhc:designView "electrical" ;
+  dhc:blocklyDisposition "block" ;
+  dhc:blocklyParentProperty dhc:hasCircuit .
 
 dhc:CircuitType
   a owl:Class ;
   rdfs:label "Circuit Type"@en ;
   rdfs:label "Stromkreistyp"@de ;
   rdfs:label "Type de circuit"@fr ;
-  rdfs:comment "Classification: lighting, sockets, dedicated, etc."@en ;
-  dhc:designView "electrical" .
+  rdfs:comment "Classification: lighting, sockets, dedicated, etc. Instances are used as dropdown values."@en ;
+  dhc:designView "electrical" ;
+  dhc:blocklyDisposition "excluded" .
 
 dhc:DistributionBoard
   a owl:Class ;
@@ -551,8 +555,9 @@ dhc:PlumbingSystem
   rdfs:label "Plumbing System"@en ;
   rdfs:label "Sanitärsystem"@de ;
   rdfs:label "Système de plomberie"@fr ;
-  rdfs:comment "A water supply or drainage system."@en ;
-  dhc:designView "plumbing" .
+  rdfs:comment "A water supply or drainage system. Abstract base; concrete subclasses are the blocks."@en ;
+  dhc:designView "plumbing" ;
+  dhc:blocklyDisposition "excluded" .
 
 dhc:WaterSupply
   a owl:Class ;
@@ -646,8 +651,9 @@ dhc:HVACSystem
   rdfs:label "HVAC System"@en ;
   rdfs:label "Heizungs-/Klimaanlage"@de ;
   rdfs:label "Système CVC"@fr ;
-  rdfs:comment "A heating, ventilation, or air conditioning system."@en ;
-  dhc:designView "heating" .
+  rdfs:comment "A heating, ventilation, or air conditioning system. Abstract base; concrete subclasses are the blocks."@en ;
+  dhc:designView "heating" ;
+  dhc:blocklyDisposition "excluded" .
 
 dhc:HeatSource
   a owl:Class ;
@@ -734,8 +740,9 @@ dhc:NetworkSegment
   rdfs:label "Network Segment"@en ;
   rdfs:label "Netzwerksegment"@de ;
   rdfs:label "Segment réseau"@fr ;
-  rdfs:comment "A logical or physical network segment."@en ;
-  dhc:designView "network" .
+  rdfs:comment "A logical or physical network segment. Abstract base; concrete subclasses are the blocks."@en ;
+  dhc:designView "network" ;
+  dhc:blocklyDisposition "excluded" .
 
 dhc:EthernetSegment
   a owl:Class ;
@@ -818,14 +825,18 @@ dhc:Equipment
   rdfs:label "Equipment"@en ;
   rdfs:label "Gerät"@de ;
   rdfs:label "Équipement"@fr ;
-  rdfs:comment "A physical device: sensor, actuator, appliance, fixture."@en .
+  rdfs:comment "A physical device: sensor, actuator, appliance, fixture. Abstract base; subclasses are the concrete blocks."@en ;
+  dhc:designView "electrical" ;
+  dhc:blocklyDisposition "excluded" .
 
 dhc:EquipmentType
   a owl:Class ;
   rdfs:label "Equipment Type"@en ;
   rdfs:label "Gerätetyp"@de ;
   rdfs:label "Type d'équipement"@fr ;
-  rdfs:comment "Classification of equipment by category, brand, model."@en .
+  rdfs:comment "Classification of equipment by category, brand, model. Instances are used as dropdown values."@en ;
+  dhc:designView "electrical" ;
+  dhc:blocklyDisposition "excluded" .
 
 # Common equipment subclasses
 dhc:Socket
@@ -1287,14 +1298,16 @@ dhc:ElectricVehicle
   rdfs:label "Electric Vehicle"@en ;
   rdfs:label "Elektrofahrzeug"@de ;
   rdfs:label "Véhicule électrique"@fr ;
-  rdfs:comment "An electrically powered vehicle associated with the property."@en .
+  rdfs:comment "An electrically powered vehicle associated with the property."@en ;
+  dhc:designView "electrical" .
 
 dhc:ChargingStation
   a owl:Class ;
   rdfs:label "Charging Station"@en ;
   rdfs:label "Ladestation"@de ;
   rdfs:label "Borne de recharge"@fr ;
-  rdfs:comment "A charging point for electric vehicles: wallbox, standard outlet, or public charger."@en .
+  rdfs:comment "A charging point for electric vehicles: wallbox, standard outlet, or public charger."@en ;
+  dhc:designView "electrical" .
 
 # ── E-Mobility object properties ──
 
@@ -1368,6 +1381,59 @@ dhc:designView
   rdfs:label "Entwurfsansicht"@de ;
   rdfs:label "vue de conception"@fr ;
   rdfs:comment "Indicates which Designer view/toolbox this concept belongs to. Values: spatial, building, electrical, plumbing, heating, network, governance, automation, compliance."@en .
+
+
+# ============================================================
+# ANNOTATIONS: Blockly generation hints (consumed by the Modeler)
+# Per DH-SPEC-201 §9.2 — T-Box is authoritative for block shape.
+# ============================================================
+
+dhc:blocklyDisposition
+  a owl:AnnotationProperty ;
+  rdfs:label "blockly disposition"@en ;
+  rdfs:label "Blockly-Disposition"@de ;
+  rdfs:label "disposition Blockly"@fr ;
+  rdfs:comment "How the Modeler should materialize this class in Blockly. One of: block, variable, excluded."@en ;
+  dhc:designView "compliance" .
+
+dhc:blocklyCategory
+  a owl:AnnotationProperty ;
+  rdfs:label "blockly category"@en ;
+  rdfs:label "Blockly-Kategorie"@de ;
+  rdfs:label "catégorie Blockly"@fr ;
+  rdfs:comment "Optional toolbox-category override. Defaults to the class's dhc:designView when absent."@en ;
+  dhc:designView "compliance" .
+
+dhc:blocklyParentProperty
+  a owl:AnnotationProperty ;
+  rdfs:label "blockly parent property"@en ;
+  rdfs:label "Blockly-Elterneigenschaft"@de ;
+  rdfs:label "propriété parent Blockly"@fr ;
+  rdfs:comment "Object property that links this class to its parent block, used to drive Blockly nesting."@en ;
+  dhc:designView "compliance" .
+
+dhc:blocklyFieldType
+  a owl:AnnotationProperty ;
+  rdfs:label "blockly field type"@en ;
+  rdfs:label "Blockly-Feldtyp"@de ;
+  rdfs:label "type de champ Blockly"@fr ;
+  rdfs:comment "Explicit Blockly field renderer for a datatype property. One of: number, text, dropdown, checkbox."@en ;
+  dhc:designView "compliance" .
+
+
+# ============================================================
+# ANNOTATION: defaultValue
+# Attached to SHACL property blank nodes in C-Box shapes; consumed
+# by the Modeler when building block field defaults.
+# ============================================================
+
+dhc:defaultValue
+  a rdf:Property ;
+  rdfs:label "default value"@en ;
+  rdfs:label "Standardwert"@de ;
+  rdfs:label "valeur par défaut"@fr ;
+  rdfs:comment "Suggested default for a SHACL property, consumed by the Modeler when emitting Blockly field defaults."@en ;
+  dhc:designView "compliance" .
 
 
 # ============================================================

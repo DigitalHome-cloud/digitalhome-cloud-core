@@ -37,6 +37,7 @@ bs:RingFinalCircuitShape_GB
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 2.5 ;
+        dhc:defaultValue 2.5 ;
         sh:message "BS 7671: ring final circuit (32 A) cross-section ≥ 2.5 mm²."@en ;
         sh:message "BS 7671: Ringendstromkreis (32 A) Querschnitt ≥ 2,5 mm²."@de ;
         sh:message "BS 7671 : circuit final en anneau (32 A) section ≥ 2,5 mm²."@fr ;
@@ -64,6 +65,7 @@ bs:RadialFinalCircuitShape_GB
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 2.5 ;
+        dhc:defaultValue 2.5 ;
         sh:message "BS 7671: radial final (≤ 20 A) cross-section ≥ 2.5 mm²."@en ;
         sh:message "BS 7671: Radialendstromkreis (≤ 20 A) Querschnitt ≥ 2,5 mm²."@de ;
         sh:message "BS 7671 : circuit final radial (≤ 20 A) section ≥ 2,5 mm²."@fr ;
@@ -85,6 +87,7 @@ bs:ShowerCircuitShape_GB
       sh:property [
         sh:path dhc:crossSection ;
         sh:minInclusive 6.0 ;
+        dhc:defaultValue 6.0 ;
         sh:message "BS 7671: shower circuit (≥ 30 A) cross-section ≥ 6 mm²."@en ;
         sh:message "BS 7671: Duschstromkreis (≥ 30 A) Querschnitt ≥ 6 mm²."@de ;
         sh:message "BS 7671 : circuit douche (≥ 30 A) section ≥ 6 mm²."@fr ;
