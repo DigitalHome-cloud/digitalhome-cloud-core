@@ -1,18 +1,40 @@
 #!/usr/bin/env python3
 """
-DHC Ontology Explorer v2.0
-==========================
-Interactive loop for navigating Brick + REC + s223 + DHC ontologies.
+DHC Ontology Explorer v3.0 — T-Box curator
+==========================================
+Interactive tool for navigating and curating the DHC T-Box.
 
-Features:
-  - Interactive loop with search (?term), last-class memory
-  - Full property extraction: SHACL sh:property + rdfs:domain + qudt:hasQuantityKind
-  - Inherited properties from ancestor chain
-  - Output: stdout (text table) or .csv file (; separator)
-  - Three directions: [1] subclass tree, [2] parent chain, [3] properties table
+Files (load order: tbox first, then drafts):
+  schema/tbox/Brick+extensions.ttl   read-only baseline (Brick + REC + s223)
+  schema/tbox/dhc-core.ttl           DHC domain extension (classes, properties, R-Box)
+  schema/tbox/dhc-app-metadata.ttl   UI/UX overlay (designView, blockly*, @de/@fr)
+  schema/draft/dhc-core.ttl          work-in-progress, shrinks as classes are promoted
+  schema/draft/dhc-app-metadata.ttl  work-in-progress, shrinks as annotations are promoted
+
+Read-only navigation:
+  [1] subclass tree     [2] parent chain     [3] properties table
+
+Curation (writes the four DHC files; Brick+extensions.ttl is never modified):
+  [4] promote → tbox
+       - DHC classes:  move class declaration + rdfs:domain properties + enum
+                        instances from drafts → tbox. Domain triples land in
+                        dhc-core.ttl, app annotations and @de/@fr labels in
+                        dhc-app-metadata.ttl.
+       - External classes (rec/brick/s223): interactive prompt for annotations
+                        (designView, blockly*, @de/@fr labels). Only annotations
+                        are written, into dhc-app-metadata.ttl. The class
+                        definition stays owned by the upstream standard.
+  [5] delete dhc:
+       - Removes a dhc: class + its rdfs:domain properties + enum instances
+         from both tbox files. Refused for non-DHC URIs.
+
+After [4] / [5] the four DHC ttl files are re-serialized and re-parsed so the
+in-memory graph stays in sync with disk.
+
+Output: stdout (text) or .csv (; separator) for the read-only directions.
 
 Usage:
-  python ontology_explorer.py     # interactive
+  python ontology_explorer.py        # interactive
 
 Requires: pip install rdflib
 """
@@ -564,11 +586,31 @@ def promote_dhc_class(cls, drafts_core, drafts_meta, tbox_core, tbox_meta, union
         summary["core"] += cc + cc2; summary["meta"] += mm + mm2
         summary["enums"].append(str(i_uri))
 
-    # 4. rebuild union
-    union.remove((None, None, None))
-    for g in (tbox_core, tbox_meta, drafts_core, drafts_meta):
-        for t in g: union.add(t)
+    # Caller is responsible for re-serializing and reloading; we leave the
+    # union graph alone — _reload() will rebuild it from disk.
     return summary
+
+# Fixed enum vocabularies for selected annotation predicates — used to render
+# numbered menus instead of free-text prompts (avoids typos).
+ENUM_CHOICES = {
+    DHC["designView"]:        VIEWS,
+    DHC["blocklyDisposition"]: ["block", "variable", "excluded"],
+    DHC["blocklyFieldType"]:   ["text", "number", "dropdown", "checkbox"],
+}
+
+def _prompt_enum(label, choices, current_str):
+    """Render a numbered menu and return the chosen value, 'k', 'd', or '' (skip)."""
+    print(f"\n    {label}  [current: {current_str}]")
+    for i, v in enumerate(choices, 1):
+        print(f"      {i}) {v}")
+    ans = _ask("      Choice (1–{0}, k=keep, d=delete, blank=skip): ".format(len(choices)), "")
+    if ans == "" or ans.lower() in ("k", "d"): return ans.lower() if ans else ""
+    if ans.isdigit() and 1 <= int(ans) <= len(choices):
+        return choices[int(ans) - 1]
+    # accept exact textual match too
+    if ans in choices: return ans
+    print(f"      ✗ invalid choice '{ans}', skipping")
+    return ""
 
 def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
     """Interactively choose annotations for a non-DHC class (rec/brick/s223)
@@ -591,40 +633,48 @@ def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
     ]
     fixed_keys = {(p, lang) for p, lang, _ in fixed}
 
-    # Discover extras in drafts about cls
+    # Discover extras across tbox AND drafts (so re-promoting after a reload
+    # still surfaces every annotation that's currently attached to this class).
     extras = []
-    for g in (drafts_core, drafts_meta):
+    seen_extra_keys = set()
+    for g in (tbox_meta, drafts_core, drafts_meta):
         for p, o in g.predicate_objects(cls):
             lang = o.language if isinstance(o, Literal) else None
             key = (p, lang)
             if key in fixed_keys: continue
-            if (p, lang, None) in [(x[0], x[1], None) for x in extras]: continue
+            if key in seen_extra_keys: continue
+            seen_extra_keys.add(key)
             extras.append((p, lang, f"{sh(p)}{('@' + lang) if lang else ''}"))
 
     print(f"\n  Enrich external class: {sh(cls)}")
     print(f"  Annotations land in dhc-app-metadata.ttl. Empty input = skip.")
     print(f"  Type 'k' to keep current value, 'd' to delete it.\n")
 
-    chosen = []  # list of (predicate, language, value_str_or_None_for_skip)
     candidates = fixed + extras
     for pred, lang, label in candidates:
-        # current values in drafts
+        # Current values: tbox_meta first (authoritative after a prior promote),
+        # then drafts as the fallback for never-promoted classes.
         cur = []
-        for g in (drafts_core, drafts_meta):
+        cur_in_tbox = False
+        for g, is_tbox in [(tbox_meta, True), (drafts_core, False), (drafts_meta, False)]:
+            hits = []
             for _, _, o in g.triples((cls, pred, None)):
                 if isinstance(o, Literal) and lang and o.language != lang: continue
                 if isinstance(o, Literal) and not lang and o.language: continue
-                cur.append(o)
+                hits.append(o)
+            if hits and not cur:
+                cur = hits
+                cur_in_tbox = is_tbox
 
         cur_str = ", ".join(repr(str(x)) for x in cur) if cur else "—"
-        prompt = f"    {label}  [current: {cur_str}]: "
 
-        if pred == DHC["designView"]:
-            prompt = f"    {label}  [current: {cur_str}]  ({'/'.join(VIEWS)}): "
+        if pred in ENUM_CHOICES:
+            ans = _prompt_enum(label, ENUM_CHOICES[pred], cur_str)
+        else:
+            ans = _ask(f"\n    {label}  [current: {cur_str}]\n      (k=keep, d=delete, blank=skip, or type new value): ", "")
 
-        ans = _ask(prompt, "")
         if ans == "":
-            # skip — no change, but also do not re-promote anything
+            # skip — no change, leave any existing draft triples where they are
             continue
         if ans.lower() == "k":
             # keep: move existing draft triples to tbox_meta
@@ -634,7 +684,10 @@ def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
                 drafts_meta.remove((cls, pred, o))
             continue
         if ans.lower() == "d":
-            # delete from drafts, do not write to tbox
+            # delete from drafts AND tbox (covers both never-promoted and
+            # already-promoted classes)
+            for o in list(cur):
+                tbox_meta.remove((cls, pred, o))
             drafts_core.remove((cls, pred, None))
             drafts_meta.remove((cls, pred, None))
             continue
@@ -645,15 +698,8 @@ def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
         tbox_meta.remove((cls, pred, None))
         if pred in (RDFS.label, RDFS.comment) and lang:
             tbox_meta.add((cls, pred, Literal(ans, lang=lang)))
-        elif pred in APP_ANNOTATION_PREDS:
-            tbox_meta.add((cls, pred, Literal(ans)))
         else:
-            # fallback: literal
             tbox_meta.add((cls, pred, Literal(ans)))
-
-    # rebuild union
-    union.remove((None, None, None))
-    # Note: caller will re-add tbox_core etc. after serialization
 
 def delete_dhc_class(cls, tbox_core, tbox_meta, union):
     """Remove a dhc: class (and its properties + enum instances) from both
@@ -709,7 +755,9 @@ def _ask(prompt, default=""):
         print(); return ""
 
 def _reload(union, file_graphs):
-    """Re-read all files into the existing graph objects (after a write)."""
+    """Re-read all files into the existing graph objects after a write so the
+    in-memory state stays in sync with disk."""
+    print("  ↻ reloading ttl files …")
     union.remove((None, None, None))
     for path, fg in file_graphs.items():
         fg.remove((None, None, None))
@@ -718,6 +766,7 @@ def _reload(union, file_graphs):
             fg.parse(path, format="turtle")
             for t in fg: union.add(t)
             for p, u in fg.namespaces(): union.bind(p, u)
+            print(f"     {Path(path).name}: {len(fg):,} triples")
         except Exception as e:
             print(f"  [error] reload {path}: {e}", file=sys.stderr)
 

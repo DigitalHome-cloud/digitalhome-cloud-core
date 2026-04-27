@@ -43,6 +43,83 @@
 # VIEW: spatial
 # ════════════════════════════════════════════════════════════
 
+dhc:DigitalHome a owl:Class ;
+    rdfs:label "Digital Home"@en ;
+    rdfs:comment "The tenant boundary of a smart home digital twin. A physical property (house, apartment, land with buildings) managed as a single unit with shared IoT edge, power grid, and governance. Extends rec:Site."@en ;
+    rdfs:subClassOf rec:Site .
+
+dhc:createdAt a owl:DatatypeProperty ;
+    rdfs:label "Created at"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:dateTime .
+
+dhc:createdBy a owl:ObjectProperty ;
+    rdfs:label "Created by"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range rec:Agent .
+
+dhc:creationStatus a owl:DatatypeProperty ;
+    rdfs:label "Creation status"@en ;
+    rdfs:comment "One of: draft | active | archived."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:string .
+
+dhc:geocodeVerified a owl:DatatypeProperty ;
+    rdfs:label "Geocode verified"@en ;
+    rdfs:comment "True if lat/lng come from a provider geocode call."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:boolean .
+
+dhc:hasChargingStation a owl:ObjectProperty ;
+    rdfs:label "has charging station"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range brick:Electric_Vehicle_Charging_Station .
+
+dhc:hasElectricVehicle a owl:ObjectProperty ;
+    rdfs:label "has electric vehicle"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range dhc:ElectricVehicle .
+
+dhc:hasVehicle a owl:ObjectProperty ;
+    rdfs:label "has vehicle"@en ;
+    rdfs:comment "Links a DigitalHome to a vehicle associated with the property. Replaces dhc:hasElectricVehicle with broader scope."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range dhc:Vehicle .
+
+dhc:isDemo a owl:DatatypeProperty ;
+    rdfs:label "Is demo"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:boolean .
+
+dhc:placeId a owl:DatatypeProperty ;
+    rdfs:label "Place ID"@en ;
+    rdfs:comment "Map provider's stable place identifier."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:string .
+
+dhc:placeIdProvider a owl:DatatypeProperty ;
+    rdfs:label "Place ID provider"@en ;
+    rdfs:comment "Provider: 'google' | 'amazon-location' | 'manual'."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:string .
+
+dhc:preferredLanguage a owl:DatatypeProperty ;
+    rdfs:label "Preferred language"@en ;
+    rdfs:comment "BCP-47 tag: 'en', 'de', 'fr'."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:string .
+
+dhc:smartHomeId a owl:DatatypeProperty ;
+    rdfs:label "SmartHome ID"@en ;
+    rdfs:comment "Tenant partition key. Format: {country}-{zip}-{street3}{number}-{nn} e.g. DE-80331-MAR12-01."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:string .
+
+dhc:updatedAt a owl:DatatypeProperty ;
+    rdfs:label "Updated at"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:dateTime .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: building

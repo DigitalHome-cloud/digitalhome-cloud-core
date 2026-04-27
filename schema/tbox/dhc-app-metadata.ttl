@@ -90,6 +90,35 @@ dhc:designView a owl:AnnotationProperty ;
 # VIEW: spatial
 # ════════════════════════════════════════════════════════════
 
+dhc:DigitalHome rdfs:label "Digitales Zuhause"@de,
+        "Maison numérique"@fr ;
+    dhc:designView "spatial" .
+
+dhc:geocodeVerified dhc:designView "spatial" .
+
+dhc:placeId dhc:designView "spatial" .
+
+dhc:placeIdProvider dhc:designView "spatial" .
+
+dhc:preferredLanguage rdfs:label "Bevorzugte Sprache"@de,
+        "Langue préférée"@fr .
+
+rec:Bathroom dhc:designView "spatial" .
+
+rec:Bedroom rdfs:comment "q"@fr ;
+    dhc:designView "spatial" .
+
+rec:Building dhc:designView "spatial" .
+
+rec:SubBuilding rdfs:label "Nebengebäude"@de,
+        "Outbuilding"@en,
+        "Dépendance"@fr ;
+    rdfs:comment "dsfkdskjfkjdsf"@fr ;
+    dhc:blocklyBlockTemplate "test" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:defaultValue "0" ;
+    dhc:designView "spatial" .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: building
