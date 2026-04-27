@@ -1,0 +1,127 @@
+@prefix brick:   <https://brickschema.org/schema/Brick#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dhc:     <https://digitalhome.cloud/ontology#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rec:     <https://w3id.org/rec#> .
+@prefix s223:    <http://data.ashrae.org/standard223#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+# ============================================================
+# DigitalHome.Cloud App Metadata — v3 (UI/UX overlay)
+#
+# Application-layer annotations consumed by the SmartHome
+# Designer (Blockly toolbox) and three.js ontology renderer.
+# This file is NOT part of the domain ontology — it skins the
+# T-Box for the human user.
+#
+# Carries:
+#   - dhc:designView assignments (toolbox tab placement)
+#   - Blockly hints (disposition, field type, parent property)
+#   - Localized labels (@de, @fr) for DHC and external classes
+#   - Whitelist of Brick / REC / s223 classes exposed in UI
+#
+# Mirrors the section structure of dhc-core.ttl. Populate via
+# py-tools/ontology_explorer.py option [4].
+# ============================================================
+
+<https://digitalhome.cloud/ontology/app-metadata>
+    a owl:Ontology ;
+    rdfs:label "DigitalHome.Cloud App Metadata"@en ;
+    dcterms:creator "D-LAB-5 / DigitalHome.Cloud" ;
+    dcterms:description "UI/UX overlay for the SmartHome Designer. Annotations on T-Box classes and properties; no domain semantics."@en ;
+    dcterms:license <https://opensource.org/licenses/MIT> ;
+    owl:versionInfo "3.0.0" .
+
+# ────────────────────────────────────────────────────────────
+# § Application annotation property definitions
+# ────────────────────────────────────────────────────────────
+
+dhc:blocklyBlockTemplate a owl:AnnotationProperty ;
+    rdfs:label "Blockly-Block-Vorlage"@de,
+        "Blockly Block Template"@en,
+        "Modèle de bloc Blockly"@fr ;
+    rdfs:comment "Pointer to a block template in dhc-blockly-blockTemplates.json, consumed by the Modeller pipeline."@en .
+
+dhc:blocklyCategory a owl:AnnotationProperty ;
+    rdfs:label "Blockly-Kategorie"@de,
+        "Blockly Category"@en,
+        "Catégorie Blockly"@fr ;
+    rdfs:comment "Optional override for the Blockly toolbox category name."@en .
+
+dhc:blocklyDisposition a owl:AnnotationProperty ;
+    rdfs:label "Blockly-Disposition"@de,
+        "Blockly Disposition"@en,
+        "Disposition Blockly"@fr ;
+    rdfs:comment "How this class appears in the Blockly toolbox: block (draggable), variable (cross-cutting), excluded (hidden)."@en .
+
+dhc:blocklyFieldType a owl:AnnotationProperty ;
+    rdfs:label "Blockly-Feldtyp"@de,
+        "Blockly Field Type"@en,
+        "Type de champ Blockly"@fr ;
+    rdfs:comment "Field widget type in Blockly: number, text, dropdown, checkbox."@en .
+
+dhc:blocklyParentProperty a owl:AnnotationProperty ;
+    rdfs:label "Blockly-Elterneigenschaft"@de,
+        "Blockly Parent Property"@en,
+        "Propriété parent Blockly"@fr ;
+    rdfs:comment "The object property that drives Blockly nesting (e.g. a Circuit block nests inside the DistributionBoard that has dhc:hasCircuit)."@en .
+
+dhc:defaultValue a owl:AnnotationProperty ;
+    rdfs:label "Standardwert"@de,
+        "Default Value"@en,
+        "Valeur par défaut"@fr ;
+    rdfs:comment "Default value for a property in the Designer, consumed by the Modeller pipeline."@en .
+
+dhc:designView a owl:AnnotationProperty ;
+    rdfs:label "Entwurfsansicht"@de,
+        "Design View"@en,
+        "Vue de conception"@fr ;
+    rdfs:comment "Assigns a class or property to a toolbox tab in the SmartHome Designer: governance, spatial, building, electrical, plumbing, heating, network, automation, compliance."@en .
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: governance
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: spatial
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: building
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: electrical
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: plumbing
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: heating
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: network
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: automation
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: compliance
+# ════════════════════════════════════════════════════════════
+

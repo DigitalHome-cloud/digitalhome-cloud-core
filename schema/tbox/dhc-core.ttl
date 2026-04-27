@@ -1,0 +1,80 @@
+@prefix brick:   <https://brickschema.org/schema/Brick#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dhc:     <https://digitalhome.cloud/ontology#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rec:     <https://w3id.org/rec#> .
+@prefix s223:    <http://data.ashrae.org/standard223#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+# ============================================================
+# DigitalHome.Cloud Core Ontology — v3 (T-Box, domain extension)
+#
+# Pure domain layer over Brick + REC + ASHRAE 223P.
+#   - dhc: classes that extend the three external standards
+#   - dhc: object and data properties
+#   - R-Box axioms and enum instances
+#
+# UI/UX annotations (designView, blockly*, @de/@fr labels) live
+# in dhc-app-metadata.ttl — never here.
+#
+# Populate via py-tools/ontology_explorer.py option [4]
+# (promote class from schema/draft/* into this file).
+# ============================================================
+
+<https://digitalhome.cloud/ontology>
+    a owl:Ontology ;
+    rdfs:label "DigitalHome.Cloud Core Ontology"@en ;
+    dcterms:creator "D-LAB-5 / DigitalHome.Cloud" ;
+    dcterms:description "Domain extension layer over Brick, REC, ASHRAE 223P. T-Box only."@en ;
+    dcterms:license <https://opensource.org/licenses/MIT> ;
+    owl:imports <https://brickschema.org/schema/Brick>,
+                <https://w3id.org/rec> ;
+    owl:versionInfo "3.0.0" .
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: governance
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: spatial
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: building
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: electrical
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: plumbing
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: heating
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: network
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: automation
+# ════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════
+# VIEW: compliance
+# ════════════════════════════════════════════════════════════
+
