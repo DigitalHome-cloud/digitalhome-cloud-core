@@ -33,20 +33,128 @@
                 <https://w3id.org/rec> ;
     owl:versionInfo "3.0.0" .
 
-
 # ════════════════════════════════════════════════════════════
 # VIEW: governance
 # ════════════════════════════════════════════════════════════
+
+dhc:NormEdition a owl:Class ;
+    rdfs:label "Norm Edition"@en ;
+    rdfs:comment "A specific version/revision of a Norm (e.g. NF C 15-100:2015, NF C 15-100:2024). Each edition has a corresponding C-Box SHACL shape file. New editions are not retroactive — existing installations remain governed by the edition they were built under."@en .
+
+dhc:User a owl:Class ;
+    rdfs:label "Application User"@en ;
+    rdfs:comment "A major subdivision of a property (e.g. main building, annex, garden). No direct REC equivalent; extends rec:Architecture."@en ;
+    rdfs:subClassOf rec:Person .
+
+dhc:NormEdition_NFC14100_2021 a dhc:NormEdition ;
+    rdfs:label "NF C 14-100:2021"@en ;
+    rdfs:comment "Current edition of NF C 14-100."@en ;
+    dhc:editionOf dhc:Norm_NFC14100 ;
+    dhc:editionYear "2021"^^xsd:gYear ;
+    dhc:shapesFile "cbox/nfc14100/nfc14100-2021.shapes.ttl" .
+
+dhc:NormEdition_NFC15100_2002 a dhc:NormEdition ;
+    rdfs:label "NF C 15-100:2002"@en ;
+    rdfs:comment "Edition in force 2002–2015. Many existing installations were built under this edition."@en ;
+    dhc:editionOf dhc:Norm_NFC15100 ;
+    dhc:editionYear "2002"^^xsd:gYear ;
+    dhc:shapesFile "cbox/nfc15100/nfc15100-2002.shapes.ttl" .
+
+dhc:NormEdition_NFC15100_2015 a dhc:NormEdition ;
+    rdfs:label "NF C 15-100:2015"@en ;
+    rdfs:comment "Major revision with amended requirements for residential installations. Added requirements for IRVE, updated bathroom zones, revised minimum circuit counts."@en ;
+    dhc:editionEffectiveDate "2015-11-27"^^xsd:date ;
+    dhc:editionOf dhc:Norm_NFC15100 ;
+    dhc:editionYear "2015"^^xsd:gYear ;
+    dhc:shapesFile "cbox/nfc15100/nfc15100-2015.shapes.ttl" ;
+    dhc:supersedes dhc:NormEdition_NFC15100_2002 .
+
+dhc:NormEdition_NFC15100_2024 a dhc:NormEdition ;
+    rdfs:label "NF C 15-100:2024"@en ;
+    rdfs:comment "Current edition. Includes updated Part 7-702 (pools/basins), revised IRVE requirements, new requirements for energy storage systems."@en ;
+    dhc:editionEffectiveDate "2024-07-01"^^xsd:date ;
+    dhc:editionOf dhc:Norm_NFC15100 ;
+    dhc:editionYear "2024"^^xsd:gYear ;
+    dhc:shapesFile "cbox/nfc15100/nfc15100-2024.shapes.ttl" ;
+    dhc:supersedes dhc:NormEdition_NFC15100_2015 .
+
+dhc:AWSCognitoGroups a owl:DatatypeProperty ;
+    rdfs:label "external ID"@en ;
+    rdfs:comment "List of external groups."@en ;
+    rdfs:domain dhc:User ;
+    rdfs:range xsd:string .
+
+dhc:AWSCognitoId a owl:DatatypeProperty ;
+    rdfs:label "external ID"@en ;
+    rdfs:comment "Link to IAM/CRM/ERP identity key (Cognito subject, SAP BP, etc.)."@en ;
+    rdfs:domain dhc:User ;
+    rdfs:range xsd:string .
+
+dhc:editionEffectiveDate a owl:DatatypeProperty ;
+    rdfs:label "effective date"@en ;
+    rdfs:comment "Date from which this edition is enforceable for new installations."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range xsd:date .
+
+dhc:editionOf a owl:ObjectProperty ;
+    rdfs:label "edition of"@en ;
+    rdfs:comment "Inverse of hasEdition. Links a NormEdition back to its parent Norm."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range dhc:Norm ;
+    owl:inverseOf dhc:hasEdition .
+
+dhc:editionYear a owl:DatatypeProperty ;
+    rdfs:label "edition year"@en ;
+    rdfs:comment "Publication year of this edition."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range xsd:gYear .
+
+dhc:shapesFile a owl:DatatypeProperty ;
+    rdfs:label "shapes file"@en ;
+    rdfs:comment "Relative path to the C-Box SHACL shapes file for this edition (e.g. 'cbox/nfc15100/nfc15100-2024.shapes.ttl')."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range xsd:string .
+
+dhc:supersedes a owl:ObjectProperty ;
+    rdfs:label "supersedes"@en ;
+    rdfs:comment "Links a NormEdition to the previous edition it replaces. Used by the compliance engine to identify the upgrade path."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range dhc:NormEdition .
 
 
 # ════════════════════════════════════════════════════════════
 # VIEW: spatial
 # ════════════════════════════════════════════════════════════
 
+dhc:Barbecue a owl:Class ;
+    rdfs:label "Barbecue"@en ;
+    rdfs:comment "A fixed or built-in outdoor cooking installation."@en ;
+    rdfs:subClassOf dhc:OutdoorFurniture .
+
+dhc:DetachedHouse a owl:Class ;
+    rdfs:label "Detached House"@en ;
+    rdfs:comment "A standalone building with four facades and no shared walls."@en ;
+    rdfs:subClassOf rec:Building .
+
 dhc:DigitalHome a owl:Class ;
     rdfs:label "Digital Home"@en ;
     rdfs:comment "The tenant boundary of a smart home digital twin. A physical property (house, apartment, land with buildings) managed as a single unit with shared IoT edge, power grid, and governance. Extends rec:Site."@en ;
     rdfs:subClassOf rec:Site .
+
+dhc:GrandTownhouse a owl:Class ;
+    rdfs:label "Grand Townhouse"@en ;
+    rdfs:comment "An imposing, high-standard row house typical of Brussels, often featuring an enfilade of three rooms and a grand facade."@en ;
+    rdfs:subClassOf dhc:RowHouse .
+
+dhc:RowHouse a owl:Class ;
+    rdfs:label "Row House"@en ;
+    rdfs:comment "The dominant urban housing type in Brussels; a building attached on both sides, forming a continuous street front on a narrow, deep plot."@en ;
+    rdfs:subClassOf rec:Building .
+
+dhc:SemiDetachedHouse a owl:Class ;
+    rdfs:label "Semi-Detached House"@en ;
+    rdfs:comment "An end-of-row or paired building with three facades, sharing one sidewall."@en ;
+    rdfs:subClassOf rec:Building .
 
 dhc:createdAt a owl:DatatypeProperty ;
     rdfs:label "Created at"@en ;
@@ -154,4 +262,74 @@ dhc:updatedAt a owl:DatatypeProperty ;
 # ════════════════════════════════════════════════════════════
 # VIEW: compliance
 # ════════════════════════════════════════════════════════════
+
+dhc:Norm a owl:Class ;
+    rdfs:label "Norm"@en ;
+    rdfs:comment "A national standard, regulation, or best practice. A Norm has one or more NormEditions, each representing a specific revision with its own C-Box SHACL shape file."@en .
+
+dhc:Norm_NFC14100 a dhc:Norm ;
+    rdfs:label "NF C 14-100"@en ;
+    rdfs:comment "Energy delivery from provider to main board (France). Covers the connection between the public distribution network and the origin of the private installation."@en ;
+    dhc:hasEdition dhc:NormEdition_NFC14100_2021 ;
+    dhc:latestEdition dhc:NormEdition_NFC14100_2021 ;
+    dhc:normCategory "Regulation" ;
+    dhc:normCountry "FR" ;
+    dhc:normDomain "electrical" ;
+    dhc:normId "nfc14100" ;
+    dhc:normWeight 1.0 .
+
+dhc:Norm_NFC15100 a dhc:Norm ;
+    rdfs:label "NF C 15-100"@en ;
+    rdfs:comment "Residential and commercial low-voltage electrical installation (France). The primary norm governing circuit design, protection, wiring, and zone-specific requirements (bathrooms, pools, kitchens, etc.)."@en ;
+    dhc:hasEdition dhc:NormEdition_NFC15100_2002,
+        dhc:NormEdition_NFC15100_2015,
+        dhc:NormEdition_NFC15100_2024 ;
+    dhc:latestEdition dhc:NormEdition_NFC15100_2024 ;
+    dhc:normCategory "Regulation" ;
+    dhc:normCountry "FR" ;
+    dhc:normDomain "electrical" ;
+    dhc:normId "nfc15100" ;
+    dhc:normWeight 1.0 .
+
+dhc:hasEdition a owl:ObjectProperty ;
+    rdfs:label "has edition"@en ;
+    rdfs:comment "Links a Norm to one of its editions."@en ;
+    rdfs:domain dhc:Norm ;
+    rdfs:range dhc:NormEdition .
+
+dhc:latestEdition a owl:ObjectProperty ;
+    rdfs:label "latest edition"@en ;
+    rdfs:comment "Points from a Norm to its currently active edition. The compliance engine uses this for gap analysis against the latest rules."@en ;
+    rdfs:domain dhc:Norm ;
+    rdfs:range dhc:NormEdition .
+
+dhc:normCategory a owl:DatatypeProperty ;
+    rdfs:label "norm category"@en ;
+    rdfs:comment "One of: Regulation, Standard, BestPractice."@en ;
+    rdfs:domain dhc:Norm ;
+    rdfs:range xsd:string .
+
+dhc:normCountry a owl:DatatypeProperty ;
+    rdfs:label "norm country"@en ;
+    rdfs:comment "ISO 3166-1 alpha-2 country code (e.g. 'FR')."@en ;
+    rdfs:domain dhc:Norm ;
+    rdfs:range xsd:string .
+
+dhc:normDomain a owl:DatatypeProperty ;
+    rdfs:label "norm domain"@en ;
+    rdfs:comment "Technical domain: electrical, plumbing, heating, building."@en ;
+    rdfs:domain dhc:Norm ;
+    rdfs:range xsd:string .
+
+dhc:normId a owl:DatatypeProperty ;
+    rdfs:label "norm ID"@en ;
+    rdfs:comment "Short stable identifier matching the C-Box directory name (e.g. 'nfc15100')."@en ;
+    rdfs:domain dhc:Norm ;
+    rdfs:range xsd:string .
+
+dhc:normWeight a owl:DatatypeProperty ;
+    rdfs:label "norm weight"@en ;
+    rdfs:comment "1.0 = mandatory, 0.5 = recommended, 0.2 = optional."@en ;
+    rdfs:domain dhc:Norm ;
+    rdfs:range xsd:decimal .
 

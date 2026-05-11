@@ -1,5 +1,16 @@
 # Build outputs (legacy; retained defensively)
-build/
+schema/draft/
+.idea/
+py-tools/__pycache__/
+experimenta/
+
+# Amplify Gen 2 — local sandbox state, regenerated per developer
+amplify_outputs.json
+amplify_outputs.d.ts
+.amplify/
+
+# Claude
+.claude
 
 # Node
 node_modules/

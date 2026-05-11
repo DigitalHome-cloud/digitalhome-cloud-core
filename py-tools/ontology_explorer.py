@@ -24,12 +24,16 @@ Curation (writes the four DHC files; Brick+extensions.ttl is never modified):
                         (designView, blockly*, @de/@fr labels). Only annotations
                         are written, into dhc-app-metadata.ttl. The class
                         definition stays owned by the upstream standard.
-  [5] delete dhc:
+  [5] delete dhc: tbox
        - Removes a dhc: class + its rdfs:domain properties + enum instances
-         from both tbox files. Refused for non-DHC URIs.
+         from the two tbox files only. Drafts are left alone. Refused for
+         non-DHC URIs.
+  [6] purge dhc: all
+       - Same as [5] but also wipes the class from drafts/. Use this to
+         drop a class that hasn't been promoted yet. Refused for non-DHC URIs.
 
-After [4] / [5] the four DHC ttl files are re-serialized and re-parsed so the
-in-memory graph stays in sync with disk.
+After [4] / [5] / [6] the four DHC ttl files are re-serialized and re-parsed
+so the in-memory graph stays in sync with disk.
 
 Output: stdout (text) or .csv (; separator) for the read-only directions.
 
@@ -47,8 +51,11 @@ from typing import Optional
 try:
     from rdflib import Graph, Namespace, URIRef, BNode, RDF, RDFS, OWL, Literal
     from rdflib.namespace import SKOS, XSD
+    from rdflib.collection import Collection
 except ImportError:
     sys.exit("rdflib required: pip install rdflib")
+
+import re
 
 # ── Ontology files (edit for your setup) ──────────────────────────────────────
 def _resolve(rel):
@@ -75,13 +82,67 @@ VIEWS = ["governance", "spatial", "building", "electrical",
 DHC_NS_STR = "https://digitalhome.cloud/ontology#"
 DHC = Namespace(DHC_NS_STR)
 
-# Application annotation predicates kept in dhc-app-metadata.ttl, never in dhc-core.ttl
-APP_ANNOTATION_PREDS = {
-    DHC["designView"], DHC["blocklyDisposition"], DHC["blocklyCategory"],
-    DHC["blocklyParentProperty"], DHC["blocklyFieldType"],
-    DHC["blocklyBlockTemplate"], DHC["defaultValue"],
-}
+# Application annotation predicates kept in dhc-app-metadata.ttl, never in
+# dhc-core.ttl. Auto-discovered after load: any owl:AnnotationProperty in the
+# dhc: namespace declared in dhc-app-metadata.ttl (or its draft) qualifies.
+# Adding a new annotation property to the metadata file is picked up on the
+# next reload — no code change required.
+APP_ANNOTATION_PREDS: set = set()
+# Predicates in the order they're declared in the metadata TTL files
+# (tbox first, then drafts). Drives the prompt sequence so it follows the
+# § Application annotation property definitions section instead of an
+# arbitrary alphabetical sort.
+APP_ANNOTATION_ORDER: list = []
 LOCALIZED_LANGS = {"de", "fr"}
+
+# Match a turtle subject at the start of a line, e.g. "dhc:appMode" — used
+# to recover declaration order from the TTL files. Whatever comes after
+# the colon up to the next non-name char is the local name.
+_SUBJECT_AT_LINE_START = re.compile(r'^([A-Za-z_][\w-]*)\s*:\s*([A-Za-z_][\w-]*)', re.MULTILINE)
+
+def _annotation_decl_order_in_file(path, known_preds):
+    """Return the dhc:-namespaced annotation predicates declared in `path`,
+    in the order they first appear at line-start. Filters by `known_preds`
+    so non-annotation subjects (instances, classes) are ignored."""
+    if not Path(path).exists():
+        return []
+    try:
+        txt = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return []
+    out, seen = [], set()
+    for m in _SUBJECT_AT_LINE_START.finditer(txt):
+        prefix, local = m.group(1), m.group(2)
+        if prefix != "dhc":
+            continue
+        uri = URIRef(DHC_NS_STR + local)
+        if uri not in known_preds or uri in seen:
+            continue
+        seen.add(uri)
+        out.append(uri)
+    return out
+
+def _refresh_app_annotation_preds(*meta_graphs):
+    """Repopulate APP_ANNOTATION_PREDS from one or more metadata graphs.
+    Call after load_graph() and after every _reload()."""
+    APP_ANNOTATION_PREDS.clear()
+    for g in meta_graphs:
+        for s in g.subjects(RDF.type, OWL.AnnotationProperty):
+            if isinstance(s, URIRef) and str(s).startswith(DHC_NS_STR):
+                APP_ANNOTATION_PREDS.add(s)
+    # Recover declaration order from the underlying TTL files. tbox first,
+    # then draft, mirroring the load order.
+    APP_ANNOTATION_ORDER.clear()
+    seen = set()
+    for path in (TBOX_METADATA, DRAFT_METADATA):
+        for uri in _annotation_decl_order_in_file(path, APP_ANNOTATION_PREDS):
+            if uri in seen: continue
+            seen.add(uri)
+            APP_ANNOTATION_ORDER.append(uri)
+    # Fallback: any predicate not found in either file (e.g. discovered via
+    # an unexpected source) lands at the end, sorted by URI for stability.
+    for p in sorted(APP_ANNOTATION_PREDS - seen, key=str):
+        APP_ANNOTATION_ORDER.append(p)
 
 # ── Namespaces ────────────────────────────────────────────────────────────────
 KNOWN_NS = {
@@ -272,8 +333,22 @@ def fmt_prop(p, indent="  "):
     if p.get("inherited_from"): s += f"  (from {p['inherited_from']})"
     return s
 
+def _location_flag(uri, file_graphs):
+    """Return a 5-char (D·A) flag indicating which DHC files declare uri as a
+    subject. D=draft (either core or app-metadata draft), C=tbox/dhc-core.ttl,
+    A=tbox/dhc-app-metadata.ttl. Empty string if file_graphs not provided or
+    the uri is in none of them."""
+    if not file_graphs: return ""
+    in_draft = (any(file_graphs[DRAFT_CORE].triples((uri, None, None)))
+                or any(file_graphs[DRAFT_METADATA].triples((uri, None, None))))
+    in_core  = any(file_graphs[TBOX_CORE].triples((uri, None, None)))
+    in_anno  = any(file_graphs[TBOX_METADATA].triples((uri, None, None)))
+    if not (in_draft or in_core or in_anno): return ""
+    return f"  ({'D' if in_draft else '·'}{'C' if in_core else '·'}{'A' if in_anno else '·'})"
+
 # ── Direction 1: Tree ─────────────────────────────────────────────────────────
-def do_tree(g, sh, cls, indent=0, visited=None, maxd=99, show_p=False, rows=None):
+def do_tree(g, sh, cls, indent=0, visited=None, maxd=99, show_p=False, rows=None,
+            file_graphs=None):
     if visited is None: visited = set()
     if cls in visited or indent > maxd: return
     visited.add(cls)
@@ -281,18 +356,20 @@ def do_tree(g, sh, cls, indent=0, visited=None, maxd=99, show_p=False, rows=None
     ls = f" — {lb}" if lb and lb != nm.split(":")[-1] else ""
     ds = f"  [{nd}]" if nd > 5 else ""
     dep = " [DEPRECATED]" if is_deprecated(g, cls) else ""
+    flag = _location_flag(cls, file_graphs)
     if rows is not None:
-        rows.append({"depth":indent,"class":nm,"label":lb,"descendants":nd,"deprecated":is_deprecated(g,cls)})
+        rows.append({"depth":indent,"class":nm,"label":lb,"descendants":nd,
+                     "deprecated":is_deprecated(g,cls),"location":flag.strip()})
     else:
-        print("  "*indent + nm + ls + ds + dep)
+        print("  "*indent + nm + ls + ds + dep + flag)
     if show_p and rows is None:
         for p in get_own_properties(cls, g, sh):
             print(fmt_prop(p, "  "*(indent+1)))
     for ch in get_children(g, cls):
-        do_tree(g, sh, ch, indent+1, visited, maxd, show_p, rows)
+        do_tree(g, sh, ch, indent+1, visited, maxd, show_p, rows, file_graphs)
 
 # ── Direction 2: Parents ──────────────────────────────────────────────────────
-def do_parents(g, sh, cls, show_p=True, rows=None):
+def do_parents(g, sh, cls, show_p=True, rows=None, file_graphs=None):
     visited, queue = set(), [(cls, 0)]
     while queue:
         uri, depth = queue.pop(0)
@@ -303,12 +380,14 @@ def do_parents(g, sh, cls, show_p=True, rows=None):
         dep = " [DEPRECATED]" if is_deprecated(g, ref) else ""
         ls = f" — {lb}" if lb and lb != nm.split(":")[-1] else ""
         pfx = "↑ " if depth > 0 else ""
+        flag = _location_flag(ref, file_graphs)
         own = get_own_properties(ref, g, sh) if show_p else []
         if rows is not None:
             rows.append({"depth":depth,"class":nm,"label":lb,"deprecated":is_deprecated(g,ref),
-                         "definition":defn[:80] if defn else "","own_props":len(own)})
+                         "definition":defn[:80] if defn else "","own_props":len(own),
+                         "location":flag.strip()})
         else:
-            print(f"{'  '*depth}{pfx}{nm}{ls}{dep}")
+            print(f"{'  '*depth}{pfx}{nm}{ls}{dep}{flag}")
             if defn: print(f"{'  '*depth}  {defn[:120]}")
             for p in own:
                 print(fmt_prop(p, "  "*depth + "    "))
@@ -590,17 +669,15 @@ def promote_dhc_class(cls, drafts_core, drafts_meta, tbox_core, tbox_meta, union
     # union graph alone — _reload() will rebuild it from disk.
     return summary
 
-# Fixed enum vocabularies for selected annotation predicates — used to render
-# numbered menus instead of free-text prompts (avoids typos).
-ENUM_CHOICES = {
-    DHC["designView"]:        VIEWS,
-    DHC["blocklyDisposition"]: ["block", "variable", "excluded"],
-    DHC["blocklyFieldType"]:   ["text", "number", "dropdown", "checkbox"],
-}
-
-def _prompt_enum(label, choices, current_str):
-    """Render a numbered menu and return the chosen value, 'k', 'd', or '' (skip)."""
-    print(f"\n    {label}  [current: {current_str}]")
+def _prompt_enum(label, choices, current_str, default_str=""):
+    """Render a numbered menu and return the chosen value, 'k', 'd', or '' (skip).
+    `default_str` is shown in the header when no current value exists; pressing
+    'k' or blank applies it (handled by the caller)."""
+    head = f"\n    {label}  [current: {current_str}"
+    if default_str and current_str == "—":
+        head += f", default: {default_str}"
+    head += "]"
+    print(head)
     for i, v in enumerate(choices, 1):
         print(f"      {i}) {v}")
     ans = _ask("      Choice (1–{0}, k=keep, d=delete, blank=skip): ".format(len(choices)), "")
@@ -612,24 +689,162 @@ def _prompt_enum(label, choices, current_str):
     print(f"      ✗ invalid choice '{ans}', skipping")
     return ""
 
+def _annotation_range(g, pred):
+    """Return the rdfs:range URI for an annotation predicate, or None."""
+    rng = g.value(pred, RDFS.range)
+    return rng if isinstance(rng, URIRef) else None
+
+def _annotation_default(g, pred):
+    """Return the sh:defaultValue Literal for an annotation predicate, or None."""
+    dv = g.value(pred, SH.defaultValue)
+    return dv if isinstance(dv, Literal) else None
+
+def _annotation_in(g, pred):
+    """Return the sh:in choices for an annotation predicate as a list of strings,
+    in declared list order. Returns [] if no sh:in is set."""
+    head = g.value(pred, SH["in"])
+    if head is None:
+        return []
+    try:
+        items = list(Collection(g, head))
+    except Exception:
+        return []
+    return [str(x) for x in items if isinstance(x, Literal)]
+
+def _annotation_condition(g, pred):
+    """Parse the sh:condition / sh:property / sh:path / sh:hasValue chain on an
+    annotation predicate. Returns (path_uri, expected_value) or None.
+    Only the single-property guard pattern from the skill is supported; anything
+    more elaborate degrades to None (i.e. unconditional prompt)."""
+    cond = g.value(pred, SH.condition)
+    if cond is None:
+        return None
+    prop = g.value(cond, SH.property)
+    if prop is None:
+        return None
+    path = g.value(prop, SH.path)
+    expected = g.value(prop, SH.hasValue)
+    if path is None or expected is None:
+        return None
+    return (path, expected)
+
+def _class_effective_value(graphs, cls, path):
+    """Return the first asserted value for (cls, path, *) across the given
+    graphs, or None if no triple exists."""
+    for g in graphs:
+        for _, _, o in g.triples((cls, path, None)):
+            return o
+    return None
+
+def _value_matches(actual, expected):
+    """Loose equality used for sh:hasValue checks. Compares typed booleans
+    correctly (so true == "true"^^xsd:boolean == "1" all match) and falls back
+    to string equality otherwise."""
+    if actual is None:
+        return False
+    if isinstance(actual, Literal) and isinstance(expected, Literal):
+        try:
+            ap = actual.toPython()
+            ep = expected.toPython()
+            if isinstance(ep, bool) or isinstance(ap, bool):
+                # Coerce common boolean-ish strings on either side
+                def _b(x):
+                    if isinstance(x, bool): return x
+                    if isinstance(x, str): return x.strip().lower() in ("1", "true", "yes")
+                    return bool(x)
+                return _b(ap) == _b(ep)
+            return ap == ep
+        except Exception:
+            pass
+    return str(actual) == str(expected)
+
+def _condition_satisfied(union, cls, pred, *graphs):
+    """True if the predicate has no sh:condition, or if its condition holds for
+    `cls`. The condition's path may itself have an sh:defaultValue, which is
+    used as a fallback when the class doesn't assert the path explicitly."""
+    cond = _annotation_condition(union, pred)
+    if cond is None:
+        return True
+    path, expected = cond
+    actual = _class_effective_value(graphs, cls, path)
+    if actual is None:
+        actual = _annotation_default(union, path)  # fall back to default
+    return _value_matches(actual, expected)
+
+def _bool_from_input(ans):
+    """Parse a user-typed boolean. Accepts 1/0, true/false, yes/no, t/f, y/n.
+    Returns True, False, or None for unrecognized input."""
+    a = ans.strip().lower()
+    if a in ("1", "true", "t", "yes", "y"): return True
+    if a in ("0", "false", "f", "no", "n"): return False
+    return None
+
+def _prompt_boolean(label, current_str, default):
+    """Render a boolean prompt in the spec format. Returns 'k', 'd', '' (skip),
+    True, or False. `default` is an rdflib.Literal (or None); shown when no
+    current value exists so the user can accept it via 'k' or blank.
+    """
+    has_default = default is not None
+    default_str = ""
+    if has_default:
+        try:
+            default_str = "true" if bool(default.toPython()) else "false"
+        except Exception:
+            default_str = str(default)
+    head = f"\n    {label}  [current: {current_str}"
+    if has_default and current_str == "—":
+        head += f", default: {default_str}"
+    head += "]"
+    print(head)
+    print("      0) false")
+    print("      1) true")
+    ans = _ask("      Choice (0–1, k=keep, d=delete, blank=skip): ", "")
+    if ans == "":
+        if current_str == "—" and has_default:
+            return bool(default.toPython())
+        return ""
+    al = ans.lower()
+    if al == "k":
+        if current_str == "—" and has_default:
+            return bool(default.toPython())
+        return "k"
+    if al == "d":
+        return "d"
+    parsed = _bool_from_input(ans)
+    if parsed is None:
+        print(f"      ✗ invalid choice '{ans}', skipping")
+        return ""
+    return parsed
+
+def _annotation_prompt_label(g, pred, sh):
+    """Human-readable prompt label for a discovered annotation predicate.
+    Prefers rdfs:label@en, falls back to the prefixed local name."""
+    for _, _, o in g.triples((pred, RDFS.label, None)):
+        if isinstance(o, Literal) and o.language == "en":
+            return str(o)
+    return sh(pred)
+
 def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
     """Interactively choose annotations for a non-DHC class (rec/brick/s223)
     and write them into dhc-app-metadata.ttl. Removes the chosen triples from
     drafts. The class itself is NOT copied to dhc-core.ttl — Brick/REC/s223
-    own its definition."""
-    # Build candidate predicate list: fixed catalog + extras already in drafts
-    fixed = [
-        (DHC["designView"],          None,  "Design View"),
-        (DHC["blocklyDisposition"],  None,  "Blockly disposition"),
-        (DHC["blocklyCategory"],     None,  "Blockly category"),
-        (DHC["blocklyParentProperty"], None,"Blockly parent property"),
-        (DHC["blocklyFieldType"],    None,  "Blockly field type"),
-        (DHC["blocklyBlockTemplate"], None, "Blockly block template"),
-        (DHC["defaultValue"],        None,  "Default value"),
-        (RDFS.label,    "de", "Label @de"),
-        (RDFS.label,    "fr", "Label @fr"),
-        (RDFS.comment,  "de", "Comment @de"),
-        (RDFS.comment,  "fr", "Comment @fr"),
+    own its definition.
+
+    Prompts are driven entirely by the metadata TTL: `sh:in` gives enum
+    choices, `rdfs:range xsd:boolean` triggers the boolean prompt, and
+    `sh:condition` filters out predicates that don't apply to this class.
+    Order follows the file's § Application annotation property definitions
+    section (see APP_ANNOTATION_ORDER).
+    """
+    fixed = [(p, None, _annotation_prompt_label(union, p, sh))
+             for p in APP_ANNOTATION_ORDER]
+    # Localized label/comment slots are always offered, regardless of the
+    # discovered annotation properties.
+    fixed += [
+        (RDFS.label,   "de", "Label @de"),
+        (RDFS.label,   "fr", "Label @fr"),
+        (RDFS.comment, "de", "Comment @de"),
+        (RDFS.comment, "fr", "Comment @fr"),
     ]
     fixed_keys = {(p, lang) for p, lang, _ in fixed}
 
@@ -648,15 +863,21 @@ def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
 
     print(f"\n  Enrich external class: {sh(cls)}")
     print(f"  Annotations land in dhc-app-metadata.ttl. Empty input = skip.")
-    print(f"  Type 'k' to keep current value, 'd' to delete it.\n")
+    print(f"  Type 'k' to keep current, 'd' to delete, 'c' for 'claude_to_do' placeholder.\n")
 
     candidates = fixed + extras
     for pred, lang, label in candidates:
+        # sh:condition filter — skip silently if the guard is unsatisfied for
+        # this class. Localized label/comment slots have no condition so they
+        # always pass.
+        if not _condition_satisfied(union, cls, pred,
+                                    tbox_meta, drafts_core, drafts_meta):
+            continue
+
         # Current values: tbox_meta first (authoritative after a prior promote),
         # then drafts as the fallback for never-promoted classes.
         cur = []
-        cur_in_tbox = False
-        for g, is_tbox in [(tbox_meta, True), (drafts_core, False), (drafts_meta, False)]:
+        for g in (tbox_meta, drafts_core, drafts_meta):
             hits = []
             for _, _, o in g.triples((cls, pred, None)):
                 if isinstance(o, Literal) and lang and o.language != lang: continue
@@ -664,26 +885,37 @@ def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
                 hits.append(o)
             if hits and not cur:
                 cur = hits
-                cur_in_tbox = is_tbox
 
         cur_str = ", ".join(repr(str(x)) for x in cur) if cur else "—"
 
-        if pred in ENUM_CHOICES:
-            ans = _prompt_enum(label, ENUM_CHOICES[pred], cur_str)
+        is_boolean = _annotation_range(union, pred) == XSD.boolean
+        choices = _annotation_in(union, pred) if not is_boolean else []
+        default = _annotation_default(union, pred)
+        if choices:
+            default_str = str(default) if default is not None else ""
+            ans = _prompt_enum(label, choices, cur_str, default_str)
+            # If the user accepted the default via 'k' or blank-with-default,
+            # translate to the literal value so the write block stores it.
+            if ans == "" and cur_str == "—" and default is not None:
+                ans = str(default)
+            elif ans == "k" and cur_str == "—" and default is not None:
+                ans = str(default)
+        elif is_boolean:
+            ans = _prompt_boolean(label, cur_str, default)
         else:
-            ans = _ask(f"\n    {label}  [current: {cur_str}]\n      (k=keep, d=delete, blank=skip, or type new value): ", "")
+            ans = _ask(f"\n    {label}  [current: {cur_str}]\n      (k=keep, d=delete, c=claude_to_do, blank=skip, or type new value): ", "")
 
         if ans == "":
             # skip — no change, leave any existing draft triples where they are
             continue
-        if ans.lower() == "k":
+        if isinstance(ans, str) and ans.lower() == "k":
             # keep: move existing draft triples to tbox_meta
             for o in cur:
                 tbox_meta.add((cls, pred, o))
                 drafts_core.remove((cls, pred, o))
                 drafts_meta.remove((cls, pred, o))
             continue
-        if ans.lower() == "d":
+        if isinstance(ans, str) and ans.lower() == "d":
             # delete from drafts AND tbox (covers both never-promoted and
             # already-promoted classes)
             for o in list(cur):
@@ -691,46 +923,67 @@ def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
             drafts_core.remove((cls, pred, None))
             drafts_meta.remove((cls, pred, None))
             continue
+        if isinstance(ans, str) and ans.lower() == "c" and not choices and not is_boolean:
+            # placeholder for AI to fill in later
+            ans = "claude_to_do"
 
         # set new value (replace any existing)
         drafts_core.remove((cls, pred, None))
         drafts_meta.remove((cls, pred, None))
         tbox_meta.remove((cls, pred, None))
-        if pred in (RDFS.label, RDFS.comment) and lang:
+        if isinstance(ans, bool):
+            tbox_meta.add((cls, pred, Literal(ans, datatype=XSD.boolean)))
+        elif pred in (RDFS.label, RDFS.comment) and lang:
             tbox_meta.add((cls, pred, Literal(ans, lang=lang)))
         else:
             tbox_meta.add((cls, pred, Literal(ans)))
 
+def _purge_subject(cls, graphs_named):
+    """Remove every triple about cls (subject and object) plus its rdfs:domain
+    properties and enum instances, across the given (name, graph) pairs.
+    Returns a summary {name: count, ..., 'props': [...], 'enums': [...]}."""
+    summary = {name: 0 for name, _ in graphs_named}
+    all_graphs = [g for _, g in graphs_named]
+    props = _related_property_uris(cls, *all_graphs)
+    enums = _enum_instance_uris(cls, *all_graphs)
+
+    for name, g in graphs_named:
+        for p, o in list(g.predicate_objects(cls)):
+            g.remove((cls, p, o)); summary[name] += 1
+        for s, p in list(g.subject_predicates(cls)):
+            g.remove((s, p, cls)); summary[name] += 1
+        for p_uri in props:
+            for p, o in list(g.predicate_objects(p_uri)):
+                g.remove((p_uri, p, o)); summary[name] += 1
+            for s, p in list(g.subject_predicates(p_uri)):
+                g.remove((s, p, p_uri)); summary[name] += 1
+        for i_uri in enums:
+            for p, o in list(g.predicate_objects(i_uri)):
+                g.remove((i_uri, p, o)); summary[name] += 1
+
+    summary["props"] = [str(p) for p in props]
+    summary["enums"] = [str(i) for i in enums]
+    return summary
+
 def delete_dhc_class(cls, tbox_core, tbox_meta, union):
-    """Remove a dhc: class (and its properties + enum instances) from both
-    tbox files. External classes are refused — promote them instead."""
+    """Remove a dhc: class from the two tbox files only. Drafts are left alone.
+    External classes are refused — promote them instead."""
     if not _is_dhc(cls):
         print(f"  ✗ {cls} is not in the dhc: namespace. Refusing to delete.")
         print(f"    External classes are owned by Brick/REC/s223. Use option [4]")
         print(f"    to update their dhc-app-metadata.ttl annotations instead.")
         return None
+    return _purge_subject(cls, [("core", tbox_core), ("meta", tbox_meta)])
 
-    summary = {"core": 0, "meta": 0, "props": [], "enums": []}
-
-    # collect related uris before removal
-    props = _related_property_uris(cls, tbox_core, tbox_meta)
-    enums = _enum_instance_uris(cls, tbox_core, tbox_meta)
-
-    for g_name, g in [("core", tbox_core), ("meta", tbox_meta)]:
-        for p, o in list(g.predicate_objects(cls)):
-            g.remove((cls, p, o)); summary[g_name] += 1
-        for s, p in list(g.subject_predicates(cls)):
-            g.remove((s, p, cls)); summary[g_name] += 1
-        for p_uri in props:
-            for p, o in list(g.predicate_objects(p_uri)):
-                g.remove((p_uri, p, o)); summary[g_name] += 1
-        for i_uri in enums:
-            for p, o in list(g.predicate_objects(i_uri)):
-                g.remove((i_uri, p, o)); summary[g_name] += 1
-
-    summary["props"] = [str(p) for p in props]
-    summary["enums"] = [str(i) for i in enums]
-    return summary
+def purge_dhc_class_everywhere(cls, tbox_core, tbox_meta, drafts_core, drafts_meta):
+    """Fully purge a dhc: class from BOTH tbox files AND drafts."""
+    if not _is_dhc(cls):
+        print(f"  ✗ {cls} is not in the dhc: namespace. Refusing to delete.")
+        return None
+    return _purge_subject(cls, [
+        ("core", tbox_core), ("meta", tbox_meta),
+        ("draft_core", drafts_core), ("draft_meta", drafts_meta),
+    ])
 
 # ── Conf ──────────────────────────────────────────────────────────────────────
 def _cp(): return Path(__file__).resolve().parent / "onto_explorer.conf"
@@ -769,6 +1022,8 @@ def _reload(union, file_graphs):
             print(f"     {Path(path).name}: {len(fg):,} triples")
         except Exception as e:
             print(f"  [error] reload {path}: {e}", file=sys.stderr)
+    _refresh_app_annotation_preds(file_graphs[TBOX_METADATA],
+                                  file_graphs[DRAFT_METADATA])
 
 def _serialize_all(file_graphs, union):
     """Re-serialize the four writable files in tbox order: tbox first, then drafts.
@@ -786,10 +1041,14 @@ def main():
     print("║       Brick + REC + s223 + DHC (T-Box curator)      ║")
     print("╚══════════════════════════════════════════════════════╝\n")
     g, file_graphs = load_graph()
+    _refresh_app_annotation_preds(file_graphs[TBOX_METADATA],
+                                  file_graphs[DRAFT_METADATA])
     sh = make_shortener(g)
     conf = load_conf()
     nc = len(set(s for s in g.subjects(RDF.type, OWL.Class) if isinstance(s, URIRef)))
-    print(f"\n  {len(g):,} triples, {nc:,} classes\n")
+    print(f"\n  {len(g):,} triples, {nc:,} classes")
+    print(f"  app annotation predicates: {len(APP_ANNOTATION_PREDS)} discovered")
+    print(f"  location flag (D·A): D=draft, C=tbox/dhc-core.ttl, A=tbox/dhc-app-metadata.ttl\n")
     last = conf.get("last_class", "brick:Equipment")
 
     while True:
@@ -823,25 +1082,29 @@ def main():
         lb = get_label(g, cls); ps = get_parents(g, cls); ch = get_children(g, cls)
         nd = count_desc(g, cls); op = get_own_properties(cls, g, sh)
         cm = g.value(cls, RDFS.comment)
-        print(f"\n  {sh(cls)}" + (f" — {lb}" if lb else ""))
+        flag = _location_flag(cls, file_graphs)
+        print(f"\n  {sh(cls)}" + (f" — {lb}" if lb else "") + flag)
         if cm: print(f"  {cm}")
         if ps: print(f"  Parents: {', '.join(sh(p) for p in ps)}")
         print(f"  Subclasses: {len(ch)} direct, {nd} total | Own properties: {len(op)}")
 
-        d = _ask("  Direction  [1] down  [2] up  [3] properties  [4] promote→tbox  [5] delete dhc:  (default=1): ", "1")
-        direction = int(d) if d in ("1","2","3","4","5") else 1
+        d = _ask("  Direction  [1] down  [2] up  [3] properties  [4] promote→tbox  [5] delete dhc: tbox  [6] purge dhc: all  (default=1): ", "1")
+        direction = int(d) if d in ("1","2","3","4","5","6") else 1
 
         maxd, show_p, show_inh = 99, False, True
         if direction == 1:
             ds = _ask(f"  Max depth (default=unlimited): ")
             maxd = int(ds) if ds.isdigit() else 99
-            sp = _ask("  Show inline properties [y/n] (default=n): ", "n")
+            sp = _ask("  Show inline properties [y/n] (default=n, structure-only): ", "n")
+            show_p = sp.lower() in ("y","yes")
+        elif direction == 2:
+            sp = _ask("  Show inline properties [y/n] (default=n, structure-only): ", "n")
             show_p = sp.lower() in ("y","yes")
         elif direction == 3:
             ih = _ask("  Include inherited [y/n] (default=y): ", "y")
             show_inh = ih.lower() not in ("n","no")
 
-        if direction in (4, 5):
+        if direction in (4, 5, 6):
             print()
             tbox_core = file_graphs[TBOX_CORE]
             tbox_meta = file_graphs[TBOX_METADATA]
@@ -853,21 +1116,65 @@ def main():
                     in_drafts = (any(drafts_core.triples((cls, None, None)))
                                  or any(drafts_meta.triples((cls, None, None))))
                     if not in_drafts:
-                        print(f"  ✗ {sh(cls)} is not present in drafts/. Nothing to promote.")
-                        print(); continue
-                    print(f"  Promoting DHC class {sh(cls)} from drafts → tbox …")
-                    summ = promote_dhc_class(cls, drafts_core, drafts_meta,
-                                             tbox_core, tbox_meta, g)
-                    _serialize_all(file_graphs, g)
-                    _reload(g, file_graphs)
-                    sh = make_shortener(g)
-                    print(f"  ✅ moved {summ['core']} → dhc-core.ttl, "
-                          f"{summ['meta']} → dhc-app-metadata.ttl")
-                    if summ["props"]:
-                        print(f"     properties: {', '.join(summ['props'][:5])}"
-                              + (f" (+{len(summ['props'])-5} more)" if len(summ['props']) > 5 else ""))
-                    if summ["enums"]:
-                        print(f"     enum instances: {len(summ['enums'])} migrated")
+                        in_tbox = (any(tbox_core.triples((cls, None, None)))
+                                   or any(tbox_meta.triples((cls, None, None))))
+                        if not in_tbox:
+                            print(f"  ✗ {sh(cls)} is not present in drafts/ or tbox/. Nothing to promote.")
+                            print(); continue
+                        # already promoted — skip migration, jump straight to annotation review
+                        print(f"  {sh(cls)} already in tbox/. Reviewing annotations only.")
+                    else:
+                        # preview what will move
+                        n_class_triples = (len(list(drafts_core.predicate_objects(cls)))
+                                           + len(list(drafts_meta.predicate_objects(cls))))
+                        props = _related_property_uris(cls, drafts_core, drafts_meta)
+                        props = [p for p in props
+                                 if not (_is_property(tbox_core, p) or _is_property(tbox_meta, p))]
+                        enums = _enum_instance_uris(cls, drafts_core, drafts_meta)
+                        print(f"  Promote {sh(cls)} from drafts → tbox:")
+                        print(f"    class triples to move: {n_class_triples}")
+                        if props:
+                            print(f"    properties (rdfs:domain={sh(cls)}): "
+                                  + ", ".join(sh(p) for p in list(props)[:6])
+                                  + (f" (+{len(props)-6} more)" if len(props) > 6 else ""))
+                        if enums:
+                            print(f"    enum instances: {len(enums)}")
+                        ok = _ask("  Proceed? [Y/n]: ", "y")
+                        if ok.lower() in ("n", "no"):
+                            print("  cancelled"); print(); continue
+                        summ = promote_dhc_class(cls, drafts_core, drafts_meta,
+                                                 tbox_core, tbox_meta, g)
+                        _serialize_all(file_graphs, g)
+                        _reload(g, file_graphs)
+                        # refresh local graph references after _reload (they're the same
+                        # Graph objects, but rebind for safety)
+                        tbox_core = file_graphs[TBOX_CORE]
+                        tbox_meta = file_graphs[TBOX_METADATA]
+                        drafts_core = file_graphs[DRAFT_CORE]
+                        drafts_meta = file_graphs[DRAFT_METADATA]
+                        sh = make_shortener(g)
+                        print(f"  ✅ moved {summ['core']} → dhc-core.ttl, "
+                              f"{summ['meta']} → dhc-app-metadata.ttl")
+                        if summ["props"]:
+                            print(f"     properties: {', '.join(sh(URIRef(p)) for p in summ['props'][:5])}"
+                                  + (f" (+{len(summ['props'])-5} more)" if len(summ['props']) > 5 else ""))
+                        if summ["enums"]:
+                            print(f"     enum instances: {len(summ['enums'])} migrated")
+
+                    # Annotation review for the class itself + any related properties
+                    review = _ask("  Review annotations interactively? [Y/n]: ", "y")
+                    if review.lower() not in ("n", "no"):
+                        enrich_external_class(cls, drafts_core, drafts_meta,
+                                              tbox_meta, g, sh)
+                        rel_props = _related_property_uris(cls, tbox_core, tbox_meta)
+                        for p_uri in sorted(rel_props, key=str):
+                            print(f"\n  ── property: {sh(p_uri)} ──")
+                            enrich_external_class(p_uri, drafts_core, drafts_meta,
+                                                  tbox_meta, g, sh)
+                        _serialize_all(file_graphs, g)
+                        _reload(g, file_graphs)
+                        sh = make_shortener(g)
+                        print(f"  ✅ {sh(cls)} annotations updated in dhc-app-metadata.ttl")
                 else:
                     enrich_external_class(cls, drafts_core, drafts_meta,
                                           tbox_meta, g, sh)
@@ -891,6 +1198,25 @@ def main():
                             print(f"     enum instances removed: {len(summ['enums'])}")
                 else:
                     print("  cancelled")
+            elif direction == 6:
+                ok = _ask(f"  Purge {sh(cls)} from tbox AND drafts? [y/N]: ", "n")
+                if ok.lower() in ("y", "yes"):
+                    summ = purge_dhc_class_everywhere(cls, tbox_core, tbox_meta,
+                                                     drafts_core, drafts_meta)
+                    if summ is not None:
+                        _serialize_all(file_graphs, g)
+                        _reload(g, file_graphs)
+                        sh = make_shortener(g)
+                        print(f"  ✅ purged: tbox/dhc-core.ttl={summ['core']}, "
+                              f"tbox/dhc-app-metadata.ttl={summ['meta']}, "
+                              f"draft/dhc-core.ttl={summ['draft_core']}, "
+                              f"draft/dhc-app-metadata.ttl={summ['draft_meta']}")
+                        if summ["props"]:
+                            print(f"     properties removed: {len(summ['props'])}")
+                        if summ["enums"]:
+                            print(f"     enum instances removed: {len(summ['enums'])}")
+                else:
+                    print("  cancelled")
             print()
             continue
 
@@ -900,12 +1226,12 @@ def main():
 
         if direction == 1:
             if use_csv:
-                rows = []; do_tree(g, sh, cls, maxd=maxd, rows=rows); write_csv(rows, out)
-            else: do_tree(g, sh, cls, maxd=maxd, show_p=show_p)
+                rows = []; do_tree(g, sh, cls, maxd=maxd, rows=rows, file_graphs=file_graphs); write_csv(rows, out)
+            else: do_tree(g, sh, cls, maxd=maxd, show_p=show_p, file_graphs=file_graphs)
         elif direction == 2:
             if use_csv:
-                rows = []; do_parents(g, sh, cls, rows=rows); write_csv(rows, out)
-            else: do_parents(g, sh, cls)
+                rows = []; do_parents(g, sh, cls, show_p=show_p, rows=rows, file_graphs=file_graphs); write_csv(rows, out)
+            else: do_parents(g, sh, cls, show_p=show_p, file_graphs=file_graphs)
         elif direction == 3:
             if use_csv:
                 rows = []; do_properties(g, sh, cls, show_inh=show_inh, rows=rows); write_csv(rows, out)

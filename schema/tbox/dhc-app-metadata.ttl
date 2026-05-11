@@ -1,3 +1,4 @@
+@prefix sh:      <http://www.w3.org/ns/shacl#> .
 @prefix brick:   <https://brickschema.org/schema/Brick#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix dhc:     <https://digitalhome.cloud/ontology#> .
@@ -37,13 +38,36 @@
 # ────────────────────────────────────────────────────────────
 # § Application annotation property definitions
 # ────────────────────────────────────────────────────────────
+dhc:appMode
+  a owl:AnnotationProperty ;
+  rdfs:label "App Mode"@en, "App-Modus"@de, "Mode d'application"@fr ;
+  rdfs:comment """Tailors the application interface:
+- private: Simplified UI for homeowners.
+- residential-pro: For installers/electricians.
+- tertiary: For building managers.
+- industrial: For high-power/factory environments."""@en ;
+  sh:defaultValue "private" ;
+  sh:in ("private" "residential-pro" "tertiary" "industrial") .
+
+dhc:isInstantiated a owl:AnnotationProperty ;
+    rdfs:label "Wird instanziiert"@de,
+        "Is instantiated"@en,
+        "Est instancié"@fr ;
+    rdfs:comment "Boolean flag: true if this class is explicitly created as an instance in the A-Box; false if it serves only as an abstract template."@en ;
+    rdfs:range xsd:boolean ;
+    sh:defaultValue true .
 
 dhc:blocklyBlockTemplate a owl:AnnotationProperty ;
     rdfs:label "Blockly-Block-Vorlage"@de,
         "Blockly Block Template"@en,
         "Modèle de bloc Blockly"@fr ;
-    rdfs:comment "Pointer to a block template in dhc-blockly-blockTemplates.json, consumed by the Modeller pipeline."@en .
-
+    rdfs:comment "Pointer to a block template in dhc-blockly-blockTemplates.json, consumed by the Modeller pipeline."@en ;
+    sh:condition [
+    sh:property [
+      sh:path dhc:isInstantiated ;
+      sh:hasValue "true"^^xsd:boolean ;
+    ]
+  ] .
 dhc:blocklyCategory a owl:AnnotationProperty ;
     rdfs:label "Blockly-Kategorie"@de,
         "Blockly Category"@en,
@@ -54,13 +78,15 @@ dhc:blocklyDisposition a owl:AnnotationProperty ;
     rdfs:label "Blockly-Disposition"@de,
         "Blockly Disposition"@en,
         "Disposition Blockly"@fr ;
-    rdfs:comment "How this class appears in the Blockly toolbox: block (draggable), variable (cross-cutting), excluded (hidden)."@en .
+    rdfs:comment "How this class appears in the Blockly toolbox: block (draggable), variable (cross-cutting), excluded (hidden)."@en ;
+    sh:in ("block" "variable" "excluded") .
 
 dhc:blocklyFieldType a owl:AnnotationProperty ;
     rdfs:label "Blockly-Feldtyp"@de,
         "Blockly Field Type"@en,
         "Type de champ Blockly"@fr ;
-    rdfs:comment "Field widget type in Blockly: number, text, dropdown, checkbox."@en .
+    rdfs:comment "Field widget type in Blockly: number, text, dropdown, checkbox."@en ;
+    sh:in ("text" "number" "dropdown" "checkbox") .
 
 dhc:blocklyParentProperty a owl:AnnotationProperty ;
     rdfs:label "Blockly-Elterneigenschaft"@de,
@@ -78,21 +104,85 @@ dhc:designView a owl:AnnotationProperty ;
     rdfs:label "Entwurfsansicht"@de,
         "Design View"@en,
         "Vue de conception"@fr ;
-    rdfs:comment "Assigns a class or property to a toolbox tab in the SmartHome Designer: governance, spatial, building, electrical, plumbing, heating, network, automation, compliance."@en .
+    rdfs:comment "Assigns a class or property to a toolbox tab in the SmartHome Designer: governance, spatial, building, electrical, plumbing, heating, network, automation, compliance."@en ;
+    sh:in ("governance" "spatial" "building" "electrical" "plumbing" "heating" "network" "automation" "compliance") .
+
 
 
 # ════════════════════════════════════════════════════════════
 # VIEW: governance
 # ════════════════════════════════════════════════════════════
 
+dhc:AWSCognitoGroups rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyDisposition "excluded" ;
+    dhc:designView "governance" .
+
+dhc:AWSCognitoId rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyDisposition "excluded" ;
+    dhc:designView "governance" .
+
+dhc:User rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "governance" .
+
+rec:Person rdfs:label "claude_to_do"@en ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyDisposition "excluded" ;
+    dhc:designView "governance" .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: spatial
 # ════════════════════════════════════════════════════════════
 
+dhc:Barbecue rdfs:label "Grill"@de,
+        "Barbecue"@fr ;
+    rdfs:comment "q"@fr ;
+    dhc:blocklyDisposition "variable" ;
+    dhc:designView "spatial" .
+
+dhc:DetachedHouse rdfs:label "Freistehendes Haus"@de,
+        "Maison isolée"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyBlockTemplate "rec:Building" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
 dhc:DigitalHome rdfs:label "Digitales Zuhause"@de,
         "Maison numérique"@fr ;
-    dhc:designView "spatial" .
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated "1" .
+
+dhc:GrandTownhouse rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyBlockTemplate "rec:Building" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:RowHouse rdfs:label "Reihenhaus"@de,
+        "Maison de rangée"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyBlockTemplate "rec:Building" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:SemiDetachedHouse rdfs:label "Doppelhaushälfte"@de,
+        "Maison jumelée"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyBlockTemplate "rec:Building" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:createdAt rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr .
 
 dhc:geocodeVerified dhc:designView "spatial" .
 
@@ -103,12 +193,43 @@ dhc:placeIdProvider dhc:designView "spatial" .
 dhc:preferredLanguage rdfs:label "Bevorzugte Sprache"@de,
         "Langue préférée"@fr .
 
-rec:Bathroom dhc:designView "spatial" .
+rec:Apartment rdfs:label "claude_to_do"@en ;
+    rdfs:comment "claude_to_do"@fr ;
+    rdfs:subClassOf rec:Space ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated false .
 
-rec:Bedroom rdfs:comment "q"@fr ;
+rec:Architecture rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated false .
+
+rec:Bathroom rdfs:comment "claude_to_do"@de ;
+    dhc:defaultValue "claude_to_do" ;
     dhc:designView "spatial" .
 
-rec:Building dhc:designView "spatial" .
+rec:Building rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated false .
+
+rec:Hospital rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyBlockTemplate "rec:Building" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+rec:MeditationRoom rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyBlockTemplate "dhc_blockly_room_template" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" .
+
+rec:Space rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated false .
 
 rec:SubBuilding rdfs:label "Nebengebäude"@de,
         "Outbuilding"@en,
@@ -124,10 +245,27 @@ rec:SubBuilding rdfs:label "Nebengebäude"@de,
 # VIEW: building
 # ════════════════════════════════════════════════════════════
 
+rec:Bedroom rdfs:label "Schlafzimmer"@de,
+        "Chambre"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "building" .
+
+rec:Level rdfs:label "Stockwerk"@de,
+        "Étage"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "building" .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: electrical
 # ════════════════════════════════════════════════════════════
+
+brick:Building_Disconnect_Switch rdfs:label "Agent de Coupure Générale de la Couronne (AGCP)"@fr ;
+    rdfs:comment "Le sectionneur de bâtiment, généralement appelé « Agent de Coupure Générale de la Couronne » (AGCP) ou « disjoncteur d'abonné », est le principal dispositif de sécurité qui coupe l'alimentation électrique de l'ensemble d'un bâtiment."@fr ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "electrical" .
 
 
 # ════════════════════════════════════════════════════════════
@@ -153,4 +291,36 @@ rec:SubBuilding rdfs:label "Nebengebäude"@de,
 # ════════════════════════════════════════════════════════════
 # VIEW: compliance
 # ════════════════════════════════════════════════════════════
+
+dhc:Norm rdfs:label "Norm"@de,
+        "Norme"@fr ;
+    dhc:designView "compliance" .
+
+dhc:Norm_NFC14100 rdfs:label "NF C 14-100"@de,
+        "NF C 14-100"@fr ;
+    dhc:designView "compliance" .
+
+dhc:Norm_NFC15100 rdfs:label "NF C 15-100"@de,
+        "NF C 15-100"@fr ;
+    dhc:designView "compliance" .
+
+dhc:normCategory rdfs:label "Norm-Kategorie"@de,
+        "catégorie de norme"@fr ;
+    dhc:designView "compliance" .
+
+dhc:normCountry rdfs:label "Norm-Land"@de,
+        "pays de la norme"@fr ;
+    dhc:designView "compliance" .
+
+dhc:normDomain rdfs:label "Norm-Domäne"@de,
+        "domaine de la norme"@fr ;
+    dhc:designView "compliance" .
+
+dhc:normId rdfs:label "Norm-ID"@de,
+        "identifiant de norme"@fr ;
+    dhc:designView "compliance" .
+
+dhc:normWeight rdfs:label "Norm-Gewichtung"@de,
+        "poids de la norme"@fr ;
+    dhc:designView "compliance" .
 

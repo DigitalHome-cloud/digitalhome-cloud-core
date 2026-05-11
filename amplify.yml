@@ -1,0 +1,24 @@
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        - npm ci
+        - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+frontend:
+  phases:
+    build:
+      commands:
+        # Amplify Hosting requires a non-empty artifact tree even when the
+        # app is backend-only — produce a placeholder index.html so the
+        # final "hosted deploy" step doesn't error out.
+        - mkdir -p hosted-stub
+        - >
+          printf '%s' '<!doctype html><meta charset=utf-8><title>DHC backend deployer</title><body style="font-family:system-ui;padding:2rem;background:#0f172a;color:#e5e7eb"><h1>DHC backend deployer</h1><p>This Amplify Hosting app exists only to run <code>npx ampx pipeline-deploy</code> on push. The actual frontends live at <a href="https://designer.digitalhome.cloud" style="color:#38bdf8">designer</a> / <a href="https://portal.digitalhome.cloud" style="color:#38bdf8">portal</a> / <a href="https://modeler.digitalhome.cloud" style="color:#38bdf8">modeler</a>.digitalhome.cloud.</p>' > hosted-stub/index.html
+  artifacts:
+    baseDirectory: hosted-stub
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
