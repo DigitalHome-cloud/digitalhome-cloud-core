@@ -78,6 +78,8 @@ const tablesNeedingPITR = [
   "LibraryItem",
   "DigitalHome",
   "SmartHomeDesign",
+  "DeviceModel",
+  "DeviceInstance",
 ] as const;
 for (const tableName of tablesNeedingPITR) {
   backend.data.resources.cfnResources.amplifyDynamoDbTables[

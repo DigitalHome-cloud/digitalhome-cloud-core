@@ -1,10 +1,12 @@
 /**
  * dhcDesignStorageProxy — AppSync Lambda resolver for multi-owner S3 access.
  *
- * Handles three AppSync mutations:
+ * Handles these AppSync mutations:
  *   - requestDesignReadUrl(smartHomeId, fileName)         (legacy, design save/load)
  *   - requestDesignWriteUrl(smartHomeId, fileName, ct?)   (legacy, design save/load)
  *   - requestDigitalHomeReadUrl(smartHomeId, fileName)    (step-1 designtime read)
+ *   - requestDeviceFileReadUrl(smartHomeId, deviceType, serialNumber, fileName)
+ *   - requestDeviceFileWriteUrl(smartHomeId, deviceType, serialNumber, fileName, ct?)
  *
  * Path & ownership routing:
  *   requestDesign{Read,Write}Url → key  = tenant/{smartHomeId}/{fileName}
@@ -12,6 +14,9 @@
  *   requestDigitalHomeReadUrl    → key  = {Private|Public}/DigitalHomes/{id}/designtime/{fileName}
  *                                  authz = DigitalHome.owners       + dhc-admins
  *                                  root  = Public if DigitalHome.isDemo else Private
+ *   requestDeviceFile{Read,Write}Url
+ *                                → key  = {Private|Public}/DigitalHomes/{id}/devices/{deviceType}/{serialNumber}/{fileName}
+ *                                  authz = DigitalHome.owners       + dhc-admins
  *
  * Returns a 5-minute pre-signed S3 URL.
  *
@@ -54,6 +59,8 @@ interface ProxyArgs {
   smartHomeId: string;
   fileName: string;
   contentType?: string;
+  deviceType?: string;
+  serialNumber?: string;
 }
 
 interface ProxyResponse {
@@ -80,7 +87,8 @@ export const handler = async (
   // We only authorize the AppSync API with Cognito User Pool, so identity is
   // always the Cognito variant when the resolver is invoked. Narrow the union.
   const identity = event.identity as AppSyncIdentityCognito | undefined;
-  const { smartHomeId, fileName, contentType } = event.arguments ?? ({} as ProxyArgs);
+  const { smartHomeId, fileName, contentType, deviceType, serialNumber } =
+    event.arguments ?? ({} as ProxyArgs);
 
   if (!smartHomeId || !fileName) {
     throw new Error("smartHomeId and fileName are required");
@@ -140,6 +148,64 @@ export const handler = async (
       url,
       expiresAt: new Date(Date.now() + URL_TTL_SECONDS * 1000).toISOString(),
       contentType: null,
+    };
+  }
+
+  // ─── per-device spec/doc files ─────────────────────────────────────
+  if (
+    fieldName === "requestDeviceFileReadUrl" ||
+    fieldName === "requestDeviceFileWriteUrl"
+  ) {
+    if (!DIGITALHOME_TABLE) {
+      throw new Error("Server misconfigured: missing DIGITALHOME_TABLE_NAME");
+    }
+    if (!deviceType || !serialNumber) {
+      throw new Error("deviceType and serialNumber are required");
+    }
+    // Same safe-segment guard as fileName — blocks "/" and ".." traversal.
+    if (!FILE_NAME_RE.test(deviceType) || !FILE_NAME_RE.test(serialNumber)) {
+      throw new Error(
+        "Invalid deviceType/serialNumber: only [A-Za-z0-9._-] allowed"
+      );
+    }
+    const result = await ddb.send(
+      new GetItemCommand({
+        TableName: DIGITALHOME_TABLE,
+        Key: marshall({ smartHomeId }),
+      })
+    );
+    if (!result.Item) {
+      throw new Error(`DigitalHome ${smartHomeId} not found`);
+    }
+    const home = unmarshall(result.Item) as {
+      owners?: string[];
+      isDemo?: boolean;
+    };
+    if (!isOwner(home.owners || [])) {
+      throw new Error("Not authorized");
+    }
+    const root = home.isDemo ? "Public" : "Private";
+    const key = `${root}/DigitalHomes/${smartHomeId}/devices/${deviceType}/${serialNumber}/${fileName}`;
+    const url =
+      fieldName === "requestDeviceFileReadUrl"
+        ? await getSignedUrl(
+            s3,
+            new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+            { expiresIn: URL_TTL_SECONDS }
+          )
+        : await getSignedUrl(
+            s3,
+            new PutObjectCommand({
+              Bucket: BUCKET,
+              Key: key,
+              ContentType: contentType,
+            }),
+            { expiresIn: URL_TTL_SECONDS }
+          );
+    return {
+      url,
+      expiresAt: new Date(Date.now() + URL_TTL_SECONDS * 1000).toISOString(),
+      contentType: contentType ?? null,
     };
   }
 

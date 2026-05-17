@@ -16,11 +16,30 @@ import { createDigitalHome } from "../functions/createDigitalHome/resource";
  *   - createDigitalHome: structured-address create flow that produces the full
  *     "shell" (DDB row + Cognito group + S3 abox.ttl/graph.jsonld/data folder)
  *     per repos/core/experimental/abox/abox.md (Step 1).
+ *   - DeviceModel:    admin write, any signed-in user read (device-product
+ *                     catalogue — Brand/ModelNumber/DeviceType + S3 doc/img/specs)
+ *   - DeviceInstance: multi-owner + admin (per-SmartHome device inventory,
+ *                     keyed/indexed by smartHomeId — same pattern as
+ *                     SmartHomeDesign so the Designer can list a home's devices)
+ *   - requestDeviceFileReadUrl / requestDeviceFileWriteUrl: signed-URL mutations
+ *     (dhcDesignStorageProxy) for per-device spec/doc files under
+ *     {Private|Public}/DigitalHomes/{id}/devices/{type}/{serial}/{fileName}
  */
 
 const schema = a.schema({
   // ─── enums ────────────────────────────────────────────────────────
   Locale: a.enum(["EN", "FR", "DE"]),
+
+  // Top-level device taxonomy (organizational, app-level — NOT the T-Box).
+  // Sub-types live in the frontend constant; Brick `compatibleClasses` stays
+  // the optional semantic anchor.
+  DeviceCategory: a.enum([
+    "COMPUTING_IT",
+    "CONTROLLERS_AUTOMATION",
+    "FACILITIES_APPLIANCES",
+    "MEDIA_COMMUNICATION",
+    "SECURITY_MONITORING",
+  ]),
 
   // ─── models ───────────────────────────────────────────────────────
   UserProfile: a
@@ -95,6 +114,59 @@ const schema = a.schema({
     // SmartHome) instead of a full Scan (scales as the table grows).
     .secondaryIndexes((index) => [index("smartHomeId")]),
 
+  // DeviceModel — global device-product catalogue. PK is modelNumber (unique
+  // by construction). Admin-curated, any signed-in user reads (mirrors
+  // LibraryItem). S3 paths are stored as strings; assets live under
+  // public/catalogue/devices/{deviceType}/{modelNumber}/{docs,img,specs}.
+  DeviceModel: a
+    .model({
+      modelNumber: a.id().required(),
+      brand: a.string().required(),
+      deviceType: a.string().required(),
+      category: a.ref("DeviceCategory"),
+      description: a.string(),
+      region: a.string(),
+      standards: a.string().array(),
+      compatibleClasses: a.string().array(),
+      hasActorCapability: a.boolean(),
+      hasSensorCapability: a.boolean(),
+      hasControllerCapability: a.boolean(),
+      s3DocPath: a.string(),
+      s3ImgPath: a.string(),
+      s3SpecsPath: a.string(),
+      version: a.string().required(),
+    })
+    .identifier(["modelNumber"])
+    .authorization((allow) => [
+      allow.group("dhc-admins").to(["create", "update", "delete"]),
+      allow.authenticated().to(["read"]),
+    ]),
+
+  // DeviceInstance — a physical device deployed in one SmartHome. Keyed by the
+  // default Amplify id; indexed by smartHomeId so the Designer can list a
+  // home's devices cheaply (same rationale as SmartHomeDesign). Per-device
+  // spec/doc files live under
+  // {Private|Public}/DigitalHomes/{smartHomeId}/devices/{deviceType}/{serialNumber}/.
+  DeviceInstance: a
+    .model({
+      smartHomeId: a.string().required(),
+      owners: a.string().array(),
+      modelNumber: a.string().required(),
+      serialNumber: a.string().required(),
+      deviceType: a.string().required(),
+      purchaseDate: a.date(),
+      installationDate: a.date(),
+      firmwareVersion: a.string(),
+      status: a.string(),
+      location: a.string(),
+      s3SpecsPath: a.string(),
+    })
+    .authorization((allow) => [
+      allow.ownersDefinedIn("owners"),
+      allow.group("dhc-admins"),
+    ])
+    .secondaryIndexes((index) => [index("smartHomeId")]),
+
   // ─── custom return type for the signed-URL mutations ─────────────
   DesignStorageUrl: a.customType({
     url: a.string().required(),
@@ -162,6 +234,34 @@ const schema = a.schema({
     .arguments({
       smartHomeId: a.id().required(),
       fileName: a.string().required(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // Per-device spec/doc files. Key (built in the Lambda):
+  //   {Private|Public}/DigitalHomes/{smartHomeId}/devices/{deviceType}/{serialNumber}/{fileName}
+  // Authz: DigitalHome.owners + dhc-admins (same check as requestDigitalHomeReadUrl).
+  requestDeviceFileReadUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+      deviceType: a.string().required(),
+      serialNumber: a.string().required(),
+      fileName: a.string().required(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestDeviceFileWriteUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+      deviceType: a.string().required(),
+      serialNumber: a.string().required(),
+      fileName: a.string().required(),
+      contentType: a.string(),
     })
     .returns(a.ref("DesignStorageUrl"))
     .handler(a.handler.function(dhcDesignStorageProxy))
