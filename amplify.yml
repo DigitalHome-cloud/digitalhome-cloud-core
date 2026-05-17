@@ -3,7 +3,11 @@ backend:
   phases:
     build:
       commands:
-        - npm ci
+        # npm install (not npm ci): this package.json serves two roles
+        # (ontology test harness + Amplify backend) and the committed
+        # package-lock.json is not regenerated on every dep change, so a
+        # strict `npm ci` sync check would fail. `npm install` self-heals.
+        - npm install
         - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
 frontend:
   phases:

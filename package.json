@@ -1,11 +1,13 @@
 {
-  "name": "digitalhome-cloud-darkfactory",
-  "version": "2.0.0-gen2",
+  "name": "@dhc/digitalhome-cloud-core",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "DigitalHome.Cloud platform — umbrella repo. Hosts the AWS Amplify Gen 2 backend definition (TypeScript) shared by the Portal, Designer, and Modeler frontends.",
+  "description": "DigitalHome.Cloud Core — schema-only T-Box + per-norm C-Box SHACL profiles (DH-SPEC-200). Also hosts the platform's AWS Amplify Gen 2 backend (amplify/) — moved here so there is exactly one amplify/ level per repo.",
   "license": "Apache-2.0",
   "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
     "amplify:sandbox": "ampx sandbox",
     "amplify:sandbox:delete": "ampx sandbox delete",
     "amplify:generate": "ampx generate graphql-client-code",
@@ -14,11 +16,14 @@
   "devDependencies": {
     "@aws-amplify/backend": "^1.16.0",
     "@aws-amplify/backend-cli": "^1.7.0",
+    "@types/node": "^22.7.0",
+    "@zazuko/env-node": "^1.0.0",
     "aws-cdk": "^2.158.0",
     "aws-cdk-lib": "^2.158.0",
     "constructs": "^10.4.0",
+    "rdf-validate-shacl": "^0.6.0",
     "typescript": "^5.6.0",
-    "@types/node": "^22.7.0"
+    "vitest": "^3.0.0"
   },
   "dependencies": {
     "aws-amplify": "^6.6.0",

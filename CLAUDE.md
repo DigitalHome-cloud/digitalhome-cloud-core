@@ -18,6 +18,51 @@ No build scripts, no generated artifacts, no demo instances — just schema and
 tests. Downstream apps (Modeler, Designer) parse these files directly at build
 or runtime.
 
+> **This repo also hosts the platform's AWS Amplify Gen 2 backend** under
+> `amplify/` (see next section). That is the *only* non-schema concern living
+> here — it was moved out of the umbrella so there is exactly one `amplify/`
+> level per repo.
+
+## Amplify Gen 2 Backend
+
+This repo owns the single platform backend (Cognito, AppSync/GraphQL,
+DynamoDB, S3, Lambdas), defined in TypeScript under `amplify/`
+(`backend.ts`, `auth/resource.ts`, `data/resource.ts`, `storage/resource.ts`,
+`functions/*/`). It was moved here from the umbrella root because having an
+`amplify/` directory at the umbrella *and* a submodule that Amplify Hosting
+builds caused "amplify on two levels of a repo" conflicts.
+
+Portal, Designer, and Modeler are **frontend-only consumers** — each commits
+its own `src/amplify_outputs.json` (public Cognito/AppSync/S3 IDs).
+
+```bash
+# Local sandbox (one stack per developer) — run from THIS repo:
+cd ~/digitalhomeCloud/digitalhome-cloud-darkfactory/repos/core
+npm install
+npx ampx sandbox                 # foreground watch; --once for one-shot
+# propagate the regenerated outputs into each app:
+cp amplify_outputs.json ../portal/src/
+cp amplify_outputs.json ../designer/src/
+cp amplify_outputs.json ../modeler/src/
+```
+
+- **CI/CD:** `amplify.yml` (this repo) runs `npm install` then
+  `npx ampx pipeline-deploy --branch $AWS_BRANCH` on push — this is a
+  backend-only Amplify Hosting app (the `frontend` phase only emits a stub
+  `index.html`). Each frontend app's own `amplify.yml` pulls the deployed
+  outputs via `npx ampx generate outputs --branch … --app-id …`.
+- `npm install` (not `npm ci`) because this `package.json` serves both the
+  ontology test harness *and* the Amplify backend, and the committed
+  `package-lock.json` is not regenerated on every dependency change.
+- **Stage is live:** branch `stage` → stage backend, consumed by the stage
+  Designer (operational). Portal/Modeler outputs still point at the previous
+  pool — re-point pending.
+- For authoring patterns, sandbox workflow, and CDK escape hatches see the
+  umbrella's `dhc-amplify-gen2` skill
+  (`.claude/skills/dhc-amplify-gen2/SKILL.md`).
+- `amplify_outputs.json`, `amplify_outputs.d.ts`, `.amplify/` are gitignored
+  (per-developer sandbox state).
+
 ## Repository Layout
 
 ```
