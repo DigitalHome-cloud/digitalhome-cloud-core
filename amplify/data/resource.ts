@@ -142,9 +142,14 @@ const schema = a.schema({
       hasActorCapability: a.boolean(),
       hasSensorCapability: a.boolean(),
       hasControllerCapability: a.boolean(),
+      hasIOTCapability: a.boolean(),
       s3DocPath: a.string(),
       s3ImgPath: a.string(),
       s3SpecsPath: a.string(),
+      // Tiny (~few KB) data-URL preview generated client-side from the
+      // uploaded image — inlined so list views render thumbnails without a
+      // per-row S3 fetch. The full image stays in S3 (s3ImgPath).
+      thumbnail: a.string(),
     })
     .identifier(["modelNumber"])
     .authorization((allow) => [
