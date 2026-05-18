@@ -24,6 +24,9 @@ import { createDigitalHome } from "../functions/createDigitalHome/resource";
  *   - requestDeviceFileReadUrl / requestDeviceFileWriteUrl: signed-URL mutations
  *     (dhcDesignStorageProxy) for per-device spec/doc files under
  *     {Private|Public}/DigitalHomes/{id}/devices/{type}/{serial}/{fileName}
+ *   - requestDeviceInboxReadUrl / requestDeviceInboxWriteUrl: signed-URL
+ *     mutations for the CSV mass-import inbox at
+ *     {Private|Public}/DigitalHomes/{id}/devices/inbox.json
  */
 
 const schema = a.schema({
@@ -39,6 +42,14 @@ const schema = a.schema({
     "FACILITIES_APPLIANCES",
     "MEDIA_COMMUNICATION",
     "SECURITY_MONITORING",
+  ]),
+
+  // DeviceInstance lifecycle state (replaces the v1 free-string `status`).
+  DeviceLifecycle: a.enum([
+    "NEW",
+    "ACTIVE",
+    "END_OF_LIFE",
+    "DECOMMISSIONED",
   ]),
 
   // ─── models ───────────────────────────────────────────────────────
@@ -134,7 +145,6 @@ const schema = a.schema({
       s3DocPath: a.string(),
       s3ImgPath: a.string(),
       s3SpecsPath: a.string(),
-      version: a.string().required(),
     })
     .identifier(["modelNumber"])
     .authorization((allow) => [
@@ -157,7 +167,7 @@ const schema = a.schema({
       purchaseDate: a.date(),
       installationDate: a.date(),
       firmwareVersion: a.string(),
-      status: a.string(),
+      lifecycleState: a.ref("DeviceLifecycle"),
       location: a.string(),
       s3SpecsPath: a.string(),
     })
@@ -261,6 +271,30 @@ const schema = a.schema({
       deviceType: a.string().required(),
       serialNumber: a.string().required(),
       fileName: a.string().required(),
+      contentType: a.string(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // CSV mass-import inbox — a single file directly under devices/ (no
+  // deviceType/serialNumber segment), so it needs its own mutation pair.
+  // Key (built in the Lambda):
+  //   {Private|Public}/DigitalHomes/{smartHomeId}/devices/inbox.json
+  // Authz: DigitalHome.owners + dhc-admins (same check as requestDigitalHomeReadUrl).
+  requestDeviceInboxReadUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestDeviceInboxWriteUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
       contentType: a.string(),
     })
     .returns(a.ref("DesignStorageUrl"))

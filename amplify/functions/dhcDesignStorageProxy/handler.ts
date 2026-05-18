@@ -7,6 +7,8 @@
  *   - requestDigitalHomeReadUrl(smartHomeId, fileName)    (step-1 designtime read)
  *   - requestDeviceFileReadUrl(smartHomeId, deviceType, serialNumber, fileName)
  *   - requestDeviceFileWriteUrl(smartHomeId, deviceType, serialNumber, fileName, ct?)
+ *   - requestDeviceInboxReadUrl(smartHomeId)
+ *   - requestDeviceInboxWriteUrl(smartHomeId, ct?)
  *
  * Path & ownership routing:
  *   requestDesign{Read,Write}Url → key  = tenant/{smartHomeId}/{fileName}
@@ -16,6 +18,9 @@
  *                                  root  = Public if DigitalHome.isDemo else Private
  *   requestDeviceFile{Read,Write}Url
  *                                → key  = {Private|Public}/DigitalHomes/{id}/devices/{deviceType}/{serialNumber}/{fileName}
+ *                                  authz = DigitalHome.owners       + dhc-admins
+ *   requestDeviceInbox{Read,Write}Url
+ *                                → key  = {Private|Public}/DigitalHomes/{id}/devices/inbox.json
  *                                  authz = DigitalHome.owners       + dhc-admins
  *
  * Returns a 5-minute pre-signed S3 URL.
@@ -90,13 +95,22 @@ export const handler = async (
   const { smartHomeId, fileName, contentType, deviceType, serialNumber } =
     event.arguments ?? ({} as ProxyArgs);
 
-  if (!smartHomeId || !fileName) {
+  // The inbox mutations take no fileName (the key is the fixed
+  // devices/inbox.json) — skip the fileName guards for them.
+  const isInboxField =
+    fieldName === "requestDeviceInboxReadUrl" ||
+    fieldName === "requestDeviceInboxWriteUrl";
+
+  if (!smartHomeId) {
+    throw new Error("smartHomeId is required");
+  }
+  if (!isInboxField && !fileName) {
     throw new Error("smartHomeId and fileName are required");
   }
   if (!BUCKET) {
     throw new Error("Server misconfigured: missing STORAGE_BUCKET_NAME");
   }
-  if (!FILE_NAME_RE.test(fileName)) {
+  if (!isInboxField && !FILE_NAME_RE.test(fileName)) {
     throw new Error("Invalid fileName: only [A-Za-z0-9._-] characters allowed");
   }
 
@@ -148,6 +162,52 @@ export const handler = async (
       url,
       expiresAt: new Date(Date.now() + URL_TTL_SECONDS * 1000).toISOString(),
       contentType: null,
+    };
+  }
+
+  // ─── CSV mass-import inbox (devices/inbox.json) ────────────────────
+  if (isInboxField) {
+    if (!DIGITALHOME_TABLE) {
+      throw new Error("Server misconfigured: missing DIGITALHOME_TABLE_NAME");
+    }
+    const result = await ddb.send(
+      new GetItemCommand({
+        TableName: DIGITALHOME_TABLE,
+        Key: marshall({ smartHomeId }),
+      })
+    );
+    if (!result.Item) {
+      throw new Error(`DigitalHome ${smartHomeId} not found`);
+    }
+    const home = unmarshall(result.Item) as {
+      owners?: string[];
+      isDemo?: boolean;
+    };
+    if (!isOwner(home.owners || [])) {
+      throw new Error("Not authorized");
+    }
+    const root = home.isDemo ? "Public" : "Private";
+    const key = `${root}/DigitalHomes/${smartHomeId}/devices/inbox.json`;
+    const url =
+      fieldName === "requestDeviceInboxReadUrl"
+        ? await getSignedUrl(
+            s3,
+            new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+            { expiresIn: URL_TTL_SECONDS }
+          )
+        : await getSignedUrl(
+            s3,
+            new PutObjectCommand({
+              Bucket: BUCKET,
+              Key: key,
+              ContentType: contentType,
+            }),
+            { expiresIn: URL_TTL_SECONDS }
+          );
+    return {
+      url,
+      expiresAt: new Date(Date.now() + URL_TTL_SECONDS * 1000).toISOString(),
+      contentType: contentType ?? null,
     };
   }
 
