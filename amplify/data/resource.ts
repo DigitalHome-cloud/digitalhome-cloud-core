@@ -52,6 +52,16 @@ const schema = a.schema({
     "DECOMMISSIONED",
   ]),
 
+  // How a DeviceModel is powered. Voltage/current/power are numeric ratings
+  // (their typical values depend on this — e.g. SOCKET/FIXED ≈ 220 V mains,
+  // BATTERY/ACCU ≈ 12/6/3.7 V).
+  PowerSource: a.enum([
+    "FIXED",   // hard-wired to mains
+    "SOCKET",  // mains plug
+    "BATTERY", // non-rechargeable
+    "ACCU",    // rechargeable accumulator
+  ]),
+
   // ─── models ───────────────────────────────────────────────────────
   UserProfile: a
     .model({
@@ -143,6 +153,11 @@ const schema = a.schema({
       hasSensorCapability: a.boolean(),
       hasControllerCapability: a.boolean(),
       hasIOTCapability: a.boolean(),
+      // Power: source + numeric input ratings (volts / amps / watts).
+      powerSource: a.ref("PowerSource"),
+      voltageV: a.float(),
+      currentA: a.float(),
+      powerW: a.float(),
       s3DocPath: a.string(),
       s3ImgPath: a.string(),
       s3SpecsPath: a.string(),
