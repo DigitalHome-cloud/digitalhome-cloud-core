@@ -70,6 +70,11 @@ const schema = a.schema({
       email: a.email(),
       locale: a.ref("Locale"),
       marketingOptIn: a.boolean(),
+      // Persisted active-home selection. Written by whichever app the user
+      // switches homes in (Portal Manager / Designer selector) and read on
+      // load by the others, so the elected SmartHome follows the user across
+      // apps instead of being trapped in per-subdomain localStorage.
+      activeSmartHomeId: a.string(),
     })
     .authorization((allow) => [
       allow.owner(),
