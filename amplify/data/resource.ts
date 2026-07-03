@@ -1,6 +1,7 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 import { dhcDesignStorageProxy } from "../functions/dhcDesignStorageProxy/resource";
 import { createDigitalHome } from "../functions/createDigitalHome/resource";
+import { edgeDeviceApproval } from "../functions/edgeDeviceApproval/resource";
 
 /**
  * AppSync data layer. Models + custom mutations.
@@ -210,6 +211,22 @@ const schema = a.schema({
     createdAt: a.datetime().required(),
   }),
 
+  // ─── custom return type for edge device-code approve/deny ────────
+  DeviceApprovalResult: a.customType({
+    status: a.string().required(),
+    home_id: a.string(),
+  }),
+
+  // ─── device_info shown on the /link approval screen ──────────────
+  // Lets the user sanity-check "yes, that's my box" before approving.
+  DeviceCodeInfo: a.customType({
+    status: a.string().required(),
+    hostname: a.string(),
+    lan_ip: a.string(),
+    dhe_version: a.string(),
+    machine_id: a.string(),
+  }),
+
   // ─── initiateDigitalHome custom mutation ─────────────────────────
   // Backed by the createDigitalHome Lambda. Performs:
   //   - DDB PutItem (DigitalHome row)
@@ -232,6 +249,40 @@ const schema = a.schema({
     })
     .returns(a.ref("InitiateDigitalHomePayload"))
     .handler(a.handler.function(createDigitalHome))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── edge device-flow approval (backed by edgeDeviceApproval) ────
+  // The Portal /link page calls these after the user logs in with Cognito.
+  // describeDeviceCode returns the box's device_info for the approval screen;
+  // approveDeviceCode binds a pending device_code (looked up by the human
+  // user_code) to a home the caller owns; denyDeviceCode rejects it. The
+  // Lambda enforces the owner/admin check — see spec DH-SPEC-100 §3.2.
+  describeDeviceCode: a
+    .query()
+    .arguments({
+      user_code: a.string().required(),
+    })
+    .returns(a.ref("DeviceCodeInfo"))
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  approveDeviceCode: a
+    .mutation()
+    .arguments({
+      user_code: a.string().required(),
+      home_id: a.string().required(),
+    })
+    .returns(a.ref("DeviceApprovalResult"))
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  denyDeviceCode: a
+    .mutation()
+    .arguments({
+      user_code: a.string().required(),
+    })
+    .returns(a.ref("DeviceApprovalResult"))
+    .handler(a.handler.function(edgeDeviceApproval))
     .authorization((allow) => [allow.authenticated()]),
 
   // ─── signed-URL mutations (backed by dhcDesignStorageProxy) ──────
