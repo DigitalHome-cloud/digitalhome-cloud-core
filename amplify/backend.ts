@@ -1,5 +1,5 @@
 import { defineBackend } from "@aws-amplify/backend";
-import { Stack } from "aws-cdk-lib";
+import { CfnOutput, Stack } from "aws-cdk-lib";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import {
   AttributeType,
@@ -394,11 +394,14 @@ if (defaultStage) {
   };
 }
 
-// Surface the invoke URL so the edge test box / operators can find it
-// (CloudFormation output on the edge stack). The edge's Node-RED cloudApiUrl
-// property is set to `${this}` (already includes the stage) + "/edge/v1".
-edgeStack.exportValue(edgeApi.apiEndpoint, {
-  name: "dhcEdgeApiEndpoint",
+// Surface the invoke URL as a stack-scoped CloudFormation Output (NOT an
+// exportValue — a named Export is global per account/region and would collide
+// across the sandbox and stage stacks). Set the edge box's Node-RED
+// cloudApiUrl to `<this>/edge/v1`.
+new CfnOutput(edgeStack, "dhcEdgeApiEndpoint", {
+  value: edgeApi.apiEndpoint,
+  description:
+    "Base URL of the edge HTTP API. Edge cloudApiUrl = <this>/edge/v1.",
 });
 
 export default backend;
