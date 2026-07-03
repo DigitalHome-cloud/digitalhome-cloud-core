@@ -90,6 +90,9 @@ export const handler = async (
     poll_after_s: HEARTBEAT_POLL_S,
     cbox_updated: false,
     cbox_version: null,
+    // Surface the current home binding so a box registered without a home can
+    // learn its assignment after the user links it in the Portal (two-step).
+    home_id: row.home_id ?? null,
     server_timestamp: nowIso,
   });
 };

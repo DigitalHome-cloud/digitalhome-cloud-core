@@ -58,7 +58,12 @@ interface DeviceCodeRow {
   device_code: string;
   user_code: string;
   status: "pending" | "approved" | "denied";
-  device_info?: { machine_id?: string };
+  device_info?: {
+    machine_id?: string;
+    hostname?: string;
+    lan_ip?: string;
+    dhe_version?: string;
+  };
   approved_by_sub?: string | null;
   home_id?: string | null;
   poll_count?: number;
@@ -66,12 +71,18 @@ interface DeviceCodeRow {
   expires_at?: number; // unix epoch seconds
 }
 
-// Re-link dedup: if this machine already has a linked EdgeRegistry row for the
-// same home, reuse its edge_id so a re-pair doesn't orphan the old record.
-async function findExistingEdgeId(
-  machineId: string | undefined,
-  homeId: string
-): Promise<string | null> {
+interface ExistingEdge {
+  edge_id: string;
+  home_id?: string | null;
+  first_seen_at?: string;
+}
+
+// One physical box (machine_id) maps to one durable edge_id. On re-pair, reuse
+// the existing row so we don't orphan it — and so a register-only re-pair keeps
+// whatever home it was previously linked to.
+async function findExistingEdge(
+  machineId: string | undefined
+): Promise<ExistingEdge | null> {
   if (!machineId) return null;
   const res = await ddb.send(
     new QueryCommand({
@@ -79,11 +90,17 @@ async function findExistingEdgeId(
       IndexName: "byMachineId",
       KeyConditionExpression: "machine_id = :m",
       ExpressionAttributeValues: marshall({ ":m": machineId }),
+      Limit: 1,
     })
   );
-  const rows = (res.Items || []).map((i) => unmarshall(i));
-  const match = rows.find((r) => r.home_id === homeId);
-  return match ? (match.edge_id as string) : null;
+  const row = (res.Items || []).map((i) => unmarshall(i))[0];
+  return row
+    ? {
+        edge_id: row.edge_id as string,
+        home_id: (row.home_id as string) ?? null,
+        first_seen_at: row.first_seen_at as string | undefined,
+      }
+    : null;
 }
 
 export const handler = async (
@@ -136,16 +153,20 @@ export const handler = async (
   if (row.status === "denied") return oauthError("access_denied");
   // status === "approved" falls through.
 
-  const homeId = row.home_id;
   const approvedBy = row.approved_by_sub;
-  if (!homeId || !approvedBy) {
-    // Approved but missing binding — treat as not-yet-usable rather than error.
+  if (!approvedBy) {
+    // Approved flag set but no approver captured — not yet usable.
     return oauthError("authorization_pending");
   }
 
   const machineId = row.device_info?.machine_id;
-  const existingEdgeId = await findExistingEdgeId(machineId, homeId);
-  const edgeId = existingEdgeId || generateEdgeId();
+  const existing = await findExistingEdge(machineId);
+  const edgeId = existing?.edge_id || generateEdgeId();
+  // Two-step model: the home is OPTIONAL at registration. If the user picked one
+  // during approval, use it; otherwise keep whatever this box was previously
+  // linked to (re-pair), else null (registered but unassigned — link later from
+  // the Portal "My Edges" view).
+  const homeId = row.home_id ?? existing?.home_id ?? null;
 
   const deviceToken = generateDeviceToken(edgeId);
   const tokenHash = sha256(deviceToken);
@@ -153,23 +174,30 @@ export const handler = async (
     nowMs + DEVICE_TOKEN_TTL_S * 1000
   ).toISOString();
 
-  // Upsert the durable registry row. On re-link we overwrite the token hash and
-  // keep first_seen_at via if_not_exists.
+  // Upsert the durable registry row. Preserve first_seen_at across re-pairs.
   await ddb.send(
     new PutItemCommand({
       TableName: EDGE_REGISTRY_TABLE,
       Item: marshall(
         {
           edge_id: edgeId,
-          machine_id: machineId || null,
-          home_id: homeId,
+          // machine_id + home_id are GSI partition keys — OMIT them when absent
+          // (marshall drops `undefined`) so the sparse indexes don't choke on a
+          // NULL-typed key. `null` would throw a Type-mismatch on write.
+          machine_id: machineId || undefined,
+          home_id: homeId || undefined,
           linked_by_cognito_sub: approvedBy,
+          // device_info snapshot so the Portal can show the box before its
+          // first telemetry lands.
+          hostname: row.device_info?.hostname || null,
+          lan_ip: row.device_info?.lan_ip || null,
+          dhe_version: row.device_info?.dhe_version || null,
           device_token_hash: tokenHash,
           device_token_expires: tokenExpiresIso,
           previous_token_hash: null,
           previous_token_expires: null,
           status: "linked",
-          first_seen_at: nowIso,
+          first_seen_at: existing?.first_seen_at || nowIso,
           last_telemetry_at: null,
           last_heartbeat_at: null,
           linked_at: nowIso,
@@ -196,7 +224,10 @@ export const handler = async (
     edge_id: edgeId,
     home_id: homeId,
     scope: SCOPE,
-    cloud_endpoints: buildCloudEndpoints(event, edgeId, homeId),
+    // Home-scoped endpoints only make sense once a home is assigned.
+    cloud_endpoints: homeId
+      ? buildCloudEndpoints(event, edgeId, homeId)
+      : null,
     interval: POLL_INTERVAL_S,
   });
 };

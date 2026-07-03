@@ -232,6 +232,18 @@ const schema = a.schema({
     machine_id: a.string(),
   }),
 
+  // ─── one registered edge, for the Portal "My Edges" view ─────────
+  EdgeSummary: a.customType({
+    edge_id: a.string().required(),
+    home_id: a.string(),
+    machine_id: a.string(),
+    hostname: a.string(),
+    dhe_version: a.string(),
+    status: a.string(),
+    last_telemetry_at: a.string(),
+    linked_at: a.string(),
+  }),
+
   // ─── initiateDigitalHome custom mutation ─────────────────────────
   // Backed by the createDigitalHome Lambda. Performs:
   //   - DDB PutItem (DigitalHome row)
@@ -275,7 +287,9 @@ const schema = a.schema({
     .mutation()
     .arguments({
       user_code: a.string().required(),
-      home_id: a.string().required(),
+      // Optional (two-step model): omit to register the edge to the caller now
+      // and link it to a home later via linkEdgeToHome.
+      home_id: a.string(),
     })
     .returns(a.ref("DeviceApprovalResult"))
     .handler(a.handler.function(edgeDeviceApproval))
@@ -287,6 +301,25 @@ const schema = a.schema({
       user_code: a.string().required(),
     })
     .returns(a.ref("DeviceApprovalResult"))
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── two-step: list the caller's edges + (re)assign them to homes ─
+  listMyEdges: a
+    .query()
+    .returns(a.ref("EdgeSummary").array())
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // Assign (or, with no home_id, unassign) an edge the caller owns to a home
+  // the caller owns. Enforced in the Lambda.
+  linkEdgeToHome: a
+    .mutation()
+    .arguments({
+      edge_id: a.string().required(),
+      home_id: a.string(),
+    })
+    .returns(a.ref("EdgeSummary"))
     .handler(a.handler.function(edgeDeviceApproval))
     .authorization((allow) => [allow.authenticated()]),
 

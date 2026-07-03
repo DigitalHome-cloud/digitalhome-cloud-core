@@ -1,18 +1,23 @@
-// edgeDeviceApproval — AppSync resolver for the Portal /link page.
+// edgeDeviceApproval — AppSync resolver for the Portal edge-management UI.
 //
 // Dispatches on event.info.fieldName:
-//   approveDeviceCode(user_code, home_id) — binds a pending device_code to a
-//     home the CALLER is authorized for (owner of the DigitalHome, or admin),
-//     flipping its status to "approved" so the edge's next /token poll succeeds.
-//   denyDeviceCode(user_code)             — flips status to "denied".
+//   describeDeviceCode(user_code)          — device_info for the /link screen.
+//   approveDeviceCode(user_code, home_id?) — registers the box to the caller.
+//     home_id is OPTIONAL (two-step model): omit it to register the edge to the
+//     user now and link it to a home later from "My Edges".
+//   denyDeviceCode(user_code)              — rejects the pairing.
+//   listMyEdges                            — the caller's registered edges.
+//   linkEdgeToHome(edge_id, home_id?)      — assign/reassign (or, with no
+//     home_id, unassign) an edge the caller owns to a home they own.
 //
-// Auth trust anchor: the Cognito login. We never trust the edge; the persisted
-// home binding requires an authenticated owner here (spec §2).
+// Trust anchor: the Cognito login. Registration binds the edge to the caller's
+// sub; home assignment always verifies the caller owns both the edge and home.
 
 import {
   QueryCommand,
   UpdateItemCommand,
   GetItemCommand,
+  DynamoDBClient,
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import type { AppSyncResolverEvent, AppSyncIdentityCognito } from "aws-lambda";
@@ -20,18 +25,15 @@ import type { AppSyncResolverEvent, AppSyncIdentityCognito } from "aws-lambda";
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const DEVICE_CODES_TABLE = process.env.DEVICE_CODES_TABLE_NAME!;
 const DIGITALHOME_TABLE = process.env.DIGITALHOME_TABLE_NAME!;
+const EDGE_REGISTRY_TABLE = process.env.EDGE_REGISTRY_TABLE_NAME!;
 const ADMIN_GROUP = "dhc-admins";
 
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 const ddb = new DynamoDBClient({ region: REGION });
 
-interface ApprovalArgs {
+interface Args {
   user_code?: string;
   home_id?: string;
-}
-interface ApprovalPayload {
-  status: string;
-  home_id: string | null;
+  edge_id?: string;
 }
 interface DeviceInfo {
   machine_id?: string;
@@ -45,8 +47,6 @@ interface PendingRow {
   device_info?: DeviceInfo;
 }
 
-// Look up the pending pairing row by the human user_code (GSI1 is KEYS_ONLY, so
-// re-read the base row to get device_info). Returns null if none live.
 async function findByUserCode(userCode: string): Promise<PendingRow | null> {
   const idx = await ddb.send(
     new QueryCommand({
@@ -74,7 +74,7 @@ async function findByUserCode(userCode: string): Promise<PendingRow | null> {
   };
 }
 
-// Authorize the caller for a home: owner listed on the DigitalHome, or admin.
+// Owner of the DigitalHome, or admin.
 async function callerOwnsHome(
   sub: string,
   isAdmin: boolean,
@@ -93,37 +93,95 @@ async function callerOwnsHome(
   return owners.includes(sub);
 }
 
-interface DeviceCodeInfoPayload {
-  status: string;
-  hostname: string | null;
-  lan_ip: string | null;
-  dhe_version: string | null;
-  machine_id: string | null;
+function toEdgeSummary(row: Record<string, unknown>) {
+  return {
+    edge_id: (row.edge_id as string) ?? null,
+    home_id: (row.home_id as string) ?? null,
+    machine_id: (row.machine_id as string) ?? null,
+    hostname: (row.hostname as string) ?? null,
+    dhe_version: (row.dhe_version as string) ?? null,
+    status: (row.status as string) ?? null,
+    last_telemetry_at: (row.last_telemetry_at as string) ?? null,
+    linked_at: (row.linked_at as string) ?? null,
+  };
 }
 
-export const handler = async (
-  event: AppSyncResolverEvent<ApprovalArgs>
-): Promise<ApprovalPayload | DeviceCodeInfoPayload> => {
-  if (!DEVICE_CODES_TABLE || !DIGITALHOME_TABLE) {
+export const handler = async (event: AppSyncResolverEvent<Args>) => {
+  if (!DEVICE_CODES_TABLE || !DIGITALHOME_TABLE || !EDGE_REGISTRY_TABLE) {
     throw new Error("Server misconfigured");
   }
 
   const identity = event.identity as AppSyncIdentityCognito | undefined;
   if (!identity?.sub) throw new Error("Unauthenticated");
   const sub = identity.sub;
-  const groups = identity.groups || [];
-  const isAdmin = groups.includes(ADMIN_GROUP);
-
+  const isAdmin = (identity.groups || []).includes(ADMIN_GROUP);
   const field = event.info.fieldName;
+
+  // ─── Edge-registry operations (no device_code) ──────────────────────────
+  if (field === "listMyEdges") {
+    const res = await ddb.send(
+      new QueryCommand({
+        TableName: EDGE_REGISTRY_TABLE,
+        IndexName: "byOwner",
+        KeyConditionExpression: "linked_by_cognito_sub = :s",
+        ExpressionAttributeValues: marshall({ ":s": sub }),
+      })
+    );
+    return (res.Items || []).map((i) => toEdgeSummary(unmarshall(i)));
+  }
+
+  if (field === "linkEdgeToHome") {
+    const edgeId = (event.arguments.edge_id || "").trim();
+    if (!edgeId) throw new Error("edge_id is required");
+    const got = await ddb.send(
+      new GetItemCommand({
+        TableName: EDGE_REGISTRY_TABLE,
+        Key: marshall({ edge_id: edgeId }),
+      })
+    );
+    if (!got.Item) throw new Error("Edge not found");
+    const edge = unmarshall(got.Item);
+    // Must own the edge (registered it) or be an admin.
+    if (!isAdmin && edge.linked_by_cognito_sub !== sub) {
+      throw new Error("Not authorized for that edge");
+    }
+
+    const homeId = (event.arguments.home_id || "").trim();
+    if (homeId) {
+      if (!(await callerOwnsHome(sub, isAdmin, homeId))) {
+        throw new Error("Not authorized for that home");
+      }
+      await ddb.send(
+        new UpdateItemCommand({
+          TableName: EDGE_REGISTRY_TABLE,
+          Key: marshall({ edge_id: edgeId }),
+          UpdateExpression: "SET home_id = :h",
+          ExpressionAttributeValues: marshall({ ":h": homeId }),
+        })
+      );
+      edge.home_id = homeId;
+    } else {
+      // Unassign — REMOVE the attribute so the byHomeId GSI drops it (a null
+      // GSI key is not allowed; absence makes it a sparse-index no-op).
+      await ddb.send(
+        new UpdateItemCommand({
+          TableName: EDGE_REGISTRY_TABLE,
+          Key: marshall({ edge_id: edgeId }),
+          UpdateExpression: "REMOVE home_id",
+        })
+      );
+      edge.home_id = null;
+    }
+    return toEdgeSummary(edge);
+  }
+
+  // ─── Device-code operations (require a user_code) ───────────────────────
   const userCode = (event.arguments.user_code || "").trim().toUpperCase();
   if (!userCode) throw new Error("user_code is required");
 
   const pending = await findByUserCode(userCode);
-  // Same generic error for missing/expired so we don't reveal code existence.
   if (!pending) throw new Error("No pending device found for that code");
 
-  // describeDeviceCode — read-only device_info for the approval screen. Allowed
-  // for any status so a re-opened /link can still show what happened.
   if (field === "describeDeviceCode") {
     const di = pending.device_info || {};
     return {
@@ -135,7 +193,6 @@ export const handler = async (
     };
   }
 
-  // approve/deny mutate — only valid while still pending.
   if (pending.status !== "pending") {
     throw new Error(`Device code already ${pending.status}`);
   }
@@ -160,29 +217,37 @@ export const handler = async (
   }
 
   if (field === "approveDeviceCode") {
+    // Home is OPTIONAL (two-step). If given, the caller must own it.
     const homeId = (event.arguments.home_id || "").trim();
-    if (!homeId) throw new Error("home_id is required");
-    if (!(await callerOwnsHome(sub, isAdmin, homeId))) {
+    if (homeId && !(await callerOwnsHome(sub, isAdmin, homeId))) {
       throw new Error("Not authorized for that home");
+    }
+    const sets = [
+      "#s = :approved",
+      "approved_by_sub = :sub",
+      "approved_at = :now",
+    ];
+    const values: Record<string, unknown> = {
+      ":approved": "approved",
+      ":sub": sub,
+      ":now": nowIso,
+      ":pending": "pending",
+    };
+    if (homeId) {
+      sets.push("home_id = :home");
+      values[":home"] = homeId;
     }
     await ddb.send(
       new UpdateItemCommand({
         TableName: DEVICE_CODES_TABLE,
         Key: marshall({ device_code: pending.device_code }),
-        UpdateExpression:
-          "SET #s = :approved, home_id = :home, approved_by_sub = :sub, approved_at = :now",
+        UpdateExpression: `SET ${sets.join(", ")}`,
         ConditionExpression: "#s = :pending",
         ExpressionAttributeNames: { "#s": "status" },
-        ExpressionAttributeValues: marshall({
-          ":approved": "approved",
-          ":home": homeId,
-          ":sub": sub,
-          ":now": nowIso,
-          ":pending": "pending",
-        }),
+        ExpressionAttributeValues: marshall(values),
       })
     );
-    return { status: "approved", home_id: homeId };
+    return { status: "approved", home_id: homeId || null };
   }
 
   throw new Error(`Unsupported field: ${field}`);

@@ -251,6 +251,13 @@ edgeRegistryTable.addGlobalSecondaryIndex({
   sortKey: { name: "edge_id", type: AttributeType.STRING },
   projectionType: ProjectionType.ALL,
 });
+// byOwner — the Portal "My Edges" view lists a user's registered edges.
+edgeRegistryTable.addGlobalSecondaryIndex({
+  indexName: "byOwner",
+  partitionKey: { name: "linked_by_cognito_sub", type: AttributeType.STRING },
+  sortKey: { name: "edge_id", type: AttributeType.STRING },
+  projectionType: ProjectionType.ALL,
+});
 
 // Wire table names into every edge Lambda (the 4 HTTP handlers + the AppSync
 // approval handler) and grant least-privilege DDB access per spec §8.1.
@@ -323,8 +330,9 @@ for (const fn of [edgeTelemetryFn, edgeRotateFn]) {
 }
 
 // edgeDeviceApproval (AppSync): queries the KEYS_ONLY user_code GSI, re-reads
-// the base row (GetItem) for device_info, updates DeviceCodes, and reads
-// DigitalHome to verify the caller owns the target home.
+// the base row (GetItem) for device_info, updates DeviceCodes, reads DigitalHome
+// to verify home ownership, and (two-step) reads/updates EdgeRegistry to list
+// and (re)assign the caller's edges.
 edgeApprovalFn.addToRolePolicy(
   new PolicyStatement({
     effect: Effect.ALLOW,
@@ -342,6 +350,16 @@ edgeApprovalFn.addToRolePolicy(
     resources: [digitalHomeTable.tableArn],
   })
 );
+edgeApprovalFn.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:Query"],
+    resources: [
+      edgeRegistryTable.tableArn,
+      `${edgeRegistryTable.tableArn}/index/*`,
+    ],
+  })
+);
 backend.edgeDeviceApproval.addEnvironment(
   "DEVICE_CODES_TABLE_NAME",
   deviceCodesTable.tableName
@@ -349,6 +367,10 @@ backend.edgeDeviceApproval.addEnvironment(
 backend.edgeDeviceApproval.addEnvironment(
   "DIGITALHOME_TABLE_NAME",
   digitalHomeTable.tableName
+);
+backend.edgeDeviceApproval.addEnvironment(
+  "EDGE_REGISTRY_TABLE_NAME",
+  edgeRegistryTable.tableName
 );
 
 // HTTP API — POST routes under /edge/v1/*. The edge appends fixed paths to its
