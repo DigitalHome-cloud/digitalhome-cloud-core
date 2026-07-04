@@ -115,7 +115,12 @@ export const handler = async (event: AppSyncResolverEvent<Args>) => {
   if (!identity?.sub) throw new Error("Unauthenticated");
   const sub = identity.sub;
   const isAdmin = (identity.groups || []).includes(ADMIN_GROUP);
-  const field = event.info.fieldName;
+  // Amplify Gen 2's Lambda resolver passes the operation name at the TOP LEVEL
+  // as `event.fieldName` (from ctx.stash) and does NOT populate `event.info`.
+  // Fall back to `event.info?.fieldName` so direct/test invokes still work.
+  const field =
+    (event as unknown as { fieldName?: string }).fieldName ??
+    event.info?.fieldName;
 
   // ─── Edge-registry operations (no device_code) ──────────────────────────
   if (field === "listMyEdges") {
