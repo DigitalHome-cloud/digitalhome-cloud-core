@@ -9,12 +9,25 @@ import {
   TableEncryption,
 } from "aws-cdk-lib/aws-dynamodb";
 import {
+  ApiMapping,
   CfnStage,
+  DomainName,
   HttpApi,
   HttpMethod,
   CorsHttpMethod,
 } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import {
+  Certificate,
+  CertificateValidation,
+} from "aws-cdk-lib/aws-certificatemanager";
+import {
+  ARecord,
+  AaaaRecord,
+  HostedZone,
+  RecordTarget,
+} from "aws-cdk-lib/aws-route53";
+import { ApiGatewayv2DomainProperties } from "aws-cdk-lib/aws-route53-targets";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
 import { storage } from "./storage/resource";
@@ -414,6 +427,55 @@ if (defaultStage) {
     throttlingBurstLimit: 20,
     throttlingRateLimit: 10,
   };
+}
+
+// ─── Custom domain (branch-aware) ─────────────────────────────────────────
+// Map the edge HTTP API onto a stable hostname per environment:
+//   stage branch → stage-api.digitalhome.cloud
+//   main  branch → api.digitalhome.cloud   (the edge client's hardcoded default)
+// Only on the deployed pipeline branches — personal sandboxes keep the raw
+// execute-api URL (AWS_BRANCH is unset there). DNS is Route53-hosted in this
+// account, so the ACM cert (DNS-validated) and the alias record are created
+// automatically. NOTE: the Amplify pipeline deploy role must have ACM +
+// Route53 (ListHostedZonesByName / ChangeResourceRecordSets / GetChange)
+// permissions, or the deploy will fail here.
+const branch = process.env.AWS_BRANCH;
+const edgeApiDomain =
+  branch === "main"
+    ? "api.digitalhome.cloud"
+    : branch === "stage"
+    ? "stage-api.digitalhome.cloud"
+    : null;
+
+if (edgeApiDomain && edgeApi.defaultStage) {
+  const zone = HostedZone.fromLookup(edgeStack, "DhcZone", {
+    domainName: "digitalhome.cloud",
+  });
+  const cert = new Certificate(edgeStack, "EdgeApiCert", {
+    domainName: edgeApiDomain,
+    validation: CertificateValidation.fromDns(zone),
+  });
+  const dn = new DomainName(edgeStack, "EdgeApiDomain", {
+    domainName: edgeApiDomain,
+    certificate: cert,
+  });
+  // Root mapping → routes stay at /edge/v1/* (no base path).
+  new ApiMapping(edgeStack, "EdgeApiMapping", {
+    api: edgeApi,
+    domainName: dn,
+    stage: edgeApi.defaultStage,
+  });
+  const recordName = edgeApiDomain.replace(".digitalhome.cloud", "");
+  const target = RecordTarget.fromAlias(
+    new ApiGatewayv2DomainProperties(dn.regionalDomainName, dn.regionalHostedZoneId)
+  );
+  new ARecord(edgeStack, "EdgeApiARecord", { zone, recordName, target });
+  new AaaaRecord(edgeStack, "EdgeApiAaaaRecord", { zone, recordName, target });
+
+  new CfnOutput(edgeStack, "dhcEdgeApiCustomDomain", {
+    value: `https://${edgeApiDomain}/edge/v1`,
+    description: "Custom-domain base URL for the edge API (cloudApiUrl).",
+  });
 }
 
 // Surface the invoke URL as a stack-scoped CloudFormation Output (NOT an
