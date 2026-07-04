@@ -289,10 +289,15 @@ for (const fn of [
   fn.addEnvironment("DEVICE_CODES_TABLE_NAME", deviceCodesTable.tableName);
   fn.addEnvironment("EDGE_REGISTRY_TABLE_NAME", edgeRegistryTable.tableName);
 }
-backend.edgeDeviceAuthz.addEnvironment(
-  "PORTAL_LINK_URL",
-  process.env.PORTAL_LINK_URL || "https://portal.digitalhome.cloud/link"
-);
+// verification_uri the box shows (QR) points the user at the matching Portal
+// per environment: stage → stage-portal, otherwise prod.
+const deployBranch = process.env.AWS_BRANCH;
+const portalLinkUrl =
+  process.env.PORTAL_LINK_URL ||
+  (deployBranch === "stage"
+    ? "https://stage-portal.digitalhome.cloud/link"
+    : "https://portal.digitalhome.cloud/link");
+backend.edgeDeviceAuthz.addEnvironment("PORTAL_LINK_URL", portalLinkUrl);
 
 // edgeDeviceAuthz: only writes pending DeviceCodes rows + reads the user_code
 // GSI for collision avoidance.
@@ -439,11 +444,10 @@ if (defaultStage) {
 // automatically. NOTE: the Amplify pipeline deploy role must have ACM +
 // Route53 (ListHostedZonesByName / ChangeResourceRecordSets / GetChange)
 // permissions, or the deploy will fail here.
-const branch = process.env.AWS_BRANCH;
 const edgeApiDomain =
-  branch === "main"
+  deployBranch === "main"
     ? "api.digitalhome.cloud"
-    : branch === "stage"
+    : deployBranch === "stage"
     ? "stage-api.digitalhome.cloud"
     : null;
 
