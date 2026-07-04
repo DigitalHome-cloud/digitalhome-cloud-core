@@ -448,8 +448,11 @@ const edgeApiDomain =
     : null;
 
 if (edgeApiDomain && edgeApi.defaultStage) {
-  const zone = HostedZone.fromLookup(edgeStack, "DhcZone", {
-    domainName: "digitalhome.cloud",
+  // fromHostedZoneAttributes (not fromLookup) — Amplify Gen2 stacks are
+  // env-agnostic, so a context lookup fails; the zone id is stable, so pin it.
+  const zone = HostedZone.fromHostedZoneAttributes(edgeStack, "DhcZone", {
+    hostedZoneId: "Z07301791TDZ9RI2P98OL",
+    zoneName: "digitalhome.cloud",
   });
   const cert = new Certificate(edgeStack, "EdgeApiCert", {
     domainName: edgeApiDomain,
