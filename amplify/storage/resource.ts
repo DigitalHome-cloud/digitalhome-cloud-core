@@ -34,6 +34,15 @@ export const storage = defineStorage({
       allow.authenticated.to(["read"]),
       allow.groups(["dhc-admins"]).to(["read", "write", "delete"]),
     ],
+    // Area weather + air-quality Delta Lake — world-readable (operator app /
+    // analytics), admin-write only so the shared dataset can't be clobbered by
+    // arbitrary authenticated users. The ingest pipeline writes via a direct
+    // IAM principal, not a Cognito role, so it is unaffected by these rules.
+    "public/weather/*": [
+      allow.guest.to(["read"]),
+      allow.authenticated.to(["read"]),
+      allow.groups(["dhc-admins"]).to(["read", "write", "delete"]),
+    ],
     "public/*": [
       allow.guest.to(["read"]),
       allow.authenticated.to(["read", "write", "delete"]),
