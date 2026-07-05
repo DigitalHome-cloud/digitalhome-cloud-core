@@ -123,6 +123,29 @@ const schema = a.schema({
       allow.group("dhc-admins"),
     ]),
 
+  // Area — geographic area keyed by {country}-{postalCode} (e.g. "DE-39576").
+  // Weather + air-quality data (in the Delta Lake) are keyed by AREA, not by
+  // SmartHome: many homes share one area's climate. A DigitalHome belongs to
+  // Area `${country}-${postalCode}`. lastIngestedAt is stamped by the weather
+  // pipeline. Shared reference data: admins write, all authenticated users read.
+  Area: a
+    .model({
+      areaId: a.id().required(),
+      country: a.string().required(),
+      postalCode: a.string().required(),
+      name: a.string().required(),
+      latitude: a.float().required(),
+      longitude: a.float().required(),
+      timezone: a.string(),
+      lastIngestedAt: a.datetime(),
+      createdBy: a.string(),
+    })
+    .identifier(["areaId"])
+    .authorization((allow) => [
+      allow.group("dhc-admins").to(["create", "update", "delete"]),
+      allow.authenticated().to(["read"]),
+    ]),
+
   SmartHomeDesign: a
     .model({
       smartHomeId: a.string().required(),
