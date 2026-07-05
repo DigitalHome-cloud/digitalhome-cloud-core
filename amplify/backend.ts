@@ -39,6 +39,7 @@ import { edgeToken } from "./functions/edgeToken/resource";
 import { edgeTelemetry } from "./functions/edgeTelemetry/resource";
 import { edgeTokenRotate } from "./functions/edgeTokenRotate/resource";
 import { edgeDeviceApproval } from "./functions/edgeDeviceApproval/resource";
+import { adminDebug } from "./functions/adminDebug/resource";
 
 const backend = defineBackend({
   auth,
@@ -52,6 +53,7 @@ const backend = defineBackend({
   edgeTelemetry,
   edgeTokenRotate,
   edgeDeviceApproval,
+  adminDebug,
 });
 
 // ─── dhcDesignStorageProxy IAM + env wiring (DH-SPEC-203, audit C-2 v2) ─────
@@ -494,5 +496,50 @@ new CfnOutput(edgeStack, "dhcEdgeApiEndpoint", {
   description:
     "Base URL of the edge HTTP API. Edge cloudApiUrl = <this>/edge/v1.",
 });
+
+// ─── adminDebug IAM + env (read-only AWS inspection for the /debug page) ────
+// List/describe only — no GetObject, no writes. dhc-admins is enforced at the
+// AppSync layer (allow.group) and re-checked in the handler. The userpool-wildcard
+// ARN mirrors postConfirmation/createDigitalHome to avoid an auth→data CFN cycle.
+const dbgLambda = backend.adminDebug.resources.lambda;
+dbgLambda.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["s3:ListBucket"],
+    resources: [bucket.bucketArn],
+  })
+);
+dbgLambda.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:ListTables"],
+    resources: ["*"],
+  })
+);
+dbgLambda.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:DescribeTable"],
+    resources: [
+      `arn:aws:dynamodb:${Stack.of(dbgLambda).region}:${Stack.of(dbgLambda).account}:table/*`,
+    ],
+  })
+);
+dbgLambda.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: [
+      "cognito-idp:ListGroups",
+      "cognito-idp:ListUsersInGroup",
+      "cognito-idp:ListUsers",
+    ],
+    resources: [userPoolWildcardArn],
+  })
+);
+backend.adminDebug.addEnvironment("BUCKET_NAME", bucket.bucketName);
+backend.adminDebug.addEnvironment(
+  "USER_POOL_ID",
+  backend.auth.resources.userPool.userPoolId
+);
 
 export default backend;

@@ -2,6 +2,7 @@ import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 import { dhcDesignStorageProxy } from "../functions/dhcDesignStorageProxy/resource";
 import { createDigitalHome } from "../functions/createDigitalHome/resource";
 import { edgeDeviceApproval } from "../functions/edgeDeviceApproval/resource";
+import { adminDebug } from "../functions/adminDebug/resource";
 
 /**
  * AppSync data layer. Models + custom mutations.
@@ -345,6 +346,33 @@ const schema = a.schema({
     .returns(a.ref("EdgeSummary"))
     .handler(a.handler.function(edgeDeviceApproval))
     .authorization((allow) => [allow.authenticated()]),
+
+  // ─── admin debug: read-only AWS inspection (backed by adminDebug) ─
+  // dhc-admins only, enforced both here and in the Lambda. Returns AWSJSON.
+  debugS3: a
+    .query()
+    .arguments({ prefix: a.string() })
+    .returns(a.json())
+    .handler(a.handler.function(adminDebug))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  debugTables: a
+    .query()
+    .returns(a.json())
+    .handler(a.handler.function(adminDebug))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  debugCognito: a
+    .query()
+    .returns(a.json())
+    .handler(a.handler.function(adminDebug))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  debugConsole: a
+    .query()
+    .returns(a.json())
+    .handler(a.handler.function(adminDebug))
+    .authorization((allow) => [allow.group("dhc-admins")]),
 
   // ─── signed-URL mutations (backed by dhcDesignStorageProxy) ──────
   requestDesignReadUrl: a
