@@ -100,6 +100,24 @@ A circuit can declare `dhc:governedBy` against **multiple** norms; each norm's
 shapes are evaluated independently, and the worst verdict wins. See
 `tests/fixtures/valid-fr-circuit-multi-norm.ttl` for a working example.
 
+## License
+
+This repository is licensed under the terms in [`LICENSE`](./LICENSE).
+
+**Third-party content**, under its own license, not this repo's:
+
+- `schema/abox/examples-brick-1.5/` — example models from the
+  [Brick schema](https://brickschema.org/), © Brick Consortium, Inc., under
+  **BSD 3-Clause**. Copied verbatim (unmodified) as reference material for the
+  viewer. Full license and provenance:
+  [`schema/abox/examples-brick-1.5/LICENSE`](./schema/abox/examples-brick-1.5/LICENSE)
+  and its `README.md`.
+- `schema/tbox/Brick+extensions.ttl` — the vendored upstream baseline vocabulary
+  (Brick 1.5 + REC + ASHRAE 223P). The Brick ontology carries its own embedded
+  `dcterms:license` (→ Brick's BSD 3-Clause); the file also bundles ASHRAE 223P
+  and REC, which have their own terms. This predates the example set above and
+  its licensing has not been separately audited — **worth a dedicated review**.
+
 ## Related documentation
 
 - [DH-SPEC-200 — Ontology v2.0.0 Multi-Box Architecture](../../docs/specs/DH-SPEC-200-ontology-v2-multibox-architecture.md)
