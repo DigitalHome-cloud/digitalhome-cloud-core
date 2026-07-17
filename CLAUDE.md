@@ -355,14 +355,29 @@ python3 py-tools/ontology_explorer.py                       # interactive (human
 python3 py-tools/ontology_explorer.py --promote dhc:Circuit # scripted / agents
 python3 py-tools/ontology_explorer.py --promote dhc:governedBy   # subjects, not just classes
 python3 py-tools/ontology_explorer.py --purge   dhc:Norm_BS7671
+python3 py-tools/ontology_explorer.py --scan                # annotation coverage
+python3 py-tools/ontology_explorer.py --scan --template f.csv    # fill-in E,P,V skeleton
+python3 py-tools/ontology_explorer.py --massupdate f.csv    # apply bulk annotations
 ```
 
 Use the flags for scripted curation — **do not pipe stdin at the interactive
 menu**. A prompt count that shifts by one silently desynchronises the stream,
 and on EOF the menu loops forever rather than exiting. Flags are repeatable,
-purges run before promotes, exit codes are real (`0` / `2`). Annotation review
-is skipped by the flags: existing annotations still move, but *adding or
-changing* one is a human call — use the menu.
+purges run before promotes, exit codes are real (`0` / `2`). `--promote`/`--purge`
+skip annotation review; `--massupdate` is the scripted way to *add or change*
+annotations in bulk (the external-class overlay `--promote` cannot touch).
+
+**Keeping the UI overlay aligned (`--scan` / `--massupdate`).** Every in-scope
+class/property needs a `dhc:designView` + `@de` + `@fr` so the apps can place and
+label it. `--scan` reports which are missing (scope: everything typed across
+`schema/abox/**` ∪ dhc-core, restricted to `dhc`/`brick`/`s223`/`rec` classes
+defined in the T-Box; coverage checked against the committed overlay, not the
+gitignored draft). `--massupdate` applies an `E,P,V` CSV — one annotation triple
+per row, values UNQUOTED (`text@de`, a bare enum word, `true`, a CURIE, or
+`__delete__[@lang]`). It is transactional (any bad row → nothing written) and a
+language-aware idempotent upsert. `tests/tbox/annotation-coverage.test.js` fails
+until every in-scope entity is fully annotated, so a new A-Box class forces its
+overlay before it ships.
 
 **Do not adopt the Brick Python modules** (`brickschema`, `brick_model_summarizer`,
 `brickschema_rdflib_sqlalchemy`). Validation is JavaScript —

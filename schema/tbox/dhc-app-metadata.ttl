@@ -130,13 +130,13 @@ dhc:isMetaProperty a owl:AnnotationProperty ;
 # VIEW: governance
 # ════════════════════════════════════════════════════════════
 
-dhc:AWSCognitoGroups rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+dhc:AWSCognitoGroups rdfs:label "AWS-Cognito-Gruppen"@de,
+        "Groupes AWS Cognito"@fr ;
     dhc:blocklyDisposition "excluded" ;
     dhc:designView "governance" .
 
-dhc:AWSCognitoId rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+dhc:AWSCognitoId rdfs:label "AWS-Cognito-ID"@de,
+        "Identifiant AWS Cognito"@fr ;
     dhc:blocklyDisposition "excluded" ;
     dhc:designView "governance" .
 
@@ -184,31 +184,80 @@ dhc:Role_SafetyResponsible rdfs:label "Sicherheitsbeauftragter"@de,
         "Responsable sécurité"@fr ;
     dhc:designView "governance" .
 
-dhc:User rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+dhc:User rdfs:label "Anwendungsbenutzer"@de,
+        "Utilisateur de l'application"@fr ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "governance" .
 
-dhc:assignedAgent dhc:designView "governance" .
+dhc:assignedAgent rdfs:label "zugewiesener Akteur"@de,
+        "agent assigné"@fr ;
+    dhc:designView "governance" .
 
-dhc:assignedRole dhc:designView "governance" .
+dhc:assignedRole rdfs:label "zugewiesene Rolle"@de,
+        "rôle assigné"@fr ;
+    dhc:designView "governance" .
 
-dhc:assignmentContext dhc:designView "governance" .
+dhc:assignmentContext rdfs:label "Zuweisungskontext"@de,
+        "contexte d'attribution"@fr ;
+    dhc:designView "governance" .
 
-dhc:assignmentStatus dhc:designView "governance" .
+dhc:assignmentStatus rdfs:label "Zuweisungsstatus"@de,
+        "statut d'attribution"@fr ;
+    dhc:designView "governance" .
 
-dhc:hasChargingStation dhc:appMode "private" ;
+dhc:createdAt rdfs:label "erstellt am"@de,
+        "créé le"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "governance" ;
     dhc:isInstantiated true .
 
-dhc:hasElectricVehicle dhc:appMode "private" ;
+dhc:createdBy rdfs:label "erstellt von"@de,
+        "créé par"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "governance" ;
     dhc:isInstantiated true .
 
-dhc:validFrom dhc:designView "governance" .
+dhc:creationStatus rdfs:label "Erstellungsstatus"@de,
+        "statut de création"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "governance" ;
+    dhc:isInstantiated true .
 
-dhc:validTo dhc:designView "governance" .
+dhc:isDemo rdfs:label "ist Demo"@de,
+        "est une démo"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "governance" ;
+    dhc:isInstantiated true .
 
-rec:Person rdfs:label "claude_to_do"@en ;
-    rdfs:comment "claude_to_do"@fr ;
+dhc:preferredLanguage rdfs:label "Bevorzugte Sprache"@de,
+        "Langue préférée"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "governance" ;
+    dhc:isInstantiated true .
+
+dhc:smartHomeId rdfs:label "SmartHome-ID"@de,
+        "identifiant SmartHome"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "governance" ;
+    dhc:isInstantiated true .
+
+dhc:updatedAt rdfs:label "aktualisiert am"@de,
+        "mis à jour le"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "governance" ;
+    dhc:isInstantiated true .
+
+dhc:validFrom rdfs:label "gültig ab"@de,
+        "valide à partir du"@fr ;
+    dhc:designView "governance" .
+
+dhc:validTo rdfs:label "gültig bis"@de,
+        "valide jusqu'au"@fr ;
+    dhc:designView "governance" .
+
+rec:Person rdfs:label "Person"@de,
+        "Person"@en,
+        "Personne"@fr ;
     dhc:blocklyDisposition "excluded" ;
     dhc:designView "governance" .
 
@@ -216,6 +265,22 @@ rec:Person rdfs:label "claude_to_do"@en ;
 # ════════════════════════════════════════════════════════════
 # VIEW: spatial
 # ════════════════════════════════════════════════════════════
+
+brick:Office_Kitchen rdfs:label "Büroküche"@de,
+        "Cuisine de bureau"@fr ;
+    dhc:designView "spatial" .
+
+brick:Room rdfs:label "Raum"@de,
+        "Pièce"@fr ;
+    dhc:designView "spatial" .
+
+brick:Site rdfs:label "Standort"@de,
+        "Site"@fr ;
+    dhc:designView "spatial" .
+
+brick:Space rdfs:label "Raum"@de,
+        "Espace"@fr ;
+    dhc:designView "spatial" .
 
 dhc:Barbecue rdfs:label "Grill"@de,
         "Barbecue"@fr ;
@@ -225,7 +290,6 @@ dhc:Barbecue rdfs:label "Grill"@de,
 
 dhc:DetachedHouse rdfs:label "Freistehendes Haus"@de,
         "Maison isolée"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "rec:Building" ;
     dhc:blocklyDisposition "block" ;
@@ -234,7 +298,6 @@ dhc:DetachedHouse rdfs:label "Freistehendes Haus"@de,
 
 dhc:DigitalHome rdfs:label "Digitales Zuhause"@de,
         "Maison numérique"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "dhc:DigitalHome" ;
     dhc:blocklyDisposition "block" ;
@@ -243,15 +306,14 @@ dhc:DigitalHome rdfs:label "Digitales Zuhause"@de,
 
 dhc:Garden rdfs:label "Garten"@de,
         "Jardin"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "dhc:OutdoorArea" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
-dhc:GrandTownhouse rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+dhc:GrandTownhouse rdfs:label "Stadtpalais"@de,
+        "Grande maison de ville"@fr ;
     dhc:blocklyBlockTemplate "rec:Building" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
@@ -265,7 +327,6 @@ dhc:OutdoorArea rdfs:label "Außenbereich"@de,
 
 dhc:Patio rdfs:label "Innenhof"@de,
         "Patio"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "dhc:OutdoorArea" ;
     dhc:blocklyDisposition "block" ;
@@ -274,7 +335,6 @@ dhc:Patio rdfs:label "Innenhof"@de,
 
 dhc:RowHouse rdfs:label "Reihenhaus"@de,
         "Maison de rangée"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:blocklyBlockTemplate "rec:Building" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
@@ -282,21 +342,9 @@ dhc:RowHouse rdfs:label "Reihenhaus"@de,
 
 dhc:SemiDetachedHouse rdfs:label "Doppelhaushälfte"@de,
         "Maison jumelée"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:blocklyBlockTemplate "rec:Building" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
-    dhc:isInstantiated true .
-
-dhc:createdAt rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
-    dhc:appMode "private" ;
-    dhc:isInstantiated true .
-
-dhc:createdBy dhc:appMode "private" ;
-    dhc:isInstantiated true .
-
-dhc:creationStatus dhc:appMode "private" ;
     dhc:isInstantiated true .
 
 dhc:fenced rdfs:label "Eingezäunt"@de,
@@ -306,30 +354,28 @@ dhc:fenced rdfs:label "Eingezäunt"@de,
     dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
-dhc:geocodeVerified dhc:appMode "private" ;
-    dhc:designView "spatial" ;
-    dhc:isInstantiated true .
-
-dhc:hasVehicle dhc:appMode "private" ;
-    dhc:isInstantiated true .
-
-dhc:isDemo dhc:appMode "private" ;
-    dhc:isInstantiated true .
-
-dhc:placeId dhc:appMode "private" ;
-    dhc:designView "spatial" ;
-    dhc:isInstantiated true .
-
-dhc:placeIdProvider dhc:appMode "private" ;
-    dhc:designView "spatial" ;
-    dhc:isInstantiated true .
-
-dhc:preferredLanguage rdfs:label "Bevorzugte Sprache"@de,
-        "Langue préférée"@fr ;
+dhc:geocodeVerified rdfs:label "Geokodierung geprüft"@de,
+        "géocodage vérifié"@fr ;
     dhc:appMode "private" ;
+    dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
-dhc:smartHomeId dhc:appMode "private" ;
+dhc:hasVehicle rdfs:label "hat Fahrzeug"@de,
+        "possède un véhicule"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:placeId rdfs:label "Orts-ID"@de,
+        "identifiant du lieu"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:placeIdProvider rdfs:label "Orts-ID-Anbieter"@de,
+        "fournisseur d'identifiant de lieu"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
 dhc:surfaceType rdfs:label "Bodenbelag"@de,
@@ -339,58 +385,60 @@ dhc:surfaceType rdfs:label "Bodenbelag"@de,
     dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
-dhc:updatedAt dhc:appMode "private" ;
-    dhc:isInstantiated true .
-
-rec:Apartment rdfs:label "claude_to_do"@en ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:Apartment rdfs:label "Wohnung"@de,
+        "Apartment"@en,
+        "Appartement"@fr ;
     rdfs:subClassOf rec:Space ;
     dhc:designView "spatial" ;
     dhc:isInstantiated false .
 
-rec:Architecture rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:Architecture rdfs:label "Architektur"@de,
+        "Architecture"@fr ;
     dhc:designView "spatial" ;
     dhc:isInstantiated false .
 
-rec:Bathroom rdfs:comment "claude_to_do"@de ;
-    dhc:defaultValue "claude_to_do" ;
+rec:Bathroom rdfs:label "Badezimmer"@de,
+        "Salle de bain"@fr ;
     dhc:designView "spatial" .
 
-rec:Building rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:Building rdfs:label "Gebäude"@de,
+        "Bâtiment"@fr ;
     dhc:designView "spatial" ;
     dhc:isInstantiated false .
 
-rec:BuildingElement rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:BuildingElement rdfs:label "Gebäudeelement"@de,
+        "Élément de bâtiment"@fr ;
     dhc:appMode "private" ;
     dhc:designView "spatial" ;
     dhc:isInstantiated false .
 
-rec:Hospital rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:Hospital rdfs:label "Krankenhaus"@de,
+        "Hôpital"@fr ;
     dhc:blocklyBlockTemplate "rec:Building" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
-rec:MeditationRoom rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:MeditationRoom rdfs:label "Meditationsraum"@de,
+        "Salle de méditation"@fr ;
     dhc:blocklyBlockTemplate "dhc_blockly_room_template" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" .
 
-rec:School rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:School rdfs:label "Schule"@de,
+        "École"@fr ;
     dhc:appMode "tertiary" ;
     dhc:blocklyBlockTemplate "rec:Building" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
-rec:Space rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:Site rdfs:label "Standort"@de,
+        "Site"@fr ;
+    dhc:designView "spatial" .
+
+rec:Space rdfs:label "Raum"@de,
+        "Espace"@fr ;
     dhc:designView "spatial" ;
     dhc:isInstantiated false .
 
@@ -403,22 +451,33 @@ rec:SubBuilding rdfs:label "Nebengebäude"@de,
     dhc:defaultValue "0" ;
     dhc:designView "spatial" .
 
-rec:Wing rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+rec:Wing rdfs:label "Flügel"@de,
+        "Aile"@fr ;
     dhc:appMode "residential-pro" ;
     dhc:blocklyBlockTemplate "rec:Wing" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
+rec:Zone rdfs:label "Zone"@de,
+        "Zone"@fr ;
+    dhc:designView "spatial" .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: building
 # ════════════════════════════════════════════════════════════
 
+brick:Building rdfs:label "Gebäude"@de,
+        "Bâtiment"@fr ;
+    dhc:designView "building" .
+
+brick:Floor rdfs:label "Geschoss"@de,
+        "Étage"@fr ;
+    dhc:designView "building" .
+
 dhc:Door rdfs:label "Tür"@de,
         "Porte"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "rec:BuildingElement" ;
     dhc:blocklyDisposition "block" ;
@@ -427,13 +486,11 @@ dhc:Door rdfs:label "Tür"@de,
 
 rec:Bedroom rdfs:label "Schlafzimmer"@de,
         "Chambre"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "building" .
 
 rec:Level rdfs:label "Stockwerk"@de,
         "Étage"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "rec:Level" ;
     dhc:blocklyCategory "spatial" ;
@@ -444,7 +501,6 @@ rec:Level rdfs:label "Stockwerk"@de,
 
 rec:Room rdfs:label "Raum"@de,
         "Pièce"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "rec:Room" ;
     dhc:blocklyCategory "spatial" ;
@@ -457,13 +513,62 @@ rec:Room rdfs:label "Raum"@de,
 # VIEW: electrical
 # ════════════════════════════════════════════════════════════
 
-brick:Building_Disconnect_Switch rdfs:label "Agent de Coupure Générale de la Couronne (AGCP)"@fr ;
+s223:Battery rdfs:label "Batterie"@de,
+        "Batterie"@fr ;
+    dhc:designView "electrical" .
+
+s223:BidirectionalConnectionPoint rdfs:label "Bidirektionaler Anschluss"@de,
+        "Point bidirectionnel"@fr ;
+    dhc:designView "electrical" .
+
+s223:ClothesWasher rdfs:label "Waschmaschine"@de,
+        "Lave-linge"@fr ;
+    dhc:designView "electrical" .
+
+s223:ElectricEnergyInverter rdfs:label "Wechselrichter"@de,
+        "Onduleur"@fr ;
+    dhc:designView "electrical" .
+
+s223:InletConnectionPoint rdfs:label "Eingangsanschluss"@de,
+        "Point d'entrée"@fr ;
+    dhc:designView "electrical" .
+
+s223:OutletConnectionPoint rdfs:label "Ausgangsanschluss"@de,
+        "Point de sortie"@fr ;
+    dhc:designView "electrical" .
+
+brick:Battery rdfs:label "Batterie"@de,
+        "Batterie"@fr ;
+    dhc:designView "electrical" .
+
+brick:Building_Disconnect_Switch rdfs:label "Gebäude-Trennschalter"@de,
+        "Interrupteur-sectionneur du bâtiment"@fr ;
     rdfs:comment "Le sectionneur de bâtiment, généralement appelé « Agent de Coupure Générale de la Couronne » (AGCP) ou « disjoncteur d'abonné », est le principal dispositif de sécurité qui coupe l'alimentation électrique de l'ensemble d'un bâtiment."@fr ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "electrical" .
 
-brick:Inverter rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+brick:Building_Electrical_Meter rdfs:label "Gebäude-Stromzähler"@de,
+        "Compteur électrique du bâtiment"@fr ;
+    dhc:designView "electrical" .
+
+brick:Electric_Vehicle_Charging_Hub rdfs:label "Ladepark"@de,
+        "Pôle de recharge"@fr ;
+    dhc:designView "electrical" .
+
+brick:Electric_Vehicle_Charging_Port rdfs:label "Ladeanschluss für Elektrofahrzeuge"@de,
+        "Point de charge pour véhicule électrique"@fr ;
+    dhc:designView "electrical" .
+
+brick:Electric_Vehicle_Charging_Station rdfs:label "Ladestation für Elektrofahrzeuge"@de,
+        "Borne de recharge pour véhicule électrique"@fr ;
+    dhc:designView "electrical" .
+
+brick:Electrical_Meter rdfs:label "Stromzähler"@de,
+        "Compteur électrique"@fr ;
+    dhc:designView "electrical" .
+
+brick:Inverter rdfs:label "Wechselrichter"@de,
+        "Onduleur"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "brick:Inverter" ;
     dhc:blocklyCategory "electrical" ;
@@ -471,8 +576,20 @@ brick:Inverter rdfs:label "claude_to_do"@fr ;
     dhc:designView "electrical" ;
     dhc:isInstantiated true .
 
-brick:PV_Array rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+brick:Light_Source rdfs:label "Lichtquelle"@de,
+        "Source lumineuse"@fr ;
+    dhc:designView "electrical" .
+
+brick:Luminaire rdfs:label "Leuchte"@de,
+        "Luminaire"@fr ;
+    dhc:designView "electrical" .
+
+brick:Luminaire_Driver rdfs:label "Leuchtentreiber"@de,
+        "Driver de luminaire"@fr ;
+    dhc:designView "electrical" .
+
+brick:PV_Array rdfs:label "PV-Generator (Strang)"@de,
+        "Champ photovoltaïque"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "brick:PV_Array" ;
     dhc:blocklyCategory "spatial" ;
@@ -480,15 +597,22 @@ brick:PV_Array rdfs:label "claude_to_do"@fr ;
     dhc:designView "electrical" ;
     dhc:isInstantiated true .
 
-brick:PV_Panel rdfs:label "Photovoltaikmodul"@de,
+brick:PV_Generation_System rdfs:label "PV-Erzeugungsanlage"@de,
+        "Système de production photovoltaïque"@fr ;
+    dhc:designView "electrical" .
+
+brick:PV_Panel rdfs:label "PV-Modul"@de,
         "Panneau photovoltaïque"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "brick:PV_Panel" ;
     dhc:blocklyCategory "spatial" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "electrical" ;
     dhc:isInstantiated true .
+
+brick:Photovoltaic_Inverter rdfs:label "Photovoltaik-Wechselrichter"@de,
+        "Onduleur photovoltaïque"@fr ;
+    dhc:designView "electrical" .
 
 dhc:BusBar rdfs:label "Sammelschiene"@de,
         "Barre de distribution"@fr ;
@@ -537,6 +661,10 @@ dhc:CircuitType_WaterHeater rdfs:label "Warmwasserbereiter"@de,
         "Chauffe-eau"@fr ;
     dhc:designView "electrical" .
 
+dhc:Contactor rdfs:label "Schütz"@de,
+        "Contacteur"@fr ;
+    dhc:designView "electrical" .
+
 dhc:Distribution rdfs:label "Verteilung"@de,
         "Distribution"@fr ;
     dhc:designView "electrical" .
@@ -562,16 +690,36 @@ dhc:EnergyMeter rdfs:label "Stromzähler"@de,
         "Compteur d'énergie"@fr ;
     dhc:designView "electrical" .
 
+dhc:EquipotentialBonding rdfs:label "Potentialausgleich"@de,
+        "Liaison équipotentielle"@fr ;
+    dhc:designView "electrical" .
+
 dhc:ProtectionDevice rdfs:label "Schutzeinrichtung"@de,
         "Dispositif de protection"@fr ;
+    dhc:designView "electrical" .
+
+dhc:RCBO rdfs:label "FI/LS-Schalter (RCBO)"@de,
+        "Disjoncteur différentiel (DDR)"@fr ;
+    dhc:designView "electrical" .
+
+dhc:RCD rdfs:label "Fehlerstromschutzschalter (RCD)"@de,
+        "Dispositif différentiel (DDR)"@fr ;
     dhc:designView "electrical" .
 
 dhc:Socket rdfs:label "Steckdose"@de,
         "Prise"@fr ;
     dhc:designView "electrical" .
 
+dhc:SurgeProtector rdfs:label "Überspannungsschutz"@de,
+        "Parafoudre"@fr ;
+    dhc:designView "electrical" .
+
 dhc:WiringSegment rdfs:label "Leitungsabschnitt"@de,
         "Segment de câblage"@fr ;
+    dhc:designView "electrical" .
+
+dhc:circuitTopology rdfs:label "Schaltungstopologie"@de,
+        "Topologie du circuit"@fr ;
     dhc:designView "electrical" .
 
 dhc:contractedPowerKVA rdfs:label "Vertragsleistung (kVA)"@de,
@@ -594,13 +742,33 @@ dhc:energyProviderName rdfs:label "Energieversorger"@de,
         "fournisseur d'énergie"@fr ;
     dhc:designView "electrical" .
 
-dhc:feedsEquipment dhc:designView "electrical" .
+dhc:feedsEquipment rdfs:label "speist Betriebsmittel"@de,
+        "alimente l'équipement"@fr ;
+    dhc:designView "electrical" .
 
-dhc:hasCircuitType dhc:designView "electrical" .
+dhc:hasChargingStation rdfs:label "hat Ladestation"@de,
+        "possède une borne de recharge"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "electrical" ;
+    dhc:isInstantiated true .
 
-dhc:hasProtection dhc:designView "electrical" .
+dhc:hasCircuitType rdfs:label "hat Stromkreistyp"@de,
+        "a un type de circuit"@fr ;
+    dhc:designView "electrical" .
 
-dhc:hasWiring dhc:designView "electrical" .
+dhc:hasElectricVehicle rdfs:label "hat Elektrofahrzeug"@de,
+        "possède un véhicule électrique"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "electrical" ;
+    dhc:isInstantiated true .
+
+dhc:hasProtection rdfs:label "hat Schutzeinrichtung"@de,
+        "a pour protection"@fr ;
+    dhc:designView "electrical" .
+
+dhc:hasWiring rdfs:label "hat Verdrahtung"@de,
+        "a pour câblage"@fr ;
+    dhc:designView "electrical" .
 
 dhc:maxPoints rdfs:label "max. Punkte pro Stromkreis"@de,
         "points max. par circuit"@fr ;
@@ -614,12 +782,24 @@ dhc:phase rdfs:label "Phase"@de,
         "phase"@fr ;
     dhc:designView "electrical" .
 
+dhc:powerRating rdfs:label "Nennleistung (W)"@de,
+        "Puissance nominale (W)"@fr ;
+    dhc:designView "electrical" .
+
 dhc:ratedCurrent rdfs:label "Nennstrom (A)"@de,
         "courant assigné (A)"@fr ;
     dhc:designView "electrical" .
 
+dhc:rcdType rdfs:label "FI-Typ"@de,
+        "Type de DDR"@fr ;
+    dhc:designView "electrical" .
+
 dhc:routedThrough rdfs:label "geführt durch"@de,
         "acheminé par"@fr ;
+    dhc:designView "electrical" .
+
+dhc:sensitivityMA rdfs:label "Auslösestrom (mA)"@de,
+        "Sensibilité (mA)"@fr ;
     dhc:designView "electrical" .
 
 dhc:wiring rdfs:label "Verdrahtung"@de,
@@ -631,13 +811,145 @@ dhc:wiring rdfs:label "Verdrahtung"@de,
 # VIEW: plumbing
 # ════════════════════════════════════════════════════════════
 
+s223:Pipe rdfs:label "Rohr"@de,
+        "Tuyau"@fr ;
+    dhc:designView "plumbing" .
+
+brick:Building_Hot_Water_Meter rdfs:label "Gebäude-Warmwasserzähler"@de,
+        "Compteur d'eau chaude du bâtiment"@fr ;
+    dhc:designView "plumbing" .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: heating
 # ════════════════════════════════════════════════════════════
 
-brick:Water_Heater rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+s223:Duct rdfs:label "Luftkanal"@de,
+        "Gaine"@fr ;
+    dhc:designView "heating" .
+
+brick:AHU rdfs:label "Klimazentralgerät (RLT)"@de,
+        "Centrale de traitement d'air"@fr ;
+    dhc:designView "heating" .
+
+brick:Air_Handler_Unit rdfs:label "Klimazentralgerät (RLT)"@de,
+        "Centrale de traitement d'air"@fr ;
+    dhc:designView "heating" .
+
+brick:Boiler rdfs:label "Kessel"@de,
+        "Chaudière"@fr ;
+    dhc:designView "heating" .
+
+brick:Chilled_Water_Coil rdfs:label "Kaltwasser-Kühlregister"@de,
+        "Batterie à eau glacée"@fr ;
+    dhc:designView "heating" .
+
+brick:Chilled_Water_Pump rdfs:label "Kaltwasserpumpe"@de,
+        "Pompe à eau glacée"@fr ;
+    dhc:designView "heating" .
+
+brick:Chilled_Water_System rdfs:label "Kaltwassersystem"@de,
+        "Système d'eau glacée"@fr ;
+    dhc:designView "heating" .
+
+brick:Chiller rdfs:label "Kältemaschine"@de,
+        "Groupe frigorifique"@fr ;
+    dhc:designView "heating" .
+
+brick:Condenser_Water_Pump rdfs:label "Kondensatorwasserpumpe"@de,
+        "Pompe d'eau du condenseur"@fr ;
+    dhc:designView "heating" .
+
+brick:Condensing_Unit rdfs:label "Verflüssigersatz"@de,
+        "Groupe de condensation"@fr ;
+    dhc:designView "heating" .
+
+brick:Cooling_Tower rdfs:label "Kühlturm"@de,
+        "Tour de refroidissement"@fr ;
+    dhc:designView "heating" .
+
+brick:Cooling_Valve rdfs:label "Kühlventil"@de,
+        "Vanne de refroidissement"@fr ;
+    dhc:designView "heating" .
+
+brick:Damper rdfs:label "Klappe"@de,
+        "Registre"@fr ;
+    dhc:designView "heating" .
+
+brick:Discharge_Fan rdfs:label "Ausblasventilator"@de,
+        "Ventilateur de refoulement"@fr ;
+    dhc:designView "heating" .
+
+brick:Economizer_Damper rdfs:label "Economizer-Klappe"@de,
+        "Registre d'économiseur"@fr ;
+    dhc:designView "heating" .
+
+brick:Exhaust_Damper rdfs:label "Fortluftklappe"@de,
+        "Registre d'extraction"@fr ;
+    dhc:designView "heating" .
+
+brick:Exhaust_Fan rdfs:label "Fortluftventilator"@de,
+        "Ventilateur d'extraction"@fr ;
+    dhc:designView "heating" .
+
+brick:HVAC_Zone rdfs:label "HLK-Zone"@de,
+        "Zone CVC"@fr ;
+    dhc:designView "heating" .
+
+brick:Heating_Coil rdfs:label "Heizregister"@de,
+        "Batterie de chauffage"@fr ;
+    dhc:designView "heating" .
+
+brick:Heating_Valve rdfs:label "Heizventil"@de,
+        "Vanne de chauffage"@fr ;
+    dhc:designView "heating" .
+
+brick:Hot_Water_Coil rdfs:label "Warmwasser-Heizregister"@de,
+        "Batterie à eau chaude"@fr ;
+    dhc:designView "heating" .
+
+brick:Hot_Water_Pump rdfs:label "Warmwasserpumpe"@de,
+        "Pompe à eau chaude"@fr ;
+    dhc:designView "heating" .
+
+brick:Hot_Water_System rdfs:label "Warmwassersystem"@de,
+        "Système d'eau chaude"@fr ;
+    dhc:designView "heating" .
+
+brick:Plate_Heat_Exchanger rdfs:label "Plattenwärmetauscher"@de,
+        "Échangeur à plaques"@fr ;
+    dhc:designView "heating" .
+
+brick:Radiant_Panel rdfs:label "Strahlungsplatte"@de,
+        "Panneau rayonnant"@fr ;
+    dhc:designView "heating" .
+
+brick:Return_Damper rdfs:label "Abluftklappe"@de,
+        "Registre de reprise"@fr ;
+    dhc:designView "heating" .
+
+brick:Return_Fan rdfs:label "Abluftventilator"@de,
+        "Ventilateur de reprise"@fr ;
+    dhc:designView "heating" .
+
+brick:Supply_Fan rdfs:label "Zuluftventilator"@de,
+        "Ventilateur de soufflage"@fr ;
+    dhc:designView "heating" .
+
+brick:VAV rdfs:label "VAV-Box"@de,
+        "Boîte VAV"@fr ;
+    dhc:designView "heating" .
+
+brick:Variable_Air_Volume_Box rdfs:label "Volumenstromregler (VAV)"@de,
+        "Boîte à débit d'air variable"@fr ;
+    dhc:designView "heating" .
+
+brick:Variable_Air_Volume_Box_With_Reheat rdfs:label "VAV-Box mit Nachheizung"@de,
+        "Boîte VAV avec réchauffage"@fr ;
+    dhc:designView "heating" .
+
+brick:Water_Heater rdfs:label "Warmwasserbereiter"@de,
+        "Chauffe-eau"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "brick:Water_Heater" ;
     dhc:blocklyCategory "electrical" ;
@@ -645,6 +957,10 @@ brick:Water_Heater rdfs:label "claude_to_do"@fr ;
     dhc:blocklyParentProperty "n" ;
     dhc:designView "heating" ;
     dhc:isInstantiated true .
+
+rec:HVACZone rdfs:label "HLK-Zone"@de,
+        "Zone CVC"@fr ;
+    dhc:designView "heating" .
 
 
 # ════════════════════════════════════════════════════════════
@@ -656,8 +972,25 @@ brick:Water_Heater rdfs:label "claude_to_do"@fr ;
 # VIEW: automation
 # ════════════════════════════════════════════════════════════
 
-brick:Alarm rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+brick:Active_Power_Sensor rdfs:label "Wirkleistungssensor"@de,
+        "Capteur de puissance active"@fr ;
+    dhc:designView "automation" .
+
+brick:Air_Flow_Sensor rdfs:label "Luftvolumenstromsensor"@de,
+        "Capteur de débit d'air"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "brick:Sensor" ;
+    dhc:blocklyCategory "automation" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "automation" ;
+    dhc:isInstantiated true .
+
+brick:Air_Temperature_Sensor rdfs:label "Lufttemperatursensor"@de,
+        "Capteur de température d'air"@fr ;
+    dhc:designView "automation" .
+
+brick:Alarm rdfs:label "Alarm"@de,
+        "Alarme"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "brick:Point" ;
     dhc:blocklyCategory "spatial" ;
@@ -665,14 +998,394 @@ brick:Alarm rdfs:label "claude_to_do"@fr ;
     dhc:designView "automation" ;
     dhc:isInstantiated true .
 
-brick:Point rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+brick:Automation_Collection rdfs:label "Automations-Sammlung"@de,
+        "Collection d'automatisation"@fr ;
+    dhc:designView "automation" .
+
+brick:Average_Zone_Air_Temperature_Sensor rdfs:label "Sensor für mittlere Zonentemperatur"@de,
+        "Capteur de température moyenne d'air de zone"@fr ;
+    dhc:designView "automation" .
+
+brick:Battery_Voltage_Sensor rdfs:label "Batteriespannungssensor"@de,
+        "Capteur de tension de batterie"@fr ;
+    dhc:designView "automation" .
+
+brick:CO2_Level_Sensor rdfs:label "CO₂-Konzentrationssensor"@de,
+        "Capteur de concentration de CO₂"@fr ;
+    dhc:designView "automation" .
+
+brick:CO2_Sensor rdfs:label "CO₂-Sensor"@de,
+        "Capteur de CO₂"@fr ;
+    dhc:designView "automation" .
+
+brick:CO2_Setpoint rdfs:label "CO₂-Sollwert"@de,
+        "Consigne de CO₂"@fr ;
+    dhc:designView "automation" .
+
+brick:CO_Level_Sensor rdfs:label "CO-Konzentrationssensor"@de,
+        "Capteur de concentration de CO"@fr ;
+    dhc:designView "automation" .
+
+brick:Chilled_Water_Supply_Temperature_Sensor rdfs:label "Kaltwasser-Vorlauftemperatursensor"@de,
+        "Capteur de température d'eau glacée au départ"@fr ;
+    dhc:designView "automation" .
+
+brick:Close_Limit rdfs:label "Schließgrenze"@de,
+        "Limite de fermeture"@fr ;
+    dhc:designView "automation" .
+
+brick:Command rdfs:label "Befehl"@de,
+        "Commande"@fr ;
+    dhc:designView "automation" .
+
+brick:Controller rdfs:label "Regler"@de,
+        "Régulateur"@fr ;
+    dhc:designView "automation" .
+
+brick:Curtailment_Override_Command rdfs:label "Übersteuerungsbefehl Lastabwurf"@de,
+        "Commande de forçage de délestage"@fr ;
+    dhc:designView "automation" .
+
+brick:Damper_Position_Command rdfs:label "Klappenstellungs-Befehl"@de,
+        "Commande de position de registre"@fr ;
+    dhc:designView "automation" .
+
+brick:Damper_Position_Sensor rdfs:label "Klappenstellungssensor"@de,
+        "Capteur de position de registre"@fr ;
+    dhc:designView "automation" .
+
+brick:Damper_Position_Setpoint rdfs:label "Klappenstellungs-Sollwert"@de,
+        "Consigne de position de registre"@fr ;
+    dhc:designView "automation" .
+
+brick:Disable_Differential_Enthalpy_Command rdfs:label "Sperrbefehl Enthalpiedifferenz"@de,
+        "Commande de désactivation d'enthalpie différentielle"@fr ;
+    dhc:designView "automation" .
+
+brick:Disable_Differential_Temperature_Command rdfs:label "Sperrbefehl Temperaturdifferenz"@de,
+        "Commande de désactivation de température différentielle"@fr ;
+    dhc:designView "automation" .
+
+brick:Disable_Fixed_Enthalpy_Command rdfs:label "Sperrbefehl feste Enthalpie"@de,
+        "Commande de désactivation d'enthalpie fixe"@fr ;
+    dhc:designView "automation" .
+
+brick:Disable_Fixed_Temperature_Command rdfs:label "Sperrbefehl feste Temperatur"@de,
+        "Commande de désactivation de température fixe"@fr ;
+    dhc:designView "automation" .
+
+brick:Discharge_Air rdfs:label "Zuluft"@de,
+        "Air soufflé"@fr ;
+    dhc:designView "automation" .
+
+brick:Discharge_Air_Flow_Sensor rdfs:label "Zuluftvolumenstromsensor"@de,
+        "Capteur de débit d'air soufflé"@fr ;
+    dhc:designView "automation" .
+
+brick:Discharge_Air_Humidity_Sensor rdfs:label "Zuluftfeuchtesensor"@de,
+        "Capteur d'humidité d'air soufflé"@fr ;
+    dhc:designView "automation" .
+
+brick:Discharge_Air_Temperature_Cooling_Setpoint rdfs:label "Zulufttemperatur-Sollwert Kühlen"@de,
+        "Consigne de température d'air soufflé en refroidissement"@fr ;
+    dhc:designView "automation" .
+
+brick:Discharge_Air_Temperature_Heating_Setpoint rdfs:label "Zulufttemperatur-Sollwert Heizen"@de,
+        "Consigne de température d'air soufflé en chauffage"@fr ;
+    dhc:designView "automation" .
+
+brick:Discharge_Air_Temperature_Sensor rdfs:label "Zulufttemperatursensor"@de,
+        "Capteur de température d'air soufflé"@fr ;
+    dhc:designView "automation" .
+
+brick:Discharge_Air_Temperature_Setpoint rdfs:label "Zulufttemperatur-Sollwert"@de,
+        "Consigne de température d'air soufflé"@fr ;
+    dhc:designView "automation" .
+
+brick:Electric_Power_Sensor rdfs:label "elektrischer Leistungssensor"@de,
+        "Capteur de puissance électrique"@fr ;
+    dhc:designView "automation" .
+
+brick:Enable_Command rdfs:label "Freigabebefehl"@de,
+        "Commande d'activation"@fr ;
+    dhc:designView "automation" .
+
+brick:Enable_Differential_Enthalpy_Command rdfs:label "Freigabebefehl Enthalpiedifferenz"@de,
+        "Commande d'activation d'enthalpie différentielle"@fr ;
+    dhc:designView "automation" .
+
+brick:Enable_Differential_Temperature_Command rdfs:label "Freigabebefehl Temperaturdifferenz"@de,
+        "Commande d'activation de température différentielle"@fr ;
+    dhc:designView "automation" .
+
+brick:Enable_Fixed_Enthalpy_Command rdfs:label "Freigabebefehl feste Enthalpie"@de,
+        "Commande d'activation d'enthalpie fixe"@fr ;
+    dhc:designView "automation" .
+
+brick:Enable_Fixed_Temperature_Command rdfs:label "Freigabebefehl feste Temperatur"@de,
+        "Commande d'activation de température fixe"@fr ;
+    dhc:designView "automation" .
+
+brick:Energy_Sensor rdfs:label "Energiesensor"@de,
+        "Capteur d'énergie"@fr ;
+    dhc:designView "automation" .
+
+brick:Entering_Building_Hot_Water_Temperature_Sensor rdfs:label "Gebäude-Warmwasser-Eintrittstemperatursensor"@de,
+        "Capteur de température d'eau chaude entrante du bâtiment"@fr ;
+    dhc:designView "automation" .
+
+brick:Entering_Condenser_Water_Temperature_Sensor rdfs:label "Kondensatorwasser-Eintrittstemperatursensor"@de,
+        "Capteur de température d'eau de condenseur entrante"@fr ;
+    dhc:designView "automation" .
+
+brick:Entering_District_Hot_Water_Temperature_Sensor rdfs:label "Fernwärme-Eintrittstemperatursensor"@de,
+        "Capteur de température d'eau chaude urbaine entrante"@fr ;
+    dhc:designView "automation" .
+
+brick:Entering_Domestic_Hot_Water_Temperature_Sensor rdfs:label "Trinkwarmwasser-Eintrittstemperatursensor"@de,
+        "Capteur de température d'ECS entrante"@fr ;
+    dhc:designView "automation" .
+
+brick:Entering_Water_Temperature_Sensor rdfs:label "Wasser-Eintrittstemperatursensor"@de,
+        "Capteur de température d'eau entrante"@fr ;
+    dhc:designView "automation" .
+
+brick:Equipment rdfs:label "Betriebsmittel"@de,
+        "Équipement"@fr ;
+    dhc:designView "automation" .
+
+brick:Exhaust_Air_Flow_Sensor rdfs:label "Fortluftvolumenstromsensor"@de,
+        "Capteur de débit d'air extrait"@fr ;
+    dhc:designView "automation" .
+
+brick:Exhaust_Air_Flow_Setpoint rdfs:label "Fortluftvolumenstrom-Sollwert"@de,
+        "Consigne de débit d'air extrait"@fr ;
+    dhc:designView "automation" .
+
+brick:Exhaust_Air_Humidity_Sensor rdfs:label "Fortluftfeuchtesensor"@de,
+        "Capteur d'humidité d'air extrait"@fr ;
+    dhc:designView "automation" .
+
+brick:Exhaust_Air_Temperature_Sensor rdfs:label "Fortlufttemperatursensor"@de,
+        "Capteur de température d'air extrait"@fr ;
+    dhc:designView "automation" .
+
+brick:Fan_Status rdfs:label "Ventilatorstatus"@de,
+        "État du ventilateur"@fr ;
+    dhc:designView "automation" .
+
+brick:Fault_Status rdfs:label "Störstatus"@de,
+        "État de défaut"@fr ;
+    dhc:designView "automation" .
+
+brick:Filter_Differential_Pressure_Sensor rdfs:label "Filter-Differenzdrucksensor"@de,
+        "Capteur de pression différentielle du filtre"@fr ;
+    dhc:designView "automation" .
+
+brick:Frost_Sensor rdfs:label "Frostsensor"@de,
+        "Capteur de gel"@fr ;
+    dhc:designView "automation" .
+
+brick:High_Humidity_Alarm_Parameter rdfs:label "Alarmparameter hohe Feuchte"@de,
+        "Paramètre d'alarme d'humidité haute"@fr ;
+    dhc:designView "automation" .
+
+brick:High_Static_Pressure_Cutout_Setpoint_Limit rdfs:label "Grenzwert Abschaltung hoher statischer Druck"@de,
+        "Limite de coupure de pression statique haute"@fr ;
+    dhc:designView "automation" .
+
+brick:Hot_Water_Return_Temperature_Sensor rdfs:label "Warmwasser-Rücklauftemperatursensor"@de,
+        "Capteur de température d'eau chaude au retour"@fr ;
+    dhc:designView "automation" .
+
+brick:Hot_Water_Supply_Temperature_Sensor rdfs:label "Warmwasser-Vorlauftemperatursensor"@de,
+        "Capteur de température d'eau chaude au départ"@fr ;
+    dhc:designView "automation" .
+
+brick:Humidity_Sensor rdfs:label "Feuchtesensor"@de,
+        "Capteur d'humidité"@fr ;
+    dhc:designView "automation" .
+
+brick:Ice_Tank_Leaving_Water_Temperature_Sensor rdfs:label "Eisspeicher-Austrittstemperatursensor"@de,
+        "Capteur de température d'eau sortante du réservoir de glace"@fr ;
+    dhc:designView "automation" .
+
+brick:Illuminance_Sensor rdfs:label "Beleuchtungsstärkesensor"@de,
+        "Capteur d'éclairement"@fr ;
+    dhc:designView "automation" .
+
+brick:Integral_Gain_Parameter rdfs:label "Parameter Integralverstärkung"@de,
+        "Paramètre de gain intégral"@fr ;
+    dhc:designView "automation" .
+
+brick:Leaving_Building_Hot_Water_Temperature_Sensor rdfs:label "Gebäude-Warmwasser-Austrittstemperatursensor"@de,
+        "Capteur de température d'eau chaude sortante du bâtiment"@fr ;
+    dhc:designView "automation" .
+
+brick:Leaving_Building_Hot_Water_Temperature_Setpoint rdfs:label "Gebäude-Warmwasser-Austrittstemperatur-Sollwert"@de,
+        "Consigne de température d'eau chaude sortante du bâtiment"@fr ;
+    dhc:designView "automation" .
+
+brick:Leaving_Condenser_Water_Temperature_Sensor rdfs:label "Kondensatorwasser-Austrittstemperatursensor"@de,
+        "Capteur de température d'eau de condenseur sortante"@fr ;
+    dhc:designView "automation" .
+
+brick:Leaving_District_Hot_Water_Temperature_Sensor rdfs:label "Fernwärme-Austrittstemperatursensor"@de,
+        "Capteur de température d'eau chaude urbaine sortante"@fr ;
+    dhc:designView "automation" .
+
+brick:Leaving_Domestic_Hot_Water_Temperature_Sensor rdfs:label "Trinkwarmwasser-Austrittstemperatursensor"@de,
+        "Capteur de température d'ECS sortante"@fr ;
+    dhc:designView "automation" .
+
+brick:Leaving_Water_Temperature_Sensor rdfs:label "Wasser-Austrittstemperatursensor"@de,
+        "Capteur de température d'eau sortante"@fr ;
+    dhc:designView "automation" .
+
+brick:Lighting_Level_Command rdfs:label "Beleuchtungsstärke-Befehl"@de,
+        "Commande de niveau d'éclairage"@fr ;
+    dhc:designView "automation" .
+
+brick:Lighting_System rdfs:label "Beleuchtungsanlage"@de,
+        "Système d'éclairage"@fr ;
+    dhc:designView "automation" .
+
+brick:Lighting_Zone rdfs:label "Beleuchtungszone"@de,
+        "Zone d'éclairage"@fr ;
+    dhc:designView "automation" .
+
+brick:Low_Humidity_Alarm_Parameter rdfs:label "Alarmparameter niedrige Feuchte"@de,
+        "Paramètre d'alarme d'humidité basse"@fr ;
+    dhc:designView "automation" .
+
+brick:Low_Return_Air_Temperature_Alarm rdfs:label "Alarm niedrige Ablufttemperatur"@de,
+        "Alarme de température d'air repris basse"@fr ;
+    dhc:designView "automation" .
+
+brick:Max_Temperature_Setpoint_Limit rdfs:label "Grenzwert maximaler Temperatursollwert"@de,
+        "Limite de consigne de température maximale"@fr ;
+    dhc:designView "automation" .
+
+brick:Methane_Level_Sensor rdfs:label "Methan-Konzentrationssensor"@de,
+        "Capteur de concentration de méthane"@fr ;
+    dhc:designView "automation" .
+
+brick:Min_Limit rdfs:label "Untergrenze"@de,
+        "Limite minimale"@fr ;
+    dhc:designView "automation" .
+
+brick:Min_Temperature_Setpoint_Limit rdfs:label "Grenzwert minimaler Temperatursollwert"@de,
+        "Limite de consigne de température minimale"@fr ;
+    dhc:designView "automation" .
+
+brick:Mixed_Air_Temperature_Sensor rdfs:label "Mischlufttemperatursensor"@de,
+        "Capteur de température d'air mélangé"@fr ;
+    dhc:designView "automation" .
+
+brick:Mode_Status rdfs:label "Betriebsartstatus"@de,
+        "État de mode"@fr ;
+    dhc:designView "automation" .
+
+brick:Motion_Sensor rdfs:label "Bewegungsmelder"@de,
+        "Détecteur de mouvement"@fr ;
+    dhc:designView "automation" .
+
+brick:Occupancy_Command rdfs:label "Belegungsbefehl"@de,
+        "Commande d'occupation"@fr ;
+    dhc:designView "automation" .
+
+brick:Occupancy_Sensor rdfs:label "Präsenzmelder"@de,
+        "Détecteur de présence"@fr ;
+    dhc:designView "automation" .
+
+brick:On_Off_Command rdfs:label "Ein/Aus-Befehl"@de,
+        "Commande marche/arrêt"@fr ;
+    dhc:designView "automation" .
+
+brick:On_Off_Status rdfs:label "Ein/Aus-Status"@de,
+        "État marche/arrêt"@fr ;
+    dhc:designView "automation" .
+
+brick:Outside_Air_Flow_Sensor rdfs:label "Außenluftvolumenstromsensor"@de,
+        "Capteur de débit d'air extérieur"@fr ;
+    dhc:designView "automation" .
+
+brick:Outside_Air_Temperature_Sensor rdfs:label "Außenlufttemperatursensor"@de,
+        "Capteur de température d'air extérieur"@fr ;
+    dhc:designView "automation" .
+
+brick:Overridden_Status rdfs:label "Übersteuerungsstatus"@de,
+        "État de forçage"@fr ;
+    dhc:designView "automation" .
+
+brick:PM2.5_Sensor rdfs:label "Feinstaubsensor (PM2,5)"@de,
+        "Capteur de particules fines (PM2,5)"@fr ;
+    dhc:designView "automation" .
+
+brick:Parking_Structure rdfs:label "Parkhaus"@de,
+        "Parking couvert"@fr ;
+    dhc:designView "automation" .
+
+brick:Peak_Demand_Sensor rdfs:label "Spitzenlastsensor"@de,
+        "Capteur d'appel de pointe"@fr ;
+    dhc:designView "automation" .
+
+brick:Point rdfs:label "Datenpunkt"@de,
+        "Point"@fr ;
     dhc:appMode "private" ;
     dhc:designView "automation" ;
     dhc:isInstantiated false .
 
-brick:Sensor rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+brick:Point_Collection rdfs:label "Datenpunkt-Sammlung"@de,
+        "Collection de points"@fr ;
+    dhc:designView "automation" .
+
+brick:Power_Cycle_Count_Sensor rdfs:label "Sensor für Einschaltzyklen"@de,
+        "Capteur de nombre de cycles"@fr ;
+    dhc:designView "automation" .
+
+brick:Power_Sensor rdfs:label "Leistungssensor"@de,
+        "Capteur de puissance"@fr ;
+    dhc:designView "automation" .
+
+brick:Pressure_Sensor rdfs:label "Drucksensor"@de,
+        "Capteur de pression"@fr ;
+    dhc:designView "automation" .
+
+brick:Proportional_Gain_Parameter rdfs:label "Parameter Proportionalverstärkung"@de,
+        "Paramètre de gain proportionnel"@fr ;
+    dhc:designView "automation" .
+
+brick:Return_Air_CO2_Sensor rdfs:label "Abluft-CO₂-Sensor"@de,
+        "Capteur de CO₂ d'air repris"@fr ;
+    dhc:designView "automation" .
+
+brick:Return_Air_Differential_Pressure_Sensor rdfs:label "Abluft-Differenzdrucksensor"@de,
+        "Capteur de pression différentielle d'air repris"@fr ;
+    dhc:designView "automation" .
+
+brick:Return_Air_Flow_Sensor rdfs:label "Abluftvolumenstromsensor"@de,
+        "Capteur de débit d'air repris"@fr ;
+    dhc:designView "automation" .
+
+brick:Return_Air_Humidity_Sensor rdfs:label "Abluftfeuchtesensor"@de,
+        "Capteur d'humidité d'air repris"@fr ;
+    dhc:designView "automation" .
+
+brick:Return_Air_Temperature_Sensor rdfs:label "Ablufttemperatursensor"@de,
+        "Capteur de température d'air repris"@fr ;
+    dhc:designView "automation" .
+
+brick:Return_Chilled_Water_Temperature_Sensor rdfs:label "Kaltwasser-Rücklauftemperatursensor"@de,
+        "Capteur de température d'eau glacée au retour"@fr ;
+    dhc:designView "automation" .
+
+brick:Run_Time_Sensor rdfs:label "Laufzeitsensor"@de,
+        "Capteur de durée de marche"@fr ;
+    dhc:designView "automation" .
+
+brick:Sensor rdfs:label "Sensor"@de,
+        "Capteur"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "brick:Point" ;
     dhc:blocklyCategory "spatial" ;
@@ -680,14 +1393,102 @@ brick:Sensor rdfs:label "claude_to_do"@fr ;
     dhc:designView "automation" ;
     dhc:isInstantiated true .
 
-brick:Setpoint rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr ;
+brick:Sensor_Equipment rdfs:label "Sensorik"@de,
+        "Équipement de mesure"@fr ;
+    dhc:designView "automation" .
+
+brick:Setpoint rdfs:label "Sollwert"@de,
+        "Consigne"@fr ;
     dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "brick:Point" ;
     dhc:blocklyCategory "spatial" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "automation" ;
     dhc:isInstantiated true .
+
+brick:Speed_Setpoint rdfs:label "Drehzahl-Sollwert"@de,
+        "Consigne de vitesse"@fr ;
+    dhc:designView "automation" .
+
+brick:Start_Stop_Command rdfs:label "Start/Stopp-Befehl"@de,
+        "Commande de marche/arrêt"@fr ;
+    dhc:designView "automation" .
+
+brick:Start_Stop_Status rdfs:label "Start/Stopp-Status"@de,
+        "État de marche/arrêt"@fr ;
+    dhc:designView "automation" .
+
+brick:Static_Pressure_Sensor rdfs:label "Sensor für statischen Druck"@de,
+        "Capteur de pression statique"@fr ;
+    dhc:designView "automation" .
+
+brick:Static_Pressure_Setpoint rdfs:label "Sollwert für statischen Druck"@de,
+        "Consigne de pression statique"@fr ;
+    dhc:designView "automation" .
+
+brick:Supply_Air_Duct_Pressure_Status rdfs:label "Druckstatus Zuluftkanal"@de,
+        "État de pression de gaine de soufflage"@fr ;
+    dhc:designView "automation" .
+
+brick:Supply_Air_Flow_Sensor rdfs:label "Zuluftvolumenstromsensor"@de,
+        "Capteur de débit d'air soufflé"@fr ;
+    dhc:designView "automation" .
+
+brick:Supply_Air_Flow_Setpoint rdfs:label "Zuluftvolumenstrom-Sollwert"@de,
+        "Consigne de débit d'air soufflé"@fr ;
+    dhc:designView "automation" .
+
+brick:Supply_Air_Temperature_Sensor rdfs:label "Zulufttemperatursensor"@de,
+        "Capteur de température d'air soufflé"@fr ;
+    dhc:designView "automation" .
+
+brick:Supply_Chilled_Water_Temperature_Sensor rdfs:label "Kaltwasser-Vorlauftemperatursensor"@de,
+        "Capteur de température d'eau glacée au départ"@fr ;
+    dhc:designView "automation" .
+
+brick:Target_Zone_Air_Temperature_Setpoint rdfs:label "Zonentemperatur-Zielsollwert"@de,
+        "Consigne cible de température d'air de zone"@fr ;
+    dhc:designView "automation" .
+
+brick:Temperature rdfs:label "Temperatur"@de,
+        "Température"@fr ;
+    dhc:designView "automation" .
+
+brick:Temperature_Adjust_Sensor rdfs:label "Sensor für Temperaturkorrektur"@de,
+        "Capteur de correction de température"@fr ;
+    dhc:designView "automation" .
+
+brick:Temperature_Sensor rdfs:label "Temperatursensor"@de,
+        "Capteur de température"@fr ;
+    dhc:designView "automation" .
+
+brick:Temperature_Setpoint rdfs:label "Temperatursollwert"@de,
+        "Consigne de température"@fr ;
+    dhc:designView "automation" .
+
+brick:Valve_Command rdfs:label "Ventilbefehl"@de,
+        "Commande de vanne"@fr ;
+    dhc:designView "automation" .
+
+brick:Vent_Operating_Mode_Status rdfs:label "Status Lüftungsbetriebsart"@de,
+        "État de mode de ventilation"@fr ;
+    dhc:designView "automation" .
+
+brick:Ventilation_Air_Flow_Ratio_Limit rdfs:label "Grenzwert Lüftungsvolumenstromverhältnis"@de,
+        "Limite de ratio de débit de ventilation"@fr ;
+    dhc:designView "automation" .
+
+brick:Zone_Air_Temperature_Sensor rdfs:label "Zonentemperatursensor"@de,
+        "Capteur de température d'air de zone"@fr ;
+    dhc:designView "automation" .
+
+brick:Zone_Air_Temperature_Setpoint rdfs:label "Zonentemperatur-Sollwert"@de,
+        "Consigne de température d'air de zone"@fr ;
+    dhc:designView "automation" .
+
+rec:TemperatureObservation rdfs:label "Temperaturmessung"@de,
+        "Observation de température"@fr ;
+    dhc:designView "automation" .
 
 
 # ════════════════════════════════════════════════════════════
@@ -698,6 +1499,30 @@ dhc:Norm rdfs:label "Norm"@de,
         "Norme"@fr ;
     dhc:designView "compliance" .
 
+dhc:NormEdition rdfs:label "Normausgabe"@de,
+        "Édition de norme"@fr ;
+    dhc:designView "compliance" .
+
+dhc:NormEdition_NFC14100_2008 rdfs:label "NF C 14-100:2008"@de,
+        "NF C 14-100:2008"@fr ;
+    dhc:designView "compliance" .
+
+dhc:NormEdition_NFC14100_2021 rdfs:label "NF C 14-100:2021"@de,
+        "NF C 14-100:2021"@fr ;
+    dhc:designView "compliance" .
+
+dhc:NormEdition_NFC15100_2002 rdfs:label "NF C 15-100:2002"@de,
+        "NF C 15-100:2002"@fr ;
+    dhc:designView "compliance" .
+
+dhc:NormEdition_NFC15100_2015 rdfs:label "NF C 15-100:2015"@de,
+        "NF C 15-100:2015"@fr ;
+    dhc:designView "compliance" .
+
+dhc:NormEdition_NFC15100_2024 rdfs:label "NF C 15-100:2024"@de,
+        "NF C 15-100:2024"@fr ;
+    dhc:designView "compliance" .
+
 dhc:Norm_NFC14100 rdfs:label "NF C 14-100"@de,
         "NF C 14-100"@fr ;
     dhc:designView "compliance" .
@@ -706,8 +1531,32 @@ dhc:Norm_NFC15100 rdfs:label "NF C 15-100"@de,
         "NF C 15-100"@fr ;
     dhc:designView "compliance" .
 
+dhc:builtUnder rdfs:label "errichtet nach"@de,
+        "réalisé selon"@fr ;
+    dhc:designView "compliance" .
+
+dhc:editionEffectiveDate rdfs:label "Inkrafttretensdatum"@de,
+        "date d'entrée en vigueur"@fr ;
+    dhc:designView "compliance" .
+
+dhc:editionOf rdfs:label "Ausgabe von"@de,
+        "édition de"@fr ;
+    dhc:designView "compliance" .
+
+dhc:editionYear rdfs:label "Ausgabejahr"@de,
+        "année d'édition"@fr ;
+    dhc:designView "compliance" .
+
 dhc:governedBy rdfs:label "geregelt durch"@de,
         "régi par"@fr ;
+    dhc:designView "compliance" .
+
+dhc:hasEdition rdfs:label "hat Ausgabe"@de,
+        "a pour édition"@fr ;
+    dhc:designView "compliance" .
+
+dhc:latestEdition rdfs:label "aktuelle Ausgabe"@de,
+        "édition en vigueur"@fr ;
     dhc:designView "compliance" .
 
 dhc:normCategory rdfs:label "Norm-Kategorie"@de,
@@ -728,5 +1577,13 @@ dhc:normId rdfs:label "Norm-ID"@de,
 
 dhc:normWeight rdfs:label "Norm-Gewichtung"@de,
         "poids de la norme"@fr ;
+    dhc:designView "compliance" .
+
+dhc:shapesFile rdfs:label "Shapes-Datei"@de,
+        "fichier de shapes"@fr ;
+    dhc:designView "compliance" .
+
+dhc:supersedes rdfs:label "ersetzt"@de,
+        "remplace"@fr ;
     dhc:designView "compliance" .
 

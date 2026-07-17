@@ -21,3 +21,8 @@ Thumbs.db
 
 # js-tools generated artifacts (rebuilt by scripts/preview-abox.sh)
 js-tools/data/
+
+# py-tools generated reconciliation artifacts (ontology_explorer.py --scan/--template)
+py-tools/out.csv
+py-tools/*.csv
+py-tools/.~lock.*

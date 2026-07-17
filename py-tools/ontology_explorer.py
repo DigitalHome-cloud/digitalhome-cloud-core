@@ -1244,6 +1244,324 @@ def _cli_purge(uri_arg):
     return 0
 
 
+# ════════════════════════════════════════════════════════════════════════════
+#  Reconciliation  (--scan / --massupdate)
+# ════════════════════════════════════════════════════════════════════════════
+#
+# dhc-app-metadata.ttl must stay aligned with the entities the models actually
+# use: every in-scope class/property/enum carries a dhc:designView + @de + @fr.
+# --scan reports the gap; --massupdate closes it from a CSV, non-interactively.
+#
+# --massupdate is the scripted twin of enrich_external_class: it writes only
+# annotation triples, routes external subjects to dhc-app-metadata.ttl and dhc:
+# subjects via the same splitter, and serializes through the one writer. It does
+# a LANG-AWARE upsert — setting @de must not clobber an existing @en/@fr — which
+# is stricter than the interactive path's blanket remove.
+
+ABOX_DIR = _resolve("../schema/abox")
+
+# The three built-in vocabularies whose terms are never DHC entities to annotate.
+_BUILTIN_NS = (str(OWL), str(RDF), str(RDFS), str(SH))
+
+def _load_abox_types():
+    """Every class an A-Box individual is typed as, across schema/abox/**.ttl
+    (recursive — includes the reference examples). Returns a set of URIRefs."""
+    g = Graph()
+    root = Path(ABOX_DIR)
+    if root.is_dir():
+        for f in sorted(root.glob("**/*.ttl")):
+            try:
+                g.parse(str(f), format="turtle")
+            except Exception as e:
+                print(f"  [skip abox] {f.name}: {e}", file=sys.stderr)
+    types = set()
+    for _, _, o in g.triples((None, RDF.type, None)):
+        if isinstance(o, URIRef) and not str(o).startswith(_BUILTIN_NS):
+            types.add(o)
+    return types
+
+# The DHC ontology's own vocabularies. An A-Box may reference a protocol or
+# versioned namespace (bacnet:, ref:, brick_v_1_0_2:, a building-local bldg:) —
+# those are NOT DHC entities to annotate, and the user's scope is explicitly
+# "entities FROM Brick+extensions and dhc-core". The reliable test for that is
+# not a namespace allow-list (reference files invent their own) but whether the
+# entity is actually DEFINED in the loaded T-Box.
+_DHC_VOCAB_NS = (DHC_NS_STR, KNOWN_NS["brick"], KNOWN_NS["s223"], KNOWN_NS["rec"])
+
+def _is_defined(ent, union):
+    """True if the entity has any definition in the loaded T-Box (Brick+extensions
+    ∪ dhc-core ∪ metadata ∪ drafts). A class merely REFERENCED by an A-Box but
+    defined nowhere we load (bacnet:Port, brick_v_1_0_2:*) is not in scope."""
+    return isinstance(ent, URIRef) and any(union.triples((ent, None, None)))
+
+def _inscope_entities(union, file_graphs):
+    """The set of entities that MUST be fully annotated:
+      · every class an A-Box individual is typed as (recursive over schema/abox/)
+      · every dhc: class / property / enum-individual declared in dhc-core.ttl
+      · every subject already annotated in dhc-app-metadata.ttl
+    ...restricted to DHC vocabularies AND actually defined in the loaded T-Box, so
+    protocol/versioned/building-local namespaces from the reference examples drop
+    out. Annotation-property definitions and the ontology header are NOT entities."""
+    core = file_graphs[TBOX_CORE]
+    meta = file_graphs[TBOX_METADATA]
+
+    used = _load_abox_types()
+
+    core_vocab = set()
+    for t in (OWL.Class, OWL.ObjectProperty, OWL.DatatypeProperty):
+        for s in core.subjects(RDF.type, t):
+            if isinstance(s, URIRef) and _is_dhc(s):
+                core_vocab.add(s)
+    # dhc: enum individuals (e.g. dhc:CircuitType_IRVE, dhc:Role_Owner): a dhc:
+    # subject in core whose own rdf:type is itself a dhc: class.
+    for s, _, o in core.triples((None, RDF.type, None)):
+        if isinstance(s, URIRef) and _is_dhc(s) and isinstance(o, URIRef) and _is_dhc(o):
+            core_vocab.add(s)
+
+    annotated = set()
+    for s in set(meta.subjects()):
+        if not isinstance(s, URIRef):
+            continue
+        # exclude the annotation vocabulary itself and the ontology header
+        if s in APP_ANNOTATION_PREDS:
+            continue
+        if (s, RDF.type, OWL.AnnotationProperty) in meta or (s, RDF.type, OWL.Ontology) in meta:
+            continue
+        annotated.add(s)
+
+    candidates = used | core_vocab | annotated
+    return {e for e in candidates
+            if str(e).startswith(_DHC_VOCAB_NS) and _is_defined(e, union)}
+
+def _missing_annotations(ent, meta, union):
+    """What `ent` lacks against the done bar (designView + @de + @fr), plus any
+    claude_to_do placeholder.
+
+    Coverage is checked against `meta` — the COMMITTED tbox metadata overlay,
+    the file the apps ship and read — NOT the union. Checking the union would
+    count annotations that only exist in the gitignored schema/draft/ (or upstream
+    Brick labels that are English-only anyway), so a fresh clone would disagree.
+    The union is used only to detect stray claude_to_do wherever it lurks."""
+    miss = []
+    if not any(meta.triples((ent, DHC.designView, None))):
+        miss.append("designView")
+    langs = {o.language for o in meta.objects(ent, RDFS.label) if isinstance(o, Literal) and o.language}
+    if "de" not in langs:
+        miss.append("@de")
+    if "fr" not in langs:
+        miss.append("@fr")
+    for p, o in union.predicate_objects(ent):
+        if isinstance(o, Literal) and str(o) == "claude_to_do":
+            miss.append(f"claude_to_do:{make_shortener(union)(p)}")
+    return sorted(set(miss))
+
+def _cli_scan(csv_path=None, template_path=None):
+    """Coverage report over the in-scope entity set. Exit 0 if fully covered,
+    2 if any gaps (so CI/scripts can gate on it)."""
+    g, file_graphs = load_graph()
+    _refresh_app_annotation_preds(file_graphs[TBOX_METADATA], file_graphs[DRAFT_METADATA])
+    sh = make_shortener(g)
+
+    inscope = _inscope_entities(g, file_graphs)
+    if not inscope:
+        print("✗ in-scope set is empty — scan misconfigured (no A-Box types, no dhc-core vocab)")
+        return 2
+
+    meta = file_graphs[TBOX_METADATA]
+    rows = []            # (category, curie, missing[])
+    for ent in sorted(inscope, key=lambda u: sh(u)):
+        miss = _missing_annotations(ent, meta, g)
+        if not miss:
+            continue
+        cur = sh(ent)
+        cat = "CLS" if any(g.triples((ent, RDF.type, OWL.Class))) else \
+              "PROP" if (any(g.triples((ent, RDF.type, OWL.ObjectProperty))) or
+                         any(g.triples((ent, RDF.type, OWL.DatatypeProperty)))) else "ENT"
+        rows.append((cat, cur, miss))
+
+    total, gaps = len(inscope), len(rows)
+    print(f"\n  in scope: {total}   ·   complete: {total - gaps}   ·   with gaps: {gaps}\n")
+    by_ns = defaultdict(int)
+    for _, cur, _ in rows:
+        by_ns[cur.split(":", 1)[0]] += 1
+    if rows:
+        print("  gaps by namespace: " + "  ".join(f"{k} {v}" for k, v in sorted(by_ns.items(), key=lambda kv: -kv[1])))
+        for cat, cur, miss in rows[:40]:
+            print(f"    [{cat:4}] {cur:<45} missing: {', '.join(miss)}")
+        if len(rows) > 40:
+            print(f"    … and {len(rows) - 40} more (use --csv for the full list)")
+
+    if csv_path:
+        with open(csv_path, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["Cat", "Entity", "Missing"])
+            for cat, cur, miss in rows:
+                w.writerow([cat, cur, "|".join(miss)])
+        print(f"\n  → report: {csv_path}")
+
+    if template_path:
+        # A fill-in E,P,V skeleton: one blank row per (entity × missing slot),
+        # with the @en source as a comment so the translator has it in view.
+        with open(template_path, "w", newline="", encoding="utf-8") as f:
+            f.write("# Fill the V column, then: ontology_explorer.py --massupdate this.csv\n")
+            f.write("#   label/comment: bare text ending in @de or @fr  (NOT quoted)\n")
+            f.write("#   designView:    one bare enum word (electrical, spatial, …)\n")
+            f.write("#   an unfilled label row (just '@de') is rejected until filled\n")
+            w = csv.writer(f)
+            w.writerow(["E", "P", "V"])
+            for cat, cur, miss in rows:
+                ent = resolve_name(cur, g)
+                en = next((str(o) for o in g.objects(ent, RDFS.label)
+                           if isinstance(o, Literal) and o.language == "en"), None) \
+                     or next((str(o) for o in g.objects(ent, RDFS.label)
+                              if isinstance(o, Literal) and not o.language), None) \
+                     or next((str(o) for o in g.objects(ent, SKOS.definition)), "")
+                f.write(f"# {cur}  —  EN: {en}\n")
+                for m in miss:
+                    if m == "designView":
+                        w.writerow([cur, "dhc:designView", ""])
+                    elif m == "@de":
+                        w.writerow([cur, "rdfs:label", "@de"])
+                    elif m == "@fr":
+                        w.writerow([cur, "rdfs:label", "@fr"])
+                    elif m.startswith("claude_to_do:"):
+                        w.writerow([cur, m.split(":", 1)[1], ""])
+        print(f"  → template: {template_path}")
+
+    return 0 if not rows else 2
+
+def _expand_curie(name, g):
+    """CURIE/URI → URIRef by pure namespace expansion — no 'must already have
+    triples' requirement (unlike resolve_name), so a predicate like rdfs:label
+    resolves even though it only ever appears in predicate position."""
+    name = name.strip()
+    if name.startswith("<") and name.endswith(">"):
+        return URIRef(name[1:-1])
+    ns = dict(KNOWN_NS)
+    for p, u in g.namespaces():
+        if p:
+            ns[str(p)] = str(u)
+    if ":" in name:
+        pfx, local = name.split(":", 1)
+        if pfx in ns:
+            return URIRef(ns[pfx] + local)
+    return None
+
+def _parse_value(v, union):
+    """Parse a CSV V cell → an rdflib term, or ('ERR', msg).
+
+    The value is UNQUOTED — CSV already owns the `"` character for its own field
+    quoting, so a `"text"@fr` value collides with it (the parser eats the quotes
+    and strips the language tag). Bare forms have no such collision; CSV handles
+    embedded commas transparently and the trailing `@xx` survives the round-trip.
+
+       text@de     → Literal(text, 'de')      (label/comment in a language)
+       true|false  → Literal(bool)            (a boolean annotation)
+       prefix:local→ URIRef                    (an object-valued annotation)
+       text        → Literal(text)            (a bare enum word, e.g. electrical)
+
+    Caveat: a literal whose text genuinely ends in `@xx` (two letters) is read as
+    language-tagged. Vanishingly rare for a UI label; documented."""
+    v = v.strip()
+    if v == "":
+        return ("ERR", "empty value")
+    m = re.match(r'^(.*)@([a-z]{2})$', v, re.S)          # bare  text@de
+    if m:
+        if m.group(1).strip() == "":
+            return ("ERR", "language tag with no text (unfilled template row?)")
+        return Literal(m.group(1), lang=m.group(2))
+    if v in ("true", "false"):
+        return Literal(v == "true", datatype=XSD.boolean)
+    if re.match(r'^[A-Za-z][\w.-]*:[\w.-]+$', v):        # looks like a CURIE
+        uri = resolve_name(v, union)
+        if uri is not None:
+            return uri
+    return Literal(v)                                     # bare enum word / free text
+
+def _cli_massupdate(csv_path):
+    """Apply an E,P,V CSV of annotations through the one writer. TRANSACTIONAL:
+    validate every row first; if ANY row is invalid, report all errors and write
+    nothing (exit 2). Only a fully-valid CSV touches the files (exit 0). This
+    keeps the metadata file from ever landing in a half-applied state — fix the
+    CSV and re-run."""
+    if not Path(csv_path).exists():
+        print(f"  ✗ {csv_path} not found")
+        return 2
+    g, file_graphs = load_graph()
+    _refresh_app_annotation_preds(file_graphs[TBOX_METADATA], file_graphs[DRAFT_METADATA])
+    tbox_core = file_graphs[TBOX_CORE]
+    tbox_meta = file_graphs[TBOX_METADATA]
+
+    allowed = set(APP_ANNOTATION_PREDS) | {RDFS.label, RDFS.comment}
+    plan, errors = [], []           # plan: (subj, pred, val); errors: (row, what, why)
+
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.reader(r for r in f if not r.lstrip().startswith("#"))
+        header = next(reader, None)
+        if not header or [h.strip().upper() for h in header[:3]] != ["E", "P", "V"]:
+            print(f"  ✗ expected header 'E,P,V', got {header}")
+            return 2
+        for i, row in enumerate(reader, start=2):
+            if not row or all(c.strip() == "" for c in row):
+                continue
+            if len(row) < 3:
+                errors.append((i, ",".join(row), "fewer than 3 columns")); continue
+            e, p, v = row[0].strip(), row[1].strip(), row[2]
+            subj = resolve_name(e, g)                    # entity MUST already exist
+            if subj is None:
+                errors.append((i, e, "entity is not defined in the T-Box")); continue
+            pred = _expand_curie(p, g)                   # predicate: pure expansion
+            if pred is None:
+                errors.append((i, f"{e} {p}", "predicate namespace unknown")); continue
+            if pred not in allowed:
+                errors.append((i, f"{e} {p}", "not an annotation predicate (domain triples go via --promote)")); continue
+            dm = re.match(r'^__delete__(?:@([a-z]{2}))?$', v.strip())
+            if dm:                                        # parity with the menu's 'd'
+                plan.append((subj, pred, ("DELETE", dm.group(1))))  # lang or None (=all)
+                continue
+            val = _parse_value(v, g)
+            if isinstance(val, tuple) and val[0] == "ERR":
+                errors.append((i, f"{e} {p}", val[1])); continue
+            choices = _annotation_in(g, pred)
+            if choices and str(val) not in choices:
+                errors.append((i, f"{e} {p}", f"'{val}' not in {choices}")); continue
+            if _annotation_range(g, pred) == XSD.boolean and not (isinstance(val, Literal) and val.datatype == XSD.boolean):
+                errors.append((i, f"{e} {p}", "expected true/false")); continue
+            plan.append((subj, pred, val))
+
+    if errors:
+        print(f"\n  ✗ {len(errors)} invalid row(s) — NOTHING written; fix and re-run:")
+        for i, what, why in errors:
+            print(f"    row {i}: {what} — {why}")
+        return 2
+
+    applied = deleted = 0
+    for subj, pred, val in plan:
+        is_delete = isinstance(val, tuple) and val[0] == "DELETE"
+        # the language filter: for an upsert of a tagged literal, replace only
+        # that language; for a __delete__@LL, remove only that language; for a
+        # bare __delete__, remove every object of the predicate.
+        want_lang = (val[1] if is_delete else
+                     (val.language if isinstance(val, Literal) else None))
+        for gph in (tbox_core, tbox_meta, file_graphs[DRAFT_CORE], file_graphs[DRAFT_METADATA]):
+            for o in list(gph.objects(subj, pred)):
+                if want_lang is not None and not (isinstance(o, Literal) and o.language == want_lang):
+                    continue
+                gph.remove((subj, pred, o))
+        if is_delete:
+            deleted += 1
+            continue
+        # route: external subject → metadata only; dhc: subject → splitter
+        dest = (tbox_meta if _is_app_annotation_triple(pred, val) else tbox_core) if _is_dhc(subj) else tbox_meta
+        dest.add((subj, pred, val))
+        applied += 1
+
+    _serialize_all(file_graphs, g)
+    _reload(g, file_graphs)
+    print(f"\n  ✅ massupdate: {applied} applied · {deleted} deleted")
+    return 0
+
+
 def _run_cli(argv):
     """Handle --promote/--purge. Returns an exit code, or None to fall through
     to the interactive menu."""
@@ -1255,10 +1573,13 @@ def _run_cli(argv):
             "  ontology_explorer.py                      # interactive menu (humans)\n"
             "  ontology_explorer.py --promote dhc:Circuit\n"
             "  ontology_explorer.py --promote dhc:governedBy   # properties work too\n"
-            "  ontology_explorer.py --purge   dhc:Norm_BS7671\n\n"
-            "Both flags are repeatable and run in order; the first failure stops the run.\n"
-            "Annotation review is skipped — use the interactive menu to add or change\n"
-            "annotations. Writes go through the same splitter and serializer as [4]/[6]."
+            "  ontology_explorer.py --purge   dhc:Norm_BS7671\n"
+            "  ontology_explorer.py --scan --template fill.csv # coverage + fill-in skeleton\n"
+            "  ontology_explorer.py --massupdate fill.csv      # apply E,P,V annotations\n\n"
+            "--promote/--purge are repeatable and run in order; the first failure stops.\n"
+            "Annotation review is skipped by those two — use the interactive menu, or\n"
+            "--massupdate, to add or change annotations. All writes go through the same\n"
+            "splitter and serializer as [4]/[6]."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -1266,10 +1587,23 @@ def _run_cli(argv):
                     help="promote a dhc: subject drafts → tbox (repeatable)")
     ap.add_argument("--purge", action="append", metavar="URI", default=[],
                     help="purge a dhc: subject from tbox AND drafts (repeatable)")
+    ap.add_argument("--scan", action="store_true",
+                    help="report annotation coverage over the in-scope entity set")
+    ap.add_argument("--csv", metavar="PATH", default=None,
+                    help="with --scan: write the Cat,Entity,Missing report here")
+    ap.add_argument("--template", metavar="PATH", default=None,
+                    help="with --scan: write a fill-in E,P,V skeleton here")
+    ap.add_argument("--massupdate", metavar="CSV", default=None,
+                    help="apply an E,P,V annotation CSV through the one writer")
     args = ap.parse_args(argv)
 
-    if not args.promote and not args.purge:
+    if not (args.promote or args.purge or args.scan or args.massupdate):
         return None                     # → interactive
+
+    if args.scan:
+        return _cli_scan(args.csv, args.template)
+    if args.massupdate:
+        return _cli_massupdate(args.massupdate)
 
     # purge before promote: re-adding a corrected definition is purge-then-promote
     for uri in args.purge:
