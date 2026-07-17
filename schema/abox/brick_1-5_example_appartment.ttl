@@ -1,0 +1,52 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Brick 1.5 reference — simple apartment (UNMODIFIED UPSTREAM)
+#
+#  Verbatim copy of experimental/Brick/examples/simple_apartment/apartment.ttl.
+#  Kept as-is on purpose: a standard, canonical Brick 1.5 model, so the viewer
+#  can be seen rendering one next to the DHC electrical models. Only this header
+#  is added; every triple below is upstream's.
+#
+#  What it shows, by contrast with the DHC A-Boxes:
+#   - Pure brick: — no dhc:, no s223: topology, no norm layer. Relationships are
+#     all brick:isPartOf (structural). No brick:feeds, so NO flow edges.
+#   - Every node is 'unchecked' in compliance mode: the C-Box targets dhc:Circuit
+#     and friends, nothing here. A standard Brick model has no compliance opinion
+#     at all — which is exactly the point of the norm layer DHC adds on top.
+#   - owl:imports is inert here: build-abox.mjs loads Brick+extensions.ttl itself
+#     for the class hierarchy and does not dereference the import.
+# ═══════════════════════════════════════════════════════════════════════════
+
+@prefix apt: <http://example.com/apartment#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+<http://example.com/apartment> a owl:Ontology ;
+    owl:imports <https://brickschema.org/schema/1.5/Brick> .
+
+apt:bedroom a brick:Room ;
+    brick:isPartOf apt:bedroom_lighting,
+        apt:my_apartment,
+        apt:thermostat_zone .
+
+apt:kitchen a brick:Room ;
+    brick:isPartOf apt:kitchen_lighting,
+        apt:my_apartment,
+        apt:thermostat_zone .
+
+apt:living_room a brick:Room ;
+    brick:isPartOf apt:living_room_lighting,
+        apt:my_apartment,
+        apt:thermostat_zone .
+
+apt:bedroom_lighting a brick:Lighting_Zone .
+
+apt:kitchen_lighting a brick:Lighting_Zone .
+
+apt:living_room_lighting a brick:Lighting_Zone .
+
+brick:Apartment rdfs:subClassOf brick:Space .
+
+apt:my_apartment a brick:Apartment .
+
+apt:thermostat_zone a brick:HVAC_Zone .

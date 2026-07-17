@@ -49,8 +49,12 @@ const PREFIXES = {
 
 const curie = (iri) => {
   for (const [ns, p] of Object.entries(PREFIXES)) if (iri.startsWith(ns)) return `${p}:${iri.slice(ns.length)}`;
-  // A-Box individuals live under an ex: base that varies per file
-  const m = /^https?:\/\/example\.org\/[^/]*\/?(.+)$/.exec(iri);
+  // A-Box individuals live under an example base that varies per file — the DHC
+  // models use http://example.org/<slug>/ , upstream Brick examples use
+  // http://example.com/<slug># . Shorten either to a local name rather than
+  // leaving a full IRI as the node label. Split on the last / or # so the
+  // fragment ("bedroom") survives without the base ("apartment#").
+  const m = /^https?:\/\/example\.(?:org|com)\/.*[/#]([^/#]+)$/.exec(iri);
   return m ? `ex:${m[1]}` : iri;
 };
 
@@ -385,8 +389,14 @@ async function buildOne(rel) {
     return nodes.get(iri);
   };
 
+  // The ontology header triple (<...> a owl:Ontology) is document metadata, not
+  // an A-Box individual — the same category as the blank nodes excluded below.
+  // Upstream Brick examples carry one; rendered it is a lone unconnected node
+  // labelled with a full IRI. This viewer shows instances, so skip it.
+  const OWL_ONTOLOGY = 'http://www.w3.org/2002/07/owl#Ontology';
   for (const q of abox.match(null, namedNode(`${RDF}type`), null)) {
     if (q.subject.termType !== 'NamedNode') continue;
+    if (q.object.value === OWL_ONTOLOGY) continue;
     const n = ensure(q.subject.value);
     n.types.push(curie(q.object.value));
     n.typeIris.push(q.object.value);
