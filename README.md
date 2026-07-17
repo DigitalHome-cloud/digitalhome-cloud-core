@@ -13,21 +13,24 @@ Do not merge to `main` or `stage` until the Modeler v2 work lands.
 ```
 schema/
   tbox/                           ← T-Box: norm-agnostic domain vocabulary
-    dhc-core.schema.ttl             classes, properties, R-Box axioms, enum instances
-    dhc-roles.ttl                   role instances (Owner, Designer, Installer, …)
-    context.jsonld                  JSON-LD context for A-Box serialization
-  cbox/                           ← C-Box: per-norm SHACL profiles
-    cbox-manifest.json              registry of published norm profiles
+    Brick+extensions.ttl            read-only baseline: Brick 1.5 + REC + ASHRAE 223P
+    dhc-core.ttl                    classes, properties, R-Box axioms, enum instances (@en)
+    dhc-app-metadata.ttl            UI overlay: designView, blockly*, @de/@fr labels
+  cbox/                           ← C-Box: SHACL profiles, one per norm EDITION
+    cbox-manifest.json              registry of published profiles
     electrical/
-      nfc14100.shapes.ttl           NF C 14-100   (FR — energy delivery)
-      nfc15100.shapes.ttl           NF C 15-100   (FR — installation)
-      din-vde-0100.shapes.ttl       DIN VDE 0100  (DE)
-      arei-rgie.shapes.ttl          AREI / RGIE   (BE)
-      bs7671.shapes.ttl             BS 7671       (UK)
+      nfc14100-2008.shapes.ttl      NF C 14-100:2008  (FR — energy delivery)
+      nfc15100-2015.shapes.ttl      NF C 15-100:2015  (FR — installation) — the base
+      nfc15100-2024.shapes.ttl      NF C 15-100:2024  — delta over 2015; ⚠ illustrative
+  abox/                           ← prototype / POC / example models only
+    electrical-installation-house.ttl
+js-tools/                         ← offline A-Box viewer + validator (see its README)
+py-tools/
+  ontology_explorer.py            ← the ONLY sanctioned writer for tbox/dhc-*.ttl
 tests/
   _helpers/loadGraph.js           ← n3 + rdf-validate-shacl helpers
   tbox/                           ← T-Box structural tests
-  cbox/                           ← per-norm SHACL conformance tests
+  cbox/                           ← per-edition SHACL conformance tests
   fixtures/                       ← valid / invalid A-Box fragments
 ```
 
@@ -67,16 +70,34 @@ npm run test:watch # iterative authoring
 
 ## Supported norms
 
-| Norm        | Country | Profile file                                          |
-|-------------|---------|-------------------------------------------------------|
-| NF C 14-100 | FR      | `schema/cbox/electrical/nfc14100.shapes.ttl`          |
-| NF C 15-100 | FR      | `schema/cbox/electrical/nfc15100.shapes.ttl`          |
-| DIN VDE 0100| DE      | `schema/cbox/electrical/din-vde-0100.shapes.ttl`      |
-| AREI / RGIE | BE      | `schema/cbox/electrical/arei-rgie.shapes.ttl`         |
-| BS 7671     | UK      | `schema/cbox/electrical/bs7671.shapes.ttl`            |
+**France only, deliberately** (since v3.0.0). DIN VDE 0100 (DE), AREI/RGIE (BE)
+and BS 7671 (GB) were removed — shapes, tests, fixtures, manifest entries and
+`dhc:Norm` instances together — so the norm layer could be got right against one
+country first. They return once the core is released; re-adding one means all
+four artifacts plus a valid *and* invalid fixture per shape. See CLAUDE.md.
+
+One profile per **edition**, not per norm — that is what makes compliance
+computable rather than declared:
+
+| Norm | Edition | In force? | Profile file |
+|---|---|---|---|
+| NF C 14-100 | 2008 | no | `schema/cbox/electrical/nfc14100-2008.shapes.ttl` |
+| NF C 14-100 | 2021 | **yes** | *(none — so nothing under this norm can be proven current)* |
+| NF C 15-100 | 2015-A5 | no | `schema/cbox/electrical/nfc15100-2015.shapes.ttl` |
+| NF C 15-100 | 2024 | **yes** | `schema/cbox/electrical/nfc15100-2024.shapes.ttl` — delta over 2015 |
+
+An A-Box is validated against each, and the verdicts are compared: passing the
+edition in force is compliant; passing an older one and failing the current is
+**grandfathered** — lawful as built, re-qualified the moment it is modified.
+Nothing in the A-Box declares this. See `js-tools/README.md` § Compliance and
+CLAUDE.md § One C-Box profile per norm EDITION.
+
+> ⚠ The NF C 15-100:2024 rules are **illustrative**, not sourced from the
+> published text. They exist so the mechanism has something to compute, and are
+> marked `UNVERIFIED` throughout.
 
 A circuit can declare `dhc:governedBy` against **multiple** norms; each norm's
-shapes are evaluated independently. See
+shapes are evaluated independently, and the worst verdict wins. See
 `tests/fixtures/valid-fr-circuit-multi-norm.ttl` for a working example.
 
 ## Related documentation

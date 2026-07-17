@@ -1,0 +1,190 @@
+import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { readTtl, parseToStore, namedNode, repoRoot } from '../_helpers/loadGraph.js';
+
+const DHC = 'https://digitalhome.cloud/ontology#';
+const RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+
+const tbox = parseToStore(
+  readTtl('schema/tbox/dhc-core.ttl') + '\n' + readTtl('schema/tbox/dhc-app-metadata.ttl'),
+);
+const abox = parseToStore(readTtl('schema/abox/electrical-installation-house.ttl'));
+
+const short = (v) => v.replace(DHC, 'dhc:');
+const subjects = (pred) => [...tbox.match(null, namedNode(`${DHC}${pred}`), null)];
+const objectsOf = (s, pred, store = tbox) =>
+  [...store.match(namedNode(s), namedNode(`${DHC}${pred}`), null)].map((q) => q.object.value);
+const typed = (cls) =>
+  [...tbox.match(null, namedNode(`${RDF}type`), namedNode(`${DHC}${cls}`))].map((q) => q.subject.value);
+
+// ── The grandfathering chain ──────────────────────────────────────────────
+//
+// Compliance is COMPUTED: js-tools/build-abox.mjs validates the A-Box against
+// every edition that declares dhc:shapesFile and compares the verdicts. Green
+// means "passes the edition in force"; yellow means "passes an older one and
+// fails the current" — grandfathered.
+//
+// That rests entirely on four T-Box properties, and every one of them fails
+// silently when broken:
+//
+//   dhc:editionOf     edition → norm.        Unresolvable ⇒ no norm ⇒ no verdict.
+//   dhc:latestEdition norm → edition in force. Missing ⇒ nothing can be called
+//                     current, so nothing is ever honestly green.
+//   dhc:supersedes    the chain build-abox walks to concatenate a delta onto its
+//                     base. Broken ⇒ the 2024 run silently loses the 2015 rules
+//                     and reports far too little.
+//   dhc:shapesFile    edition → the shapes implementing it. Missing ⇒ that
+//                     edition is never validated at all, and SHACL's answer to
+//                     "nothing ran" is conforms:true.
+//
+// dhc:latestEdition was DEFINED for months and never once ASSERTED — it parsed,
+// it had a label, and every occurrence in the file was inside an rdfs:comment.
+// Nothing noticed, because nothing read it yet.
+//
+// So these are not schema-tidiness assertions. Each one, if it fails, means the
+// compliance colouring silently lies rather than errors.
+
+describe('norm editions — the chain that makes grandfathering computable', () => {
+  const norms = typed('Norm');
+  const editions = typed('NormEdition');
+
+  it('the T-Box declares norms and editions at all', () => {
+    // Guards the guards: every assertion below is vacuously true over an empty
+    // set, so a rename that empties these would turn this whole file green.
+    expect(norms.length, 'no dhc:Norm instances').toBeGreaterThan(0);
+    expect(editions.length, 'no dhc:NormEdition instances').toBeGreaterThan(0);
+  });
+
+  it('every dhc:Norm asserts exactly one dhc:latestEdition', () => {
+    const bad = norms
+      .map((n) => ({ n: short(n), count: objectsOf(n, 'latestEdition').length }))
+      .filter((x) => x.count !== 1);
+    expect(bad, 'a norm with no latestEdition makes every node under it "edition undeclared"').toEqual([]);
+  });
+
+  it('every dhc:NormEdition asserts dhc:editionOf a declared dhc:Norm', () => {
+    const declared = new Set(norms);
+    const bad = editions
+      .map((e) => ({ e: short(e), of: objectsOf(e, 'editionOf') }))
+      .filter((x) => x.of.length !== 1 || !declared.has(x.of[0]))
+      .map((x) => `${x.e} → ${x.of.map(short).join(', ') || '(none)'}`);
+    expect(bad, 'an edition that resolves to no norm cannot be compared to a latest').toEqual([]);
+  });
+
+  it('dhc:latestEdition round-trips: the latest edition is an edition OF that norm', () => {
+    const bad = [];
+    for (const n of norms) {
+      for (const e of objectsOf(n, 'latestEdition')) {
+        const back = objectsOf(e, 'editionOf');
+        if (!back.includes(n)) bad.push(`${short(n)} → ${short(e)} → ${back.map(short).join(', ') || '(none)'}`);
+      }
+    }
+    // Without this, Norm_A could name an edition of Norm_B and every
+    // comparison would quietly answer the wrong question.
+    expect(bad, 'latestEdition points at an edition belonging to another norm').toEqual([]);
+  });
+
+  it('dhc:supersedes never forms a cycle, and never crosses norms', () => {
+    const bad = [];
+    for (const q of subjects('supersedes')) {
+      const [a, b] = [q.subject.value, q.object.value];
+      if (a === b) bad.push(`${short(a)} supersedes itself`);
+      const [na, nb] = [objectsOf(a, 'editionOf')[0], objectsOf(b, 'editionOf')[0]];
+      if (na && nb && na !== nb) bad.push(`${short(a)} supersedes ${short(b)} across norms`);
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
+describe('the edition→shapes binding', () => {
+  const editions = typed('NormEdition');
+
+  it('the edition in force declares shapes for every norm that has any', () => {
+    // The sharpest one. If the LATEST edition has no shapes, every node under
+    // that norm is validated against superseded rules and can never honestly be
+    // called compliant — which is precisely the state NF C 14-100 is in, and
+    // why its nodes render ghosted rather than green. Asserting it for norms
+    // that have shapes at all keeps that an explicit, visible exception instead
+    // of a silent default.
+    const withShapes = typed('Norm').filter((n) =>
+      editions.some((e) => objectsOf(e, 'editionOf')[0] === n && objectsOf(e, 'shapesFile').length));
+    const bad = withShapes
+      .filter((n) => {
+        const latest = objectsOf(n, 'latestEdition')[0];
+        return !latest || objectsOf(latest, 'shapesFile').length === 0;
+      })
+      .map(short);
+    expect(bad, 'norm whose edition in force has no shapes — nothing under it can be proven current').toEqual(['dhc:Norm_NFC14100']);
+  });
+
+  it('every edition that declares shapes resolves to a norm with a latestEdition', () => {
+    // The precise condition under which the state machine cannot tell current
+    // from superseded. `undefined` is not "not superseded" — it is "no idea",
+    // and an earlier cut of this logic painted exactly that green.
+    const bad = editions
+      .filter((e) => objectsOf(e, 'shapesFile').length)
+      .filter((e) => {
+        const norm = objectsOf(e, 'editionOf')[0];
+        return !norm || objectsOf(norm, 'latestEdition').length === 0;
+      })
+      .map(short);
+    expect(bad, 'unresolvable edition — compliance would be uncomputable, not green').toEqual([]);
+  });
+
+  it('a delta edition can reach its base through dhc:supersedes', () => {
+    // build-abox.mjs builds the effective rule set by walking this chain. An
+    // edition with shapes but no path to another edition with shapes is either
+    // a base (fine) or a delta that silently lost its base (not fine: it would
+    // then enforce ONLY its own two rules and report almost everything as
+    // passing).
+    const withShapes = editions.filter((e) => objectsOf(e, 'shapesFile').length);
+    const reaches = (e) => {
+      for (let c = objectsOf(e, 'supersedes')[0]; c; c = objectsOf(c, 'supersedes')[0]) {
+        if (objectsOf(c, 'shapesFile').length) return true;
+      }
+      return false;
+    };
+    // NFC15100:2024 ships a delta, so it MUST reach 2015.
+    expect(reaches(`${DHC}NormEdition_NFC15100_2024`), 'the 2024 delta cannot reach the 2015 base — it would enforce only its own rules').toBe(true);
+    expect(withShapes.length, 'no edition declares shapes at all').toBeGreaterThan(1);
+  });
+});
+
+describe('the reference A-Box exercises every compliance state', () => {
+  // This is the anti-vacuity bar for the whole edition mechanism, and it is
+  // load-bearing. The states are COMPUTED now — nothing in the A-Box declares
+  // them — so a dead 2024 shape, a broken supersedes link, or a guard with the
+  // wrong datatype does not throw. It just quietly produces a model where
+  // everything is green, which looks like success.
+  //
+  // Checked against the built graph rather than re-deriving it, so this tests
+  // what the viewer actually shows.
+  const graphPath = 'js-tools/data/electrical-installation-house.graph.json';
+  const built = fs.existsSync(path.join(repoRoot, graphPath))
+    ? JSON.parse(fs.readFileSync(path.join(repoRoot, graphPath), 'utf8'))
+    : null;
+
+  it.runIf(built)('demonstrates ok AND gap AND danger', () => {
+    const t = built.tally;
+    expect(t.ok, 'nothing passes the edition in force').toBeGreaterThan(0);
+    expect(t.gap, 'nothing is grandfathered — the state this whole mechanism exists for is unexercised').toBeGreaterThan(0);
+    expect(t.danger, 'nothing fails — the deliberate defect stopped being reported').toBeGreaterThan(0);
+  });
+
+  it.runIf(built)('ex:circuit-ev is the grandfathering case: passes 2015, fails 2024', () => {
+    // The single most important node in the model. 10 mm² satisfies :2015 and
+    // fails :2024. If this ever goes green, the 2024 delta is a no-op.
+    const n = built.nodes.find((x) => x.curie === 'ex:circuit-ev');
+    expect(n, 'ex:circuit-ev missing from the built graph').toBeTruthy();
+    expect(n.compliance, `ex:circuit-ev should be grandfathered, got "${n?.compliance}" — the 2024 delta is not firing`).toBe('gap');
+  });
+
+  it.runIf(built)('ex:circuit-ev-legacy still fails the OLDEST edition', () => {
+    // The deliberate defect. It must fail 2015, not merely 2024 — failing only
+    // the current edition would make it grandfathered, i.e. lawful, which is
+    // the opposite of what the file exists to demonstrate.
+    const n = built.nodes.find((x) => x.curie === 'ex:circuit-ev-legacy');
+    expect(n?.compliance, 'the deliberate defect is no longer reported as never-compliant').toBe('danger');
+  });
+});

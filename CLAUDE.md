@@ -83,10 +83,11 @@ schema/
     dhc-core.ttl              ← Staging for in-progress domain triples (gitignored)
     dhc-app-metadata.ttl      ← Staging for in-progress annotations (gitignored)
   cbox/
-    cbox-manifest.json        ← Registry of published norm profiles
+    cbox-manifest.json        ← Registry of published norm profiles — one per EDITION
     electrical/
-      nfc14100.shapes.ttl     ← NF C 14-100 (FR — energy delivery)
-      nfc15100.shapes.ttl     ← NF C 15-100 (FR — installation)
+      nfc14100-2008.shapes.ttl  ← NF C 14-100:2008 (FR — energy delivery)
+      nfc15100-2015.shapes.ttl  ← NF C 15-100:2015 (FR — installation) — the base
+      nfc15100-2024.shapes.ttl  ← NF C 15-100:2024 — DELTA over 2015; ⚠ illustrative rules
   abox/
     electrical-installation-house.ttl   ← Prototype / POC / example models (see below)
 py-tools/
@@ -100,8 +101,11 @@ tests/
 
 > `dhc-core.schema.ttl`, `dhc-roles.ttl` and `context.jsonld` were removed in the
 > v3 restructure (commit `5d76452`). The role catalog now lives in
-> `schema/draft/dhc-core.ttl` awaiting promotion — `tests/tbox/roles.test.js`
-> fails until it is promoted, and that failure is intentional.
+> `schema/draft/dhc-core.ttl` awaiting promotion. This file used to say
+> `tests/tbox/roles.test.js` fails until it is promoted and that the failure is
+> intentional — **it passes**. Whether the test lost its teeth or the roles
+> landed is unresolved; see `doc/parking-lot.md` § 3. Do not treat any failing
+> test here as expected.
 
 ## Commands
 
@@ -124,8 +128,10 @@ generation and ontology-graph assembly live in the Modeler.
 | T-Box property              | camelCase                     | `dhc:hasCircuit`                 |
 | T-Box enum instance         | `{ClassName}_{Value}`         | `dhc:CircuitType_Lighting`       |
 | Norm instance               | `Norm_{id uppercased}`        | `dhc:Norm_NFC15100`              |
+| Norm edition instance       | `NormEdition_{id upper}_{year}` | `dhc:NormEdition_NFC15100_2024` |
 | C-Box shape                 | `{Concept}Shape`              | `nfc15100:LightingCircuitShape`  |
-| C-Box file                  | `{norm-id}.shapes.ttl`        | `schema/cbox/electrical/nfc15100.shapes.ttl` |
+| C-Box file                  | `{norm-id}-{year}.shapes.ttl` | `schema/cbox/electrical/nfc15100-2015.shapes.ttl` |
+| C-Box namespace             | one per **edition** past the base | `https://digitalhome.cloud/cbox/nfc15100-2024#` |
 
 ### Required annotations
 
@@ -208,26 +214,71 @@ Consequences to remember when writing tests:
   shapes. `tests/cbox/guards.test.js` enforces it; prefer `sh:minInclusive` /
   `sh:maxInclusive`, which compare numerically and are immune.
 - T-Box type triples (e.g. `dhc:Norm_NFC15100 a dhc:Norm`) must be present in
-  the **data graph** being validated, not in the shapes graph. The
-  `withTbox(fixture)` helper in `tests/_helpers/loadGraph.js` prepends the
-  T-Box to each fixture for this reason.
+  the **data graph** being validated, not in the shapes graph. Each test file
+  defines a `withTbox(fixture)` one-liner that prepends the T-Box for this
+  reason. (It is *not* exported from `tests/_helpers/loadGraph.js`, despite
+  what this file used to say — see `doc/parking-lot.md` § 3.)
+
+## One C-Box profile per norm EDITION
+
+Compliance is **computed, never declared**. `js-tools/build-abox.mjs` validates
+an A-Box against every edition that has shapes and compares the verdicts:
+passing the edition in force is compliant, passing an older one and failing the
+current is **grandfathered** — lawful as built, re-qualified the moment anyone
+modifies it, which is the state most of a real building is in. There is no
+`dhc:builtUnder`; it existed briefly and was purged.
+
+Four T-Box properties carry this, and all four fail silently when broken —
+`tests/tbox/norm-editions.test.js` guards each:
+
+| | |
+|---|---|
+| `dhc:shapesFile` | edition → its shapes. **The authority on which shapes exist — not the directory listing.** A verdict must be attributable to an edition to mean anything. |
+| `dhc:supersedes` | edition → the one it replaces. Walked to build the effective rule set. |
+| `dhc:latestEdition` | norm → the edition in force. Was *defined but never asserted* for months. |
+| `dhc:editionOf` | edition → its norm. |
+
+**Editions compose by concatenation.**
+`effective(E) = shapesFile(E) + effective(supersedes(E))`, so an edition past
+the base ships only its **delta**. Concatenation ANDs constraints: 2015 says
+≥ 10 mm², 2024 says ≥ 16, both run, the stricter decides. Two rules follow:
+
+- **An edition may add or tighten, never loosen.** If one ever relaxes a rule,
+  this mechanism is wrong and must be replaced, not worked around.
+- **A delta must never reuse a base shape IRI** (hence a namespace per edition).
+  Reuse merges both editions' constraints onto one subject, so "does it pass
+  2015?" can no longer be asked — nothing errors, the graph is valid, the
+  comparison quietly answers something else.
+
+`npm run build:abox` **fails** if a `dhc:shapesFile` names a missing file, or if
+a `*.shapes.ttl` on disk is claimed by no edition — the latter would stop
+running silently, and SHACL's answer to "nothing ran" is `conforms: true`.
+
+> ⚠ **`nfc15100-2024.shapes.ttl` is ILLUSTRATIVE.** Nobody has read the
+> published NF C 15-100:2024 text. It encodes plausible stand-ins so the
+> machinery has something real to compute, marked `UNVERIFIED` on the header and
+> every shape. Do not quote it. Replacing the numbers with the real text is
+> parked (`doc/parking-lot.md` § 1b).
 
 ## Test protocol
 
 Before committing any schema change:
 
-1. `npm test` — all tests must pass, except `tests/tbox/roles.test.js`, which
-   fails until the role catalog is promoted out of `schema/draft/`.
+1. `npm test` — all tests must pass.
 2. When adding a class/property: extend `tests/tbox/core-schema.test.js` so the
    test catalog stays in sync.
 3. When adding a C-Box shape: add a valid + invalid fixture pair under
    `tests/fixtures/` and assert both conformance outcomes in the norm's
-   `tests/cbox/<norm>.test.js`.
-4. When adding a new norm profile: create `schema/cbox/<domain>/<norm>.shapes.ttl`,
-   register it in `schema/cbox/cbox-manifest.json`, declare the `dhc:Norm_<ID>`
-   instance in the T-Box, and author `tests/cbox/<norm>.test.js`. All four move
-   together — a profile whose shapes or Norm are missing is a dangling
-   reference, which is what `tests/cbox/guards.test.js` exists to catch.
+   `tests/cbox/<norm>-<year>.test.js`.
+4. When adding a norm profile: create
+   `schema/cbox/<domain>/<norm>-<year>.shapes.ttl`, register it in
+   `schema/cbox/cbox-manifest.json`, declare the `dhc:Norm_<ID>` **and**
+   `dhc:NormEdition_<ID>_<year>` instances in the T-Box, point the edition at
+   the file with `dhc:shapesFile`, and author
+   `tests/cbox/<norm>-<year>.test.js`. All of it moves together — a profile
+   whose shapes, Norm or edition are missing is a dangling reference, which is
+   what `tests/cbox/guards.test.js` exists to catch, and an unclaimed shapes
+   file fails the build outright.
 
 ### The C-Box is France-only, deliberately (v3.0.0)
 

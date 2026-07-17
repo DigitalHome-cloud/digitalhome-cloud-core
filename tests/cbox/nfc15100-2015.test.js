@@ -4,11 +4,11 @@ import { readTtl, parseToStore, validateAgainst, namedNode } from '../_helpers/l
 const SHACL = 'http://www.w3.org/ns/shacl#';
 const DHC = 'https://digitalhome.cloud/ontology#';
 
-const shapesTtl = readTtl('schema/cbox/electrical/nfc15100.shapes.ttl');
+const shapesTtl = readTtl('schema/cbox/electrical/nfc15100-2015.shapes.ttl');
 const tboxTtl = readTtl('schema/tbox/dhc-core.ttl');
 const withTbox = (fixture) => tboxTtl + '\n' + fixture;
 
-describe('C-Box — nfc15100.shapes.ttl', () => {
+describe('C-Box — nfc15100-2015.shapes.ttl', () => {
   const store = parseToStore(shapesTtl);
 
   it('parses cleanly', () => {

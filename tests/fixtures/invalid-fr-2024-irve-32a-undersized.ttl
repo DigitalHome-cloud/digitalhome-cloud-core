@@ -1,0 +1,32 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+# ⚠ THE GRANDFATHERING FIXTURE — and it is NOT a broken installation.
+#
+# 32 A single-phase IRVE in 10 mm². Under NF C 15-100:2015 that is CORRECT
+# (nfc15100:IRVE32AMonoShape asks for ≥ 10) and this file conforms. Under the
+# :2024 delta (nfc15100-2024:IRVE32AMono2024Shape, ≥ 16 — ⚠ illustrative) it
+# does not.
+#
+# That pair of verdicts IS the yellow state: lawful as built, re-qualified the
+# moment anyone extends it. It mirrors ex:circuit-ev in the reference A-Box.
+#
+# So "invalid" in this filename means "invalid against 2024" only. The test
+# asserts BOTH verdicts, because a shape that rejects it under 2015 as well
+# would be over-firing, and one that accepts it under 2024 is a no-op — and a
+# no-op shape reports conforms:true, which looks exactly like success.
+ex:fr-irve-2024-undersized a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_IRVE ;
+  dhc:governedBy     dhc:Norm_NFC15100 ;
+  dhc:maxPoints      "1"^^xsd:integer ;
+  dhc:ratedCurrent   "32"^^xsd:decimal ;
+  dhc:crossSection   "10.0"^^xsd:decimal ;
+  dhc:phase          "1"^^xsd:integer ;
+  dhc:dedicated      true ;
+  dhc:hasProtection  ex:fr-irve-2024-undersized-rcd .
+
+ex:fr-irve-2024-undersized-rcd a dhc:RCBO ;
+  dhc:sensitivityMA "30"^^xsd:decimal ;
+  dhc:rcdType       "A" ;
+  dhc:ratedCurrent  "32"^^xsd:decimal .

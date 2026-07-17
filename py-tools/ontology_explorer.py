@@ -1232,7 +1232,12 @@ def _cli_purge(uri_arg):
         return 2
     _serialize_all(file_graphs, g)
     _reload(g, file_graphs)
-    total = sum(counts.values()) if isinstance(counts, dict) else 0
+    # _purge_subject's summary mixes per-file ints with the 'props'/'enums'
+    # lists, so sum() over every value raises TypeError as soon as the term has
+    # any related property — i.e. on any real purge. The work is already done
+    # and serialized by then, so this crashed *after* succeeding and returned a
+    # traceback instead of the documented 0/2 exit code.
+    total = sum(v for v in counts.values() if isinstance(v, int)) if isinstance(counts, dict) else 0
     print(f"  ✅ purged {sh(subj)}: {counts}")
     if total == 0:
         print("     (nothing matched — already absent)")

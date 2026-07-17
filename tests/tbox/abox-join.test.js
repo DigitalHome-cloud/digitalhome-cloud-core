@@ -14,7 +14,23 @@ const repoRoot = new URL('../..', import.meta.url).pathname;
 const fixtures = fs.readdirSync(path.join(repoRoot, 'tests/fixtures'))
   .filter(f => f.endsWith('.ttl'))
   .map(f => `tests/fixtures/${f}`);
-const aboxes = ['schema/abox/electrical-installation-house.ttl', ...fixtures];
+// Globbed, not listed. A hardcoded list means a new example under schema/abox/
+// is covered by nothing at all — and the failure mode it would miss is exactly
+// the one below: a fabricated dhc: term selects no focus nodes, so the file
+// validates green while meaning nothing. The check has to arrive with the file,
+// not with someone remembering to add a line here.
+const models = fs.readdirSync(path.join(repoRoot, 'schema/abox'))
+  .filter(f => f.endsWith('.ttl'))
+  .map(f => `schema/abox/${f}`);
+const aboxes = [...models, ...fixtures];
+
+// Guards the guard: if schema/abox/ is empty or renamed, every it() below
+// vanishes and the suite reports green having tested nothing.
+describe('A-Box — there are models to check', () => {
+  it('schema/abox/ is not empty', () => {
+    expect(models.length, 'no A-Box models found — every join test below would vanish silently').toBeGreaterThan(0);
+  });
+});
 
 // ── The fabricated-term bug class ─────────────────────────────────────────
 //

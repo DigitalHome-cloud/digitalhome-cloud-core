@@ -1,0 +1,128 @@
+@prefix dhc:     <https://digitalhome.cloud/ontology#> .
+@prefix brick:   <https://brickschema.org/schema/Brick#> .
+@prefix sh:      <http://www.w3.org/ns/shacl#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix nfc15100-2024: <https://digitalhome.cloud/cbox/nfc15100-2024#> .
+
+# ═══════════════════════════════════════════════════════════════════════
+#  C-Box SHACL profile: NF C 15-100:2024 — THE DELTA OVER :2015
+#  Binds to: dhc:Norm_NFC15100 / dhc:NormEdition_NFC15100_2024
+#
+#  ┌─ ⚠ UNVERIFIED — ILLUSTRATIVE RULES, NOT LAW ───────────────────────┐
+#  │                                                                     │
+#  │ The constraints in this file are NOT sourced from the published     │
+#  │ NF C 15-100:2024 text. Nobody has read the standard. They are       │
+#  │ plausible stand-ins, chosen to exercise the multi-edition           │
+#  │ machinery, and they encode two of the three deltas that             │
+#  │ dhc:NormEdition_NFC15100_2024's own rdfs:comment already names      │
+#  │ ("revised IRVE requirements, new requirements for energy storage    │
+#  │ systems").                                                          │
+#  │                                                                     │
+#  │ Do not quote this file to anyone. Do not let it inform a real       │
+#  │ installation. When the real text is available, replace the numbers  │
+#  │ and delete these markers — the shape IRIs and the wiring stay.      │
+#  │                                                                     │
+#  │ Every shape below repeats this marker, because a shape gets read    │
+#  │ on its own far more often than a file header does.                  │
+#  └─────────────────────────────────────────────────────────────────────┘
+#
+#  ── HOW THIS FILE IS LOADED ──────────────────────────────────────────
+#  This is a DELTA, not a standalone profile. It carries only what 2024
+#  adds or tightens. build-abox.mjs builds the effective 2024 rule set by
+#  walking dhc:supersedes and concatenating:
+#
+#      effective(2024) = nfc15100-2024.shapes.ttl + effective(2015)
+#                      = this file + nfc15100-2015.shapes.ttl
+#
+#  Concatenation ANDs constraints, so an edition can only ADD or TIGHTEN.
+#  It cannot express a LOOSENING — if a future edition ever relaxes a
+#  rule, this mechanism is the wrong one and must be replaced, not worked
+#  around. Recorded in doc/parking-lot.md.
+#
+#  Consequence: a shape here must NEVER reuse an IRI from the 2015 file.
+#  A tightening is a NEW shape (IRVE32AMono2024Shape), so both run and the
+#  stricter one decides. tests/cbox/guards.test.js enforces the disjointness.
+#
+#  Activation pattern: P3 sh:or guard, same as 2015.
+#  See repos/core/CLAUDE.md § SHACL activation pattern.
+# ═══════════════════════════════════════════════════════════════════════
+
+nfc15100-2024:Profile
+  a owl:Ontology ;
+  rdfs:label "NF C 15-100:2024 C-Box delta profile (UNVERIFIED)"@en ;
+  rdfs:label "NF C 15-100:2024 C-Box-Delta-Profil (UNGEPRÜFT)"@de ;
+  rdfs:label "Profil delta C-Box NF C 15-100:2024 (NON VÉRIFIÉ)"@fr ;
+  rdfs:comment "⚠ UNVERIFIED. Illustrative rules, not sourced from the published NF C 15-100:2024 text. Delta over nfc15100-2015.shapes.ttl — loaded by concatenation via dhc:supersedes, never on its own."@en ;
+  owl:versionInfo "0.1.0-illustrative" ;
+  dhc:normId       "nfc15100" ;
+  dhc:normCountry  "FR" ;
+  dhc:normVersion  "2024" ;
+  dhc:normDomain   "electrical" .
+
+# ── Delta 1/2: IRVE 32 A single-phase — cross-section tightened ─────────
+#
+# 2015 (nfc15100:IRVE32AMonoShape) requires ≥ 10 mm². This says ≥ 16 mm².
+#
+# THIS IS THE SHAPE THAT MAKES YELLOW EXIST. ex:circuit-ev is wired in
+# 10 mm²: it passes 2015 and fails this, which is exactly "grandfathered —
+# lawful as built, re-qualified the moment you touch it". If this shape ever
+# stops reporting ex:circuit-ev, the whole edition mechanism is a no-op that
+# reports success. tests/cbox/nfc15100-2024.test.js is the guard.
+
+nfc15100-2024:IRVE32AMono2024Shape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "IRVE EV charging — 32 A single-phase (NF C 15-100:2024, UNVERIFIED)"@en ;
+  rdfs:label "IRVE-Ladeschaltung — 32 A einphasig (NF C 15-100:2024, UNGEPRÜFT)"@de ;
+  rdfs:label "IRVE recharge VE — 32 A monophasé (NF C 15-100:2024, NON VÉRIFIÉ)"@fr ;
+  rdfs:comment "⚠ UNVERIFIED — illustrative POC rule, not sourced from the published NF C 15-100:2024 text."@en ;
+  sh:or (
+    # Guards are byte-identical to nfc15100:IRVE32AMonoShape's, deliberately:
+    # sh:hasValue compares RDF TERMS, so "32"^^xsd:decimal must keep its
+    # explicit datatype (dhc:ratedCurrent's range) or the guard never matches
+    # and this shape becomes a permanent silent no-op. That exact mistake
+    # killed three shapes in this repo — see CLAUDE.md.
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_IRVE ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:hasValue "32"^^xsd:decimal ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:phase ; sh:hasValue 1 ] ] ]
+    [ sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 16.0 ;
+        sh:message "NF C 15-100:2024 (UNVERIFIED): IRVE 32 A single-phase — cross-section ≥ 16 mm²."@en ;
+        sh:message "NF C 15-100:2024 (UNGEPRÜFT): IRVE 32 A einphasig — Querschnitt ≥ 16 mm²."@de ;
+        sh:message "NF C 15-100:2024 (NON VÉRIFIÉ) : IRVE 32 A monophasé — section ≥ 16 mm²."@fr ;
+      ] ]
+  ) .
+
+# ── Delta 2/2: energy storage comes into scope ──────────────────────────
+#
+# A different KIND of delta, and the reason it is here: 2024 does not tighten
+# a number, it EXTENDS JURISDICTION. Under 2015 a battery is not a focus node
+# of any shape — the viewer draws it transparent, meaning "no rule looked at
+# this". Under 2024 it is checked. An edition can widen coverage, and a
+# compliance model that only ever compares numbers cannot show that.
+#
+# Targets brick:Battery rather than a dhc: class: the C-Box has only ever
+# targeted dhc: classes, but SHACL does not care, and storage is Brick's
+# vocabulary. Adding a dhc: shadow class would break the gap-filling-only rule.
+
+nfc15100-2024:ESSGovernanceShape
+  a sh:NodeShape ;
+  sh:targetClass brick:Battery ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Energy storage — governance (NF C 15-100:2024, UNVERIFIED)"@en ;
+  rdfs:label "Energiespeicher — Regelwerksbindung (NF C 15-100:2024, UNGEPRÜFT)"@de ;
+  rdfs:label "Stockage d'énergie — norme applicable (NF C 15-100:2024, NON VÉRIFIÉ)"@fr ;
+  rdfs:comment "⚠ UNVERIFIED — illustrative POC rule, not sourced from the published NF C 15-100:2024 text."@en ;
+  sh:property [
+    sh:path dhc:governedBy ;
+    sh:minCount 1 ;
+    sh:class dhc:Norm ;
+    sh:message "NF C 15-100:2024 (UNVERIFIED): an energy storage system is within the scope of NF C 15-100 and must declare dhc:governedBy."@en ;
+    sh:message "NF C 15-100:2024 (UNGEPRÜFT): Ein Energiespeicher fällt in den Geltungsbereich der NF C 15-100 und muss dhc:governedBy angeben."@de ;
+    sh:message "NF C 15-100:2024 (NON VÉRIFIÉ) : un système de stockage relève de la NF C 15-100 et doit déclarer dhc:governedBy."@fr ;
+  ] .

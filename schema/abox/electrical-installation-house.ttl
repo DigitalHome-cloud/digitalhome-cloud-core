@@ -17,16 +17,39 @@
 #  Purpose: demonstrate the v3 layering end-to-end — generator to consumers —
 #  and prove the C-Box shapes actually fire.
 #
-#  NOTE ON SIZE: at ~370 lines this fuses a dozen concepts and is deliberately
-#  NOT the template for future examples. Those follow experimental/Brick/examples:
+#  NOTE ON SIZE: this fuses a dozen concepts and is deliberately NOT the
+#  template for future examples. Those follow experimental/Brick/examples:
 #  one concept, end to end, 30–70 lines. Read this file as a decomposition map
 #  of the examples still to be extracted (lighting circuit, meter/submeter,
 #  PV + inverter, EVSE).
 #
 #    REC    — site, building, rooms
-#    Brick  — equipment (PV, inverter, luminaires, EV charger, controller)
+#    Brick  — equipment (PV, inverter, battery, luminaires, EV charger, controller)
 #    223P   — connectivity: ConnectionPoints, Connections, L/N/PE media
 #    dhc:   — only the norm layer Brick/REC/223P do not define
+#
+#  ┌─ ENERGY FLOW — all generation converges on the Deye ────────────────────┐
+#  │                                                                         │
+#  │   ex:delivery ─► ex:meter ─► ex:agcp ──┐                                │
+#  │   (Enedis 9 kVA)  (Linky)    (63 A)    │                                │
+#  │                                        ├─► ex:inverter ─► ex:board-resi9│
+#  │   ex:pv-system ─► (DC 380 V) ──────────┤     (Deye 6 kW)      │         │
+#  │                                        │   power management   │         │
+#  │   ex:battery ─► (DC 48 V, bidir) ──────┘                      │         │
+#  │                                                               ▼         │
+#  │                                       ex:brk-* ─► luminaires, sockets,  │
+#  │                                                   washing machine, EVSEs│
+#  │                                                                         │
+#  │ The board hangs off ex:deye-load-out — the Deye's single AC outbound    │
+#  │ port. Every hop above is a brick:feeds edge; the conductor-level chain   │
+#  │ (CP ─connectsThrough→ Connection) runs in parallel at finer grain.       │
+#  │                                                                         │
+#  │ KNOWN MODELLING QUESTION, deliberately left visible: the AGCP is 63 A /  │
+#  │ 9 kVA and the Deye is 6 kW, yet the whole board now passes through its   │
+#  │ load port. That is a real design conflict a compliance model ought to    │
+#  │ surface, and no shape checks it — see doc/parking-lot.md. It is NOT the  │
+#  │ deliberate defect below; do not let it become a second violation.        │
+#  └─────────────────────────────────────────────────────────────────────────┘
 #
 #  ┌─ THIS FILE DOES NOT CONFORM, BY DESIGN ────────────────────────────────┐
 #  │ ex:circuit-ev-legacy is deliberately non-compliant: a 32 A single-phase │
@@ -78,29 +101,76 @@ ex:kitchen a rec:Room ;
 
 # ── Energy delivery — NF C 14-100 (grid side) ────────────────────────────
 
-ex:delivery a dhc:EnergyDelivery ;
+ex:delivery a dhc:EnergyDelivery ;                # IS-A s223:Equipment
     rdfs:label "Enedis 9 kVA single-phase supply" ;
     dhc:governedBy         dhc:Norm_NFC14100 ;
     dhc:energyProviderName "Enedis" ;
     dhc:contractedPowerKVA "9"^^xsd:decimal ;
     dhc:currentType        "SinglePhase" ;
-    dhc:neutralSystem      "TT" .
+    dhc:neutralSystem      "TT" ;
+    # The one outlet dhc:EnergyDelivery's own T-Box comment specifies
+    # ("Modeled as s223:Equipment with one s223:OutletConnectionPoint").
+    # Without it this node carried a full NF C 14-100 attribute set and no
+    # edges at all — the grid side of the installation began mid-air at the
+    # meter, and nothing said so.
+    s223:hasConnectionPoint ex:delivery-out ;
+    brick:feeds             ex:meter .
+
+ex:delivery-out a s223:OutletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-service-L .
+
+ex:wire-service-L a dhc:WiringSegment ;
+    rdfs:label "Service cable — Enedis → Linky (L)" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "16.0"^^xsd:decimal .
 
 ex:meter a dhc:EnergyMeter ;
     rdfs:label "Linky billing meter" ;
     dhc:governedBy dhc:Norm_NFC14100 ;
     rec:locatedIn  ex:gtl ;
+    s223:hasConnectionPoint ex:meter-in ;
     brick:feeds    ex:agcp .
 
+ex:meter-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-service-L .
+
+# The AGCP is the origin of the private installation. Downstream of it every
+# generator flow — grid, PV, battery — converges on the Deye, which arbitrates
+# between them; the board hangs off the Deye's outbound port. See the topology
+# note in the header.
 ex:agcp a dhc:EmergencyDisconnect ;
     rdfs:label "AGCP — disjoncteur d'abonné 63 A" ;
     dhc:governedBy   dhc:Norm_NFC14100 ;
     dhc:ratedCurrent "63"^^xsd:decimal ;
     rec:locatedIn    ex:gtl ;
-    brick:feeds      ex:board-resi9 .
+    s223:hasConnectionPoint ex:agcp-out ;
+    brick:feeds      ex:inverter .
+
+ex:agcp-out a s223:OutletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-agcp-deye-L .
+
+ex:wire-agcp-deye-L a dhc:WiringSegment ;
+    rdfs:label "AGCP → Deye grid port (L)" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "16.0"^^xsd:decimal .
 
 
-# ── Generation — PV + hybrid inverter (Brick) ────────────────────────────
+# ── Generation + storage + power management — the Deye ───────────────────
+#
+# All three generator flows converge here: grid (AC, via the AGCP), PV (DC) and
+# battery (DC, bidirectional). The Deye arbitrates between them — that is what
+# "power management" means in this model — and the whole distribution board
+# hangs off its single AC outbound port.
+#
+# ex:inverter is typed BOTH brick:Photovoltaic_Inverter (what it is, for Brick
+# consumers) and s223:ElectricEnergyInverter (how it connects). The 223P class
+# is what carries the hybrid semantics: it requires at least one connection
+# point on medium Electricity-AC and at least one on Electricity-DC. A
+# brick:Photovoltaic_Inverter alone has no connection points at all, which is
+# why this node used to be invisible to the conductor layer.
 
 ex:pv-system a brick:PV_Generation_System ;
     rdfs:label "6 kW rooftop PV" ;
@@ -119,11 +189,76 @@ ex:pv-panel-1 a brick:PV_Panel ;
     rdfs:label "PV panel (×15, 400 W)" ;
     brick:ratedPowerOutput [ brick:hasUnit unit:W ; brick:value "400"^^xsd:decimal ] .
 
-ex:inverter a brick:Photovoltaic_Inverter ;
-    rdfs:label "Deye hybrid inverter" ;
+ex:battery a brick:Battery, s223:Battery ;
+    rdfs:label "Deye 10 kWh LFP battery (48 V)" ;
+    # Storage is out of scope under NF C 15-100:2015 — no shape targets a
+    # battery, so the viewer draws it transparent — and in scope under :2024,
+    # which is why this declaration exists. It is the one node that shows an
+    # edition WIDENING coverage rather than tightening a number.
+    dhc:governedBy    dhc:Norm_NFC15100 ;
+    brick:hasLocation ex:gtl ;
+    # Discharge only. brick:feeds is an owl:AsymmetricProperty, so asserting
+    # ex:inverter brick:feeds ex:battery as well would be an OWL inconsistency
+    # — and no reasoner runs in this stack, so nothing would ever report it.
+    # Charging is expressed by ex:battery-dc being BIdirectional, not by a
+    # second feeds edge.
+    brick:feeds ex:inverter ;
+    s223:hasConnectionPoint ex:battery-dc .
+
+ex:battery-dc a s223:BidirectionalConnectionPoint ;
+    s223:hasMedium       s223:DC-48V ;
+    s223:connectsThrough ex:wire-batt-dc .
+
+ex:wire-batt-dc a dhc:WiringSegment ;
+    rdfs:label "Battery ↔ Deye DC link" ;
+    s223:hasMedium   s223:DC-48V ;
+    dhc:crossSection "35.0"^^xsd:decimal .
+
+ex:inverter a brick:Photovoltaic_Inverter, s223:ElectricEnergyInverter ;
+    rdfs:label "Deye hybrid inverter (6 kW) — power management" ;
     brick:hasLocation ex:gtl ;
     brick:ratedPowerOutput [ brick:hasUnit unit:KiloW ; brick:value "6"^^xsd:decimal ] ;
-    brick:feeds ex:board-resi9 .
+    brick:feeds ex:board-resi9 ;
+    s223:hasConnectionPoint ex:deye-grid, ex:deye-pv-in,
+                            ex:deye-batt, ex:deye-load-out .
+
+# Grid side: bidirectional because the Deye both imports and exports.
+ex:deye-grid a s223:BidirectionalConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-agcp-deye-L .
+
+ex:deye-pv-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:DC-380V ;
+    s223:connectsThrough ex:wire-pv-dc .
+
+ex:deye-batt a s223:BidirectionalConnectionPoint ;
+    s223:hasMedium       s223:DC-48V ;
+    s223:connectsThrough ex:wire-batt-dc .
+
+# ★ "The central distribution board is at the outbound port of the Deye."
+ex:deye-load-out a s223:OutletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-deye-board-L .
+
+ex:wire-pv-dc a dhc:WiringSegment ;
+    rdfs:label "PV string → Deye MPPT" ;
+    s223:hasMedium   s223:DC-380V ;
+    dhc:crossSection "6.0"^^xsd:decimal .
+
+ex:wire-deye-board-L a dhc:WiringSegment ;
+    rdfs:label "Deye load port → board (L)" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "10.0"^^xsd:decimal .
+
+ex:wire-deye-board-N a dhc:WiringSegment ;
+    rdfs:label "Deye load port → board (N)" ;
+    s223:hasMedium   s223:Electricity-Neutral ;
+    dhc:crossSection "10.0"^^xsd:decimal .
+
+ex:wire-deye-board-PE a dhc:WiringSegment ;
+    rdfs:label "Deye load port → board (PE)" ;
+    s223:hasMedium   s223:Electricity-Earth ;
+    dhc:crossSection "10.0"^^xsd:decimal .
 
 
 # ── Distribution board + head-of-row differential ────────────────────────
@@ -132,10 +267,22 @@ ex:board-resi9 a dhc:DistributionBoard ;
     rdfs:label "Schneider Resi9 — 5 rows, 58 modules" ;
     dhc:governedBy dhc:Norm_NFC15100 ;
     rec:locatedIn  ex:gtl ;
+    s223:hasConnectionPoint ex:board-in ;
     brick:hasPart  ex:rcd-main,
                    ex:brk-lgt-lr, ex:brk-lgt-kit,
                    ex:brk-soc-lr, ex:brk-soc-kit,
+                   ex:brk-wm, ex:brk-ev, ex:brk-ev-legacy ;
+    # hasPart is structural — it says the breaker sits IN the board. feeds is
+    # the flow, and it is what was missing: the chain used to stop dead here,
+    # so nothing downstream of the board was reachable by any flow edge and a
+    # single-line diagram walking flow got two disconnected fragments.
+    brick:feeds    ex:brk-lgt-lr, ex:brk-lgt-kit,
+                   ex:brk-soc-lr, ex:brk-soc-kit,
                    ex:brk-wm, ex:brk-ev, ex:brk-ev-legacy .
+
+ex:board-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-deye-board-L .
 
 ex:rcd-main a dhc:RCD ;
     rdfs:label "30 mA Type A differential switch (head of row)" ;
@@ -216,10 +363,18 @@ ex:circuit-wm a dhc:Circuit ;
     dhc:phase          "1"^^xsd:integer ;
     dhc:dedicated      true ;
     dhc:hasProtection  ex:brk-wm, ex:rcd-main ;
+    dhc:hasWiring      ex:wire-wm-L, ex:wire-wm-N, ex:wire-wm-PE ;
     s223:hasMember     ex:brk-wm, ex:washing-machine .
 
+# ★ THE GRANDFATHERING CASE. 10 mm² satisfies NF C 15-100:2015
+# (nfc15100:IRVE32AMonoShape, ≥ 10) and fails :2024
+# (nfc15100-2024:IRVE32AMono2024Shape, ≥ 16). Nothing here declares an edition
+# — the state is COMPUTED by validating against both editions' shapes. So this
+# circuit shows yellow: lawful as built, re-qualified the moment anyone extends
+# it. That is the single most common state a real installation is in, and it is
+# the one the viewer exists to make visible.
 ex:circuit-ev a dhc:Circuit ;
-    rdfs:label "EV charger — garage (IRVE, compliant)" ;
+    rdfs:label "EV charger — garage (IRVE, compliant under 2015)" ;
     dhc:hasCircuitType dhc:CircuitType_IRVE ;
     dhc:governedBy     dhc:Norm_NFC15100 ;
     dhc:maxPoints      "1"^^xsd:integer ;
@@ -228,6 +383,7 @@ ex:circuit-ev a dhc:Circuit ;
     dhc:phase          "1"^^xsd:integer ;
     dhc:dedicated      true ;
     dhc:hasProtection  ex:brk-ev, ex:rcd-main ;
+    dhc:hasWiring      ex:wire-ev-L, ex:wire-ev-N, ex:wire-ev-PE ;
     s223:hasMember     ex:brk-ev, ex:evse .
 
 # ⚠ THE DELIBERATE DEFECT — see the header. 32 A IRVE on 1.5 mm²; NF C 15-100
@@ -242,6 +398,7 @@ ex:circuit-ev-legacy a dhc:Circuit ;
     dhc:phase          "1"^^xsd:integer ;
     dhc:dedicated      true ;
     dhc:hasProtection  ex:brk-ev-legacy, ex:rcd-main ;
+    dhc:hasWiring      ex:wire-ev-legacy-L, ex:wire-ev-legacy-N, ex:wire-ev-legacy-PE ;
     s223:hasMember     ex:brk-ev-legacy, ex:evse-legacy .
 
 
@@ -251,37 +408,75 @@ ex:brk-lgt-lr a dhc:ProtectionDevice ;
     rdfs:label "MCB 10 A — lighting LR" ;
     dhc:ratedCurrent "10"^^xsd:decimal ;
     brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "10"^^xsd:decimal ] ;
+    brick:feeds ex:lum-lr-1 ;
     s223:hasConnectionPoint ex:brk-lgt-lr-in, ex:brk-lgt-lr-out .
 
 ex:brk-lgt-kit a dhc:ProtectionDevice ;
     rdfs:label "MCB 10 A — lighting kitchen" ;
     dhc:ratedCurrent "10"^^xsd:decimal ;
-    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "10"^^xsd:decimal ] .
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "10"^^xsd:decimal ] ;
+    brick:feeds ex:lum-kit-1 .
 
 ex:brk-soc-lr a dhc:ProtectionDevice ;
     rdfs:label "MCB 16 A — sockets LR" ;
     dhc:ratedCurrent "16"^^xsd:decimal ;
-    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "16"^^xsd:decimal ] .
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "16"^^xsd:decimal ] ;
+    brick:feeds ex:socket-lr-1 .
 
 ex:brk-soc-kit a dhc:ProtectionDevice ;
     rdfs:label "MCB 16 A — sockets kitchen" ;
     dhc:ratedCurrent "16"^^xsd:decimal ;
-    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "16"^^xsd:decimal ] .
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "16"^^xsd:decimal ] ;
+    brick:feeds ex:socket-kit-1 .
+
+# ── The washing-machine run, conductor level ─────────────────────────────
 
 ex:brk-wm a dhc:ProtectionDevice ;
     rdfs:label "MCB 20 A — washing machine" ;
     dhc:ratedCurrent "20"^^xsd:decimal ;
-    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "20"^^xsd:decimal ] .
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "20"^^xsd:decimal ] ;
+    brick:feeds ex:washing-machine ;
+    s223:hasConnectionPoint ex:brk-wm-in, ex:brk-wm-out .
+
+ex:brk-wm-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:busbar-feed-L .
+
+ex:brk-wm-out a s223:OutletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-wm-L .
+
+# ── The EV run, conductor level ──────────────────────────────────────────
 
 ex:brk-ev a dhc:ProtectionDevice ;
     rdfs:label "MCB 32 A + RCD Type A — EV" ;
     dhc:ratedCurrent "32"^^xsd:decimal ;
-    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "32"^^xsd:decimal ] .
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "32"^^xsd:decimal ] ;
+    brick:feeds ex:evse ;
+    s223:hasConnectionPoint ex:brk-ev-in, ex:brk-ev-out .
+
+ex:brk-ev-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:busbar-feed-L .
+
+ex:brk-ev-out a s223:OutletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-ev-L .
 
 ex:brk-ev-legacy a dhc:ProtectionDevice ;
     rdfs:label "MCB 32 A — EV legacy run" ;
     dhc:ratedCurrent "32"^^xsd:decimal ;
-    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "32"^^xsd:decimal ] .
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "32"^^xsd:decimal ] ;
+    brick:feeds ex:evse-legacy ;
+    s223:hasConnectionPoint ex:brk-ev-legacy-in, ex:brk-ev-legacy-out .
+
+ex:brk-ev-legacy-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:busbar-feed-L .
+
+ex:brk-ev-legacy-out a s223:OutletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-ev-legacy-L .
 
 
 # ── 223P connectivity — worked example on the living-room lighting circuit ─
@@ -323,6 +518,64 @@ ex:wire-lgt-lr-PE a dhc:WiringSegment ;
     s223:hasMedium   s223:Electricity-Earth ;
     dhc:crossSection "1.5"^^xsd:decimal .
 
+# Washing-machine conductors — 2.5 mm², matching ex:circuit-wm's design intent.
+
+ex:wire-wm-L a dhc:WiringSegment ;
+    rdfs:label "R2V 3G2.5 — washing machine (L)" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "2.5"^^xsd:decimal ;
+    dhc:wiring       "R2V 3G2.5" .
+
+ex:wire-wm-N a dhc:WiringSegment ;
+    rdfs:label "R2V 3G2.5 — washing machine (N)" ;
+    s223:hasMedium   s223:Electricity-Neutral ;
+    dhc:crossSection "2.5"^^xsd:decimal .
+
+ex:wire-wm-PE a dhc:WiringSegment ;
+    rdfs:label "R2V 3G2.5 — washing machine (PE)" ;
+    s223:hasMedium   s223:Electricity-Earth ;
+    dhc:crossSection "2.5"^^xsd:decimal .
+
+# EV conductors — 10 mm², matching ex:circuit-ev. NF C 15-100:2015 demands
+# ≥ 10 mm² for a 32 A single-phase IRVE run, so this passes.
+
+ex:wire-ev-L a dhc:WiringSegment ;
+    rdfs:label "R2V 3G10 — EV wallbox (L)" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "10.0"^^xsd:decimal ;
+    dhc:wiring       "R2V 3G10" .
+
+ex:wire-ev-N a dhc:WiringSegment ;
+    rdfs:label "R2V 3G10 — EV wallbox (N)" ;
+    s223:hasMedium   s223:Electricity-Neutral ;
+    dhc:crossSection "10.0"^^xsd:decimal .
+
+ex:wire-ev-PE a dhc:WiringSegment ;
+    rdfs:label "R2V 3G10 — EV wallbox (PE)" ;
+    s223:hasMedium   s223:Electricity-Earth ;
+    dhc:crossSection "10.0"^^xsd:decimal .
+
+# ⚠ The legacy EV run carries the deliberate defect at conductor level too:
+# 1.5 mm² on a 32 A IRVE circuit. dhc:crossSection on ex:circuit-ev-legacy is
+# what nfc15100:IRVE32AMonoShape actually reads; these segments are the
+# device-level fact that agrees with it. Do not "fix" either — see the header.
+
+ex:wire-ev-legacy-L a dhc:WiringSegment ;
+    rdfs:label "Legacy run — 1.5 mm² (L) — UNDERSIZED BY DESIGN" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "1.5"^^xsd:decimal ;
+    dhc:wiring       "R2V 3G1.5" .
+
+ex:wire-ev-legacy-N a dhc:WiringSegment ;
+    rdfs:label "Legacy run — 1.5 mm² (N)" ;
+    s223:hasMedium   s223:Electricity-Neutral ;
+    dhc:crossSection "1.5"^^xsd:decimal .
+
+ex:wire-ev-legacy-PE a dhc:WiringSegment ;
+    rdfs:label "Legacy run — 1.5 mm² (PE)" ;
+    s223:hasMedium   s223:Electricity-Earth ;
+    dhc:crossSection "1.5"^^xsd:decimal .
+
 ex:lum-lr-1 a brick:Luminaire ;
     rdfs:label "Living-room luminaire (×6)" ;
     brick:hasLocation       ex:living-room ;
@@ -347,10 +600,23 @@ ex:socket-kit-1 a dhc:Socket ;
     rdfs:label "Kitchen sockets (×6)" ;
     brick:hasLocation ex:kitchen .
 
-ex:washing-machine a brick:Equipment ;
+# Multi-typed on purpose. s223:ClothesWasher carries the semantics ("a piece of
+# Equipment that automatically cleans a load of textiles") that bare
+# brick:Equipment does not, but dhc:powerRating has rdfs:domain brick:Equipment,
+# so dropping the Brick type would silently violate it. Known gap: 223P's
+# ClothesWasher shape also wants an outlet on medium Fluid-Water — the drain.
+# This is an electrical model and does not carry plumbing; nothing runs the
+# upstream shapes today (build-abox.mjs parses Brick+extensions.ttl only for the
+# equipment closure). Recorded in doc/parking-lot.md rather than papered over.
+ex:washing-machine a brick:Equipment, s223:ClothesWasher ;
     rdfs:label "Washing machine" ;
     brick:hasLocation ex:gtl ;
-    dhc:powerRating "2300"^^xsd:decimal .
+    dhc:powerRating "2300"^^xsd:decimal ;
+    s223:hasConnectionPoint ex:washing-machine-in .
+
+ex:washing-machine-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-wm-L .
 
 ex:evse a brick:Electric_Vehicle_Charging_Station ;
     rdfs:label "Wallbox 7.4 kW" ;
@@ -358,13 +624,23 @@ ex:evse a brick:Electric_Vehicle_Charging_Station ;
     brick:electricVehicleChargerType     [ brick:value "Level 2"^^xsd:string ] ;
     brick:electricVehicleConnectorType   [ brick:value "Type 2 (IEC 62196)"^^xsd:string ] ;
     brick:currentFlowType                [ brick:value "AC"^^xsd:string ] ;
-    brick:electricalPhaseCount           [ brick:value 1 ] .
+    brick:electricalPhaseCount           [ brick:value 1 ] ;
+    s223:hasConnectionPoint ex:evse-in .
+
+ex:evse-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-ev-L .
 
 ex:evse-legacy a brick:Electric_Vehicle_Charging_Station ;
     rdfs:label "Legacy wallbox (previous owner)" ;
     brick:hasLocation ex:garage ;
     brick:currentFlowType      [ brick:value "AC"^^xsd:string ] ;
-    brick:electricalPhaseCount [ brick:value 1 ] .
+    brick:electricalPhaseCount [ brick:value 1 ] ;
+    s223:hasConnectionPoint ex:evse-legacy-in .
+
+ex:evse-legacy-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-ev-legacy-L .
 
 
 # ── Automation (Brick) ───────────────────────────────────────────────────

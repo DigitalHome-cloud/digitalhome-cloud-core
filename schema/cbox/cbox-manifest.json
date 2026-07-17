@@ -1,34 +1,57 @@
 {
   "$schema": "https://digitalhome.cloud/schema/cbox-manifest.schema.json",
-  "version": "3.0.0",
-  "description": "Registry of C-Box norm profiles. Each entry points to a SHACL shapes file that binds to a dhc:Norm instance in the T-Box. Scoped to France while the v3 core is prototyped — DIN VDE 0100 (DE), AREI/RGIE (BE) and BS 7671 (GB) were removed in v3.0.0 and are re-added once dhc-core is released. Every profile listed here must bind to a dhc:Norm that exists in the T-Box; tests/cbox/manifest.test.js enforces that.",
+  "version": "3.1.0",
+  "description": "Registry of C-Box norm profiles. Each entry points to a SHACL shapes file that binds to a dhc:Norm instance in the T-Box, and to the dhc:NormEdition that file implements. Scoped to France while the v3 core is prototyped — DIN VDE 0100 (DE), AREI/RGIE (BE) and BS 7671 (GB) were removed in v3.0.0 and are re-added once dhc-core is released. Every profile listed here must bind to a dhc:Norm and a dhc:NormEdition that exist in the T-Box, and the T-Box's dhc:shapesFile must agree with the file named here; tests/cbox/manifest.test.js enforces all three.",
+  "editionNote": "One profile per EDITION, not per norm (changed in 3.1.0). Compliance is computed by validating against each edition's shapes and comparing the verdicts: passing the latest is green, passing an older one but failing the latest is grandfathered. That is impossible with a single profile per norm. The T-Box's dhc:shapesFile on each dhc:NormEdition is authoritative; this manifest mirrors it so downstream apps can enumerate profiles without parsing Turtle.",
+  "deltaNote": "A profile with \"delta\": true carries ONLY what its edition adds or tightens, and is meaningless on its own. Its effective rule set is itself concatenated with every profile down the dhc:supersedes chain. Concatenation ANDs constraints, so an edition may add or tighten but NEVER loosen — see the header of nfc15100-2024.shapes.ttl.",
   "profiles": [
     {
-      "id": "nfc15100",
+      "id": "nfc15100-2015",
       "label": {
-        "en": "NF C 15-100 — Low-voltage electrical installations (France)",
-        "de": "NF C 15-100 — Niederspannungsinstallationen (Frankreich)",
-        "fr": "NF C 15-100 — Installations électriques basse tension (France)"
+        "en": "NF C 15-100:2015 — Low-voltage electrical installations (France)",
+        "de": "NF C 15-100:2015 — Niederspannungsinstallationen (Frankreich)",
+        "fr": "NF C 15-100:2015 — Installations électriques basse tension (France)"
       },
       "country": "FR",
       "domain": "electrical",
       "version": "2015-A5",
       "norm": "dhc:Norm_NFC15100",
-      "file": "electrical/nfc15100.shapes.ttl",
+      "edition": "dhc:NormEdition_NFC15100_2015",
+      "file": "electrical/nfc15100-2015.shapes.ttl",
+      "delta": false,
       "requires": []
     },
     {
-      "id": "nfc14100",
+      "id": "nfc15100-2024",
       "label": {
-        "en": "NF C 14-100 — Energy delivery installations (France)",
-        "de": "NF C 14-100 — Energieeinspeisungen (Frankreich)",
-        "fr": "NF C 14-100 — Installations de livraison d'énergie (France)"
+        "en": "NF C 15-100:2024 — Low-voltage electrical installations (France) — ⚠ UNVERIFIED illustrative delta",
+        "de": "NF C 15-100:2024 — Niederspannungsinstallationen (Frankreich) — ⚠ UNGEPRÜFTES Beispiel-Delta",
+        "fr": "NF C 15-100:2024 — Installations électriques basse tension (France) — ⚠ delta illustratif NON VÉRIFIÉ"
+      },
+      "country": "FR",
+      "domain": "electrical",
+      "version": "2024",
+      "norm": "dhc:Norm_NFC15100",
+      "edition": "dhc:NormEdition_NFC15100_2024",
+      "file": "electrical/nfc15100-2024.shapes.ttl",
+      "delta": true,
+      "unverified": "Rules are illustrative stand-ins, NOT sourced from the published NF C 15-100:2024 text. Do not use for a real installation.",
+      "requires": ["nfc15100-2015"]
+    },
+    {
+      "id": "nfc14100-2008",
+      "label": {
+        "en": "NF C 14-100:2008 — Energy delivery installations (France)",
+        "de": "NF C 14-100:2008 — Energieeinspeisungen (Frankreich)",
+        "fr": "NF C 14-100:2008 — Installations de livraison d'énergie (France)"
       },
       "country": "FR",
       "domain": "electrical",
       "version": "2008",
       "norm": "dhc:Norm_NFC14100",
-      "file": "electrical/nfc14100.shapes.ttl",
+      "edition": "dhc:NormEdition_NFC14100_2008",
+      "file": "electrical/nfc14100-2008.shapes.ttl",
+      "delta": false,
       "requires": []
     }
   ]

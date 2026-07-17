@@ -24,6 +24,8 @@ import { readTtl, parseToStore, validateAgainst, repoRoot, namedNode } from '../
 const RDF   = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const RDFS  = 'http://www.w3.org/2000/01/rdf-schema#';
 const DHC   = 'https://digitalhome.cloud/ontology#';
+const BRICK = 'https://brickschema.org/schema/Brick#';
+const S223  = 'http://data.ashrae.org/standard223#';
 
 const PREFIXES = {
   'https://digitalhome.cloud/ontology#': 'dhc',
@@ -34,6 +36,13 @@ const PREFIXES = {
   'http://www.w3.org/2000/01/rdf-schema#': 'rdfs',
   'http://www.w3.org/1999/02/22-rdf-syntax-ns#': 'rdf',
   'http://www.w3.org/2001/XMLSchema#': 'xsd',
+  // One namespace per EDITION for anything but the base: a delta profile must
+  // not reuse the base's shape IRIs, or concatenating the two would merge two
+  // editions' constraints onto one shape and the comparison would answer the
+  // wrong question. Longest-prefix order matters — nfc15100-2024# would never
+  // match if nfc15100# were tested first, but they are distinct namespaces so
+  // neither is a prefix of the other.
+  'https://digitalhome.cloud/cbox/nfc15100-2024#': 'nfc15100-2024',
   'https://digitalhome.cloud/cbox/nfc15100#': 'nfc15100',
   'https://digitalhome.cloud/cbox/nfc14100#': 'nfc14100',
 };
@@ -43,6 +52,47 @@ const curie = (iri) => {
   // A-Box individuals live under an ex: base that varies per file
   const m = /^https?:\/\/example\.org\/[^/]*\/?(.+)$/.exec(iri);
   return m ? `ex:${m[1]}` : iri;
+};
+
+// ── what kind of relationship is this edge? ───────────────────────────────
+// Four kinds, because they answer different questions and should not look alike:
+//   spatial    — where a thing is
+//   structural — what a thing is made of / belongs to
+//   flow       — what energy actually moves through (drawn with moving particles)
+//   control    — what commands what (drawn with moving blocks)
+// Unlisted predicates become 'other' and are REPORTED at the end of the build
+// rather than quietly bucketed, so a newly-modelled predicate shows up as a
+// question instead of silently rendering as an ordinary line.
+const EDGE_CLASS = {
+  'rec:locatedIn': 'spatial',
+  'rec:isLocationOf': 'spatial',
+  'rec:includes': 'spatial',
+  'rec:hasPart': 'spatial',
+  'brick:hasLocation': 'spatial',
+
+  'brick:hasPart': 'structural',
+  'brick:isPartOf': 'structural',
+  'dhc:hasProtection': 'structural',
+  'dhc:hasWiring': 'structural',
+  'dhc:hasCircuit': 'structural',
+  's223:hasMember': 'structural',
+  's223:hasConnectionPoint': 'structural',
+
+  'brick:feeds': 'flow',
+  'brick:isFedBy': 'flow',
+  's223:connectsThrough': 'flow',
+  's223:connectsTo': 'flow',
+  's223:cnx': 'flow',
+
+  'brick:controls': 'control',
+  'brick:isControlledBy': 'control',
+  'brick:hasPoint': 'control',
+};
+const unclassified = new Set();
+const edgeClassOf = (c) => {
+  const k = EDGE_CLASS[c];
+  if (!k) unclassified.add(c);
+  return k ?? 'other';
 };
 
 // Every A-Box in schema/abox/ is built, so the viewer can switch source without
@@ -67,9 +117,8 @@ if (arg && !allAbox.includes(firstRel)) {
 }
 
 // ── T-Box, loaded once ────────────────────────────────────────────────────
-// Core + app-metadata only: enough for the rdf:type → dhc:designView join.
-// Brick+extensions.ttl (3.5 MB) is deliberately NOT loaded — it contributes
-// nothing to colouring and would dominate the build time.
+// Core + app-metadata: the rdf:type → dhc:designView join and the norm-edition
+// chain (dhc:editionOf / dhc:latestEdition).
 const tboxTtl = readTtl('schema/tbox/dhc-core.ttl');
 const metaTtl = readTtl('schema/tbox/dhc-app-metadata.ttl');
 const tbox = parseToStore(tboxTtl + '\n' + metaTtl);
@@ -79,54 +128,205 @@ for (const q of tbox.match(null, namedNode(`${DHC}designView`), null)) {
   viewOf.set(q.subject.value, q.object.value);
 }
 
-// ── shapes, loaded once ───────────────────────────────────────────────────
-const SHACL = 'http://www.w3.org/ns/shacl#';
-const shapeFiles = fs.readdirSync(path.join(repoRoot, 'schema/cbox/electrical'))
-  .filter((f) => f.endsWith('.shapes.ttl'));
+// ── the norm-edition chain ────────────────────────────────────────────────
+// Compliance is COMPUTED here, not declared by the A-Box. The A-Box says what
+// is built; the T-Box says which editions exist and which shapes implement
+// each; this file validates against every implemented edition and compares the
+// verdicts. Passing the latest is compliant. Passing an older one but failing
+// the latest is GRANDFATHERED — lawful as built, re-qualified the moment anyone
+// modifies it, which is the state most of a real building is in.
+//
+// The alternative, asserting dhc:builtUnder per element, was tried and removed:
+// it asks the modeller to know something they usually do not (a surveyed
+// installation rarely records its edition), and it cannot say WHAT the delta to
+// current is — only that there is one. Two shapes files can.
+//
+//   dhc:editionOf     edition → its norm
+//   dhc:latestEdition norm    → the edition in force
+//   dhc:supersedes    edition → the one it replaces  (the upgrade path)
+//   dhc:shapesFile    edition → the shapes implementing it
+const editionOf     = new Map();  // edition → norm
+const latestEdition = new Map();  // norm    → edition
+const supersedes    = new Map();  // edition → the edition it replaces
+const shapesFileOf  = new Map();  // edition → relative path under schema/
+for (const q of tbox.match(null, namedNode(`${DHC}editionOf`), null))     editionOf.set(q.subject.value, q.object.value);
+for (const q of tbox.match(null, namedNode(`${DHC}latestEdition`), null)) latestEdition.set(q.subject.value, q.object.value);
+for (const q of tbox.match(null, namedNode(`${DHC}supersedes`), null))    supersedes.set(q.subject.value, q.object.value);
+for (const q of tbox.match(null, namedNode(`${DHC}shapesFile`), null))    shapesFileOf.set(q.subject.value, q.object.value);
 
-// Which classes does the C-Box actually LOOK AT? A node of any other class is
+if (latestEdition.size === 0) {
+  // Every governed node would silently fall back to "edition undeclared". The
+  // property was defined but never asserted for exactly this long, so guard it.
+  console.error('✗ no dhc:latestEdition asserted in the T-Box — every node would report an undeclared edition');
+  process.exit(2);
+}
+if (shapesFileOf.size === 0) {
+  console.error('✗ no dhc:NormEdition declares a dhc:shapesFile — nothing would be validated, and SHACL would report conforms:true');
+  process.exit(2);
+}
+
+// ── equipment, derived from the class hierarchy ───────────────────────────
+// The viewer draws equipment as boxes and everything else as spheres. Which is
+// which is read from the ontology, never hand-listed: brick:Equipment and
+// s223:Equipment plus their transitive subclasses. That correctly excludes
+// dhc:Circuit (⊑ s223:System), dhc:WiringSegment (⊑ s223:Connection) and
+// dhc:Socket (⊑ s223:ElectricityOutlet) — none of which are devices — and it
+// cannot drift when a class is added. Costs ~1s to parse Brick+extensions.ttl.
+const hierarchy = parseToStore(tboxTtl + '\n' + readTtl('schema/tbox/Brick+extensions.ttl'));
+const equipment = new Set([`${BRICK}Equipment`, `${S223}Equipment`]);
+for (let grew = true; grew; ) {
+  grew = false;
+  for (const q of hierarchy.match(null, namedNode(`${RDFS}subClassOf`), null)) {
+    if (equipment.has(q.object.value) && !equipment.has(q.subject.value)) {
+      equipment.add(q.subject.value);
+      grew = true;
+    }
+  }
+}
+const equipmentCuries = new Set([...equipment].map(curie));
+
+// ── shapes, driven by editions ────────────────────────────────────────────
+// The T-Box's dhc:shapesFile is the authority on which shapes exist, NOT the
+// directory listing. Reading the directory would happily validate a file no
+// edition claims — and then we could not say which edition its verdict was
+// about, which is the whole question here.
+const SHACL = 'http://www.w3.org/ns/shacl#';
+const CBOX_DIR = 'schema/cbox/electrical';
+
+// Both directions of the disk↔T-Box join must fail loudly. A missing file means
+// an edition silently stops being validated; an unclaimed file means shapes run
+// under no edition, or (worse) stop running when the driver changed and nobody
+// notices, because SHACL's answer to "nothing ran" is conforms:true.
+const onDisk = new Set(fs.readdirSync(path.join(repoRoot, CBOX_DIR)).filter((f) => f.endsWith('.shapes.ttl')));
+const claimed = new Set();
+const missing = [];
+for (const [edition, rel] of shapesFileOf) {
+  const base = path.basename(rel);
+  if (!fs.existsSync(path.join(repoRoot, 'schema', rel))) missing.push(`${curie(edition)} → schema/${rel}`);
+  else claimed.add(base);
+}
+if (missing.length) {
+  console.error(`✗ dhc:shapesFile names ${missing.length} file(s) that do not exist — that edition would silently stop being checked:`);
+  for (const m of missing) console.error(`    ${m}`);
+  process.exit(2);
+}
+const unclaimed = [...onDisk].filter((f) => !claimed.has(f));
+if (unclaimed.length) {
+  console.error(`✗ ${unclaimed.length} shapes file(s) on disk that no dhc:NormEdition claims via dhc:shapesFile:`);
+  for (const f of unclaimed) console.error(`    ${CBOX_DIR}/${f}`);
+  console.error('  Every shapes file must be bound to the edition it implements, or its verdict means nothing.');
+  process.exit(2);
+}
+
+// The effective rule set for an edition is its own file plus every file down
+// the dhc:supersedes chain. 2024 ships only its DELTA over 2015; concatenating
+// ANDs the constraints, so an edition can add or tighten but never loosen —
+// documented in nfc15100-2024.shapes.ttl's header and doc/parking-lot.md.
+function effectiveShapes(edition) {
+  const parts = [];
+  const seen = new Set();
+  for (let e = edition; e && !seen.has(e); e = supersedes.get(e)) {
+    seen.add(e);
+    const rel = shapesFileOf.get(e);
+    if (rel) parts.push(readTtl(`schema/${rel}`));
+  }
+  return parts.join('\n');
+}
+
+// One run per edition that implements shapes, ordered oldest → newest so that
+// "violates the oldest we hold" (never was compliant) can be told apart from
+// "violates only the newest" (grandfathered).
+const chainDepth = (e) => { let d = 0; for (let c = e; supersedes.get(c); c = supersedes.get(c)) d++; return d; };
+const runs = [...shapesFileOf.keys()]
+  .map((edition) => ({
+    edition,
+    norm: editionOf.get(edition),
+    depth: chainDepth(edition),
+    shapesTtl: effectiveShapes(edition),
+  }))
+  .sort((a, b) => a.depth - b.depth);
+
+// Which classes does each edition actually LOOK AT? A node of any other class is
 // never a focus node, so no shape can ever complain about it — that is a gap in
 // norm coverage, not a pass. SHACL only reports failures, so "no violation" is
-// indistinguishable from "never checked" unless we compute this set.
-const targetClasses = new Set();
-for (const f of shapeFiles) {
-  const s = parseToStore(readTtl(`schema/cbox/electrical/${f}`));
+// indistinguishable from "never checked" unless we compute this set. Tracked
+// per edition now, because an edition can WIDEN coverage: NF C 15-100:2024
+// brings energy storage into scope, so a battery is a focus node under 2024 and
+// under nothing at all in 2015.
+const targetClasses = new Set();                 // union, for the "checked at all" question
+for (const r of runs) {
+  r.targets = new Set();
+  const s = parseToStore(r.shapesTtl);
   for (const q of s.match(null, namedNode(`${SHACL}targetClass`), null)) {
+    r.targets.add(curie(q.object.value));
     targetClasses.add(curie(q.object.value));
   }
+}
+
+// Per norm: the editions we can actually check, oldest first, and whether the
+// newest of them IS the edition in force. If it is not, no node under that norm
+// can honestly be called compliant-with-current — we simply do not hold the
+// rules. That is the C-Box's gap, not the building's, so it is an opacity
+// channel in the viewer rather than a colour.
+const implementedByNorm = new Map();
+for (const r of runs) {
+  if (!implementedByNorm.has(r.norm)) implementedByNorm.set(r.norm, []);
+  implementedByNorm.get(r.norm).push(r);
+}
+const editionCoverage = [];
+for (const [norm, rs] of implementedByNorm) {
+  const newest = rs[rs.length - 1];
+  const latest = latestEdition.get(norm);
+  editionCoverage.push({
+    norm: curie(norm),
+    implements: rs.map((r) => curie(r.edition)),
+    newestImplemented: curie(newest.edition),
+    latest: latest ? curie(latest) : null,
+    // The only question that matters: can we speak to the edition in force?
+    assessable: !!latest && latest === newest.edition,
+  });
 }
 
 async function validate(aboxTtl) {
   const violationsByNode = new Map();
   const allResults = [];
   let conforms = true;
-  for (const f of shapeFiles) {
-    const shapes = readTtl(`schema/cbox/electrical/${f}`);
+  // focus IRI → Set of edition IRIs it violates
+  const violatedEditions = new Map();
+  for (const r of runs) {
     // The T-Box must be in the DATA graph: shapes reference dhc:Norm instances
     // by sh:class / sh:hasValue, and SHACL resolves those against the data, not
     // the shapes graph. tests/_helpers withTbox() does the same.
-    const { conforms: ok, results } = await validateAgainst(shapes, tboxTtl + '\n' + aboxTtl);
-    if (!ok) conforms = false;
-    for (const r of results) {
+    const { conforms: ok, results } = await validateAgainst(r.shapesTtl, tboxTtl + '\n' + aboxTtl);
+    // conforms is the verdict against the CURRENT edition only. Against 2015 the
+    // demo house has exactly one violation; against 2024 it also has the
+    // grandfathered EV circuit, and reporting that as non-conformance would be
+    // wrong — the installation is lawful.
+    if (!ok && latestEdition.get(r.norm) === r.edition) conforms = false;
+    for (const res of results) {
       const rec = {
-        profile: f.replace('.shapes.ttl', ''),
-        focus: r.focus,
-        focusCurie: r.focus ? curie(r.focus) : null,
+        edition: curie(r.edition),
+        norm: curie(r.norm),
+        profile: path.basename(shapesFileOf.get(r.edition), '.shapes.ttl'),
+        focus: res.focus,
+        focusCurie: res.focus ? curie(res.focus) : null,
         // sh:or guards report the named shape but no message; plain sh:property
         // shapes report a blank-node sourceShape but DO carry path + message.
         // Keep both so the viewer can always say something useful.
-        shape: r.sourceShape?.startsWith('http') ? curie(r.sourceShape) : null,
-        path: r.path ? curie(r.path) : null,
-        message: r.message || null,
+        shape: res.sourceShape?.startsWith('http') ? curie(res.sourceShape) : null,
+        path: res.path ? curie(res.path) : null,
+        message: res.message || null,
       };
       allResults.push(rec);
-      if (r.focus) {
-        if (!violationsByNode.has(r.focus)) violationsByNode.set(r.focus, []);
-        violationsByNode.get(r.focus).push(rec);
+      if (res.focus) {
+        if (!violatedEditions.has(res.focus)) violatedEditions.set(res.focus, new Set());
+        violatedEditions.get(res.focus).add(r.edition);
+        if (!violationsByNode.has(res.focus)) violationsByNode.set(res.focus, []);
+        violationsByNode.get(res.focus).push(rec);
       }
     }
   }
-  return { conforms, allResults, violationsByNode };
+  return { conforms, allResults, violationsByNode, violatedEditions };
 }
 
 
@@ -139,7 +339,7 @@ async function validate(aboxTtl) {
 async function buildOne(rel) {
   const aboxTtl = readTtl(rel);
   const abox = parseToStore(aboxTtl);
-  const { conforms, allResults, violationsByNode } = await validate(aboxTtl);
+  const { conforms, allResults, violationsByNode, violatedEditions } = await validate(aboxTtl);
 
   const nodes = new Map();
   const ensure = (iri) => {
@@ -147,7 +347,8 @@ async function buildOne(rel) {
       nodes.set(iri, {
         id: iri, curie: curie(iri), label: null,
         types: [], designView: null, literals: {}, violations: [],
-        checked: false, compliance: 'gap',
+        checked: false, compliance: 'unchecked', complianceWhy: null,
+        shape: 'sphere',
       });
     }
     return nodes.get(iri);
@@ -170,6 +371,13 @@ async function buildOne(rel) {
     return parts.join(' ');
   };
 
+  // A predicate may legitimately repeat (ex:gtl is governedBy two norms, and
+  // built under one edition of each). Assigning would keep only the last —
+  // silently, and the inspector would look perfectly complete while lying.
+  const addLit = (n, key, val) => {
+    n.literals[key] = n.literals[key] ? `${n.literals[key]}, ${val}` : val;
+  };
+
   const links = [];
   for (const q of abox.match(null, null, null)) {
     if (q.subject.termType !== 'NamedNode') continue;
@@ -180,17 +388,18 @@ async function buildOne(rel) {
 
     if (q.object.termType === 'NamedNode') {
       if (nodes.has(q.object.value)) {
-        links.push({ source: q.subject.value, target: q.object.value, property: curie(p) });
+        const c = curie(p);
+        links.push({ source: q.subject.value, target: q.object.value, property: c, kind: edgeClassOf(c) });
       } else {
-        // points at something outside the A-Box (a Norm, a medium, a unit) —
-        // an attribute of this node, not a topology edge
-        n.literals[curie(p)] = curie(q.object.value);
+        // points at something outside the A-Box (a Norm, a NormEdition, a
+        // medium, a unit) — an attribute of this node, not a topology edge
+        addLit(n, curie(p), curie(q.object.value));
       }
     } else if (q.object.termType === 'BlankNode') {
-      n.literals[curie(p)] = inlineBnode(q.object);
+      addLit(n, curie(p), inlineBnode(q.object));
     } else {
       if (p === `${RDFS}label`) n.label = q.object.value;
-      else n.literals[curie(p)] = q.object.value;
+      else addLit(n, curie(p), q.object.value);
     }
   }
 
@@ -200,21 +409,131 @@ async function buildOne(rel) {
   }
 
   // ── compliance state ────────────────────────────────────────────────────
-  // danger : a shape rejected it
-  // ok     : a shape actually looked at it (its class is an sh:targetClass) and
-  //          did not complain
-  // gap    : NO shape targets its class, so nothing ever checked it. This is
-  //          NOT a pass. SHACL reports only failures, so silence here means
-  //          "unknown", and calling that green would be the same vacuous-green
-  //          mistake documented in doc/prototyping-poc.md.
+  // COMPUTED, not declared. Nothing in the A-Box says which edition anything
+  // was built to; the state falls out of validating against each edition's
+  // shapes and comparing the verdicts.
+  //
+  // TWO CHANNELS, deliberately:
+  //
+  //   colour  — the verdict against the best edition we hold.
+  //   opacity — whether we hold the edition actually in force.
+  //
+  // Folding them into one scale is a mistake this tool already made once: the
+  // first cut painted "we have no rule for this" the same yellow as "built to
+  // an older edition", and buried the actionable signal under 33 nodes of
+  // ignorance. They are different claims and they belong on different axes.
+  //
+  //   danger    : violates the OLDEST edition we can check. It was never
+  //               compliant, under any rules we hold. This is the emergency.
+  //   gap       : passes an older edition, fails the newest we hold.
+  //               GRANDFATHERED — lawful as built, re-qualified the moment
+  //               anyone modifies or extends it. This is the state most of an
+  //               existing building is in, and the one worth knowing BEFORE
+  //               commissioning work. ex:circuit-ev is the worked example:
+  //               10 mm² satisfies :2015 and fails :2024.
+  //   ok        : passes the newest edition we hold.
+  //   unchecked : no shape in ANY edition targets its class. NOT a pass —
+  //               SHACL reports only failures, so silence here is
+  //               indistinguishable from conformance. Colouring it green would
+  //               be the vacuous-green mistake in doc/prototyping-poc.md.
+  //
+  // ghosted    : orthogonal to all four. Either nothing checked it, or the
+  //              edition in force for its norm has no shapes at all, so no
+  //              verdict against CURRENT is possible. NF C 14-100:2021 is
+  //              exactly that — its nodes pass the 2008 rules we hold and we
+  //              cannot speak to 2021, so they are green-but-ghosted rather
+  //              than green. That is the C-Box's gap, not the building's.
+  //
+  // Note a node may declare dhc:governedBy and still be 'unchecked': the norm
+  // claims jurisdiction, our C-Box has no rule. ex:board-resi9 is exactly that,
+  // and the transparency is the C-Box coverage gap made visible.
+  const RANK = { ok: 0, gap: 1, danger: 2 };
   for (const n of nodes.values()) {
     n.checked = n.types.some((t) => targetClasses.has(t));
-    n.compliance = n.violations.length ? 'danger' : (n.checked ? 'ok' : 'gap');
+    n.shape = n.types.some((t) => equipmentCuries.has(t)) ? 'box' : 'sphere';
+
+    // Which norms are in play? TWO sources, and they answer different questions:
+    //   targeting — a norm whose shapes actually select this node. ex:rcd-main
+    //               declares no governedBy at all yet is checked by
+    //               nfc15100:RCDSensitivityShape, so governedBy alone would miss it.
+    //   declared  — a norm the node claims via dhc:governedBy. If nothing under
+    //               that norm targets it, the norm claims jurisdiction and we
+    //               hold no rule — which must not read as a clean bill of health.
+    //               ex:gtl declares both NF C 14-100 and NF C 15-100; only the
+    //               latter has a shape for a technical space.
+    const targeting = [...implementedByNorm.entries()]
+      .filter(([, rs]) => rs.some((r) => n.types.some((t) => r.targets.has(t))))
+      .map(([norm]) => norm);
+    const declared = [...abox.match(namedNode(n.id), namedNode(`${DHC}governedBy`), null)].map((q) => q.object.value);
+    const norms = [...new Set([...targeting, ...declared])];
+
+    const bad = violatedEditions.get(n.id) ?? new Set();
+    const per = [];
+    for (const norm of norms) {
+      // Only the editions that actually target this node's class. An edition
+      // that widens coverage (2024 brings storage into scope) must not make a
+      // battery look "grandfathered" under a 2015 that never saw it.
+      const rs = (implementedByNorm.get(norm) ?? []).filter((r) => n.types.some((t) => r.targets.has(t)));
+      const latest = latestEdition.get(norm);
+      if (!rs.length) {
+        // Claimed but unruled. No verdict — and definitely not a pass.
+        per.push({
+          norm, state: null, assessable: false,
+          why: `declares dhc:governedBy ${curie(norm)}, but no edition of it has a shape for ${n.types.join(', ')} — the norm claims jurisdiction and we hold no rule`,
+        });
+        continue;
+      }
+      const oldest = rs[0], newest = rs[rs.length - 1];
+      const assessable = !!latest && latest === newest.edition;
+
+      let state, why;
+      if (bad.has(oldest.edition)) {
+        state = 'danger';
+        why = `rejected under ${curie(oldest.edition)}, the oldest edition we can check — it was never compliant`;
+      } else if (bad.has(newest.edition)) {
+        state = 'gap';
+        why = `passes ${curie(oldest.edition)} but fails ${curie(newest.edition)} — lawful as built; modifying or extending it triggers the current edition`;
+      } else {
+        state = 'ok';
+        why = assessable
+          ? `passes ${curie(newest.edition)}, the edition in force`
+          : `passes ${curie(newest.edition)}, but that is not ${latest ? curie(latest) : 'the edition in force'} — no shapes exist for the current edition, so this is unproven against it`;
+      }
+      per.push({ norm, state, why, assessable });
+    }
+
+    const verdicts = per.filter((p) => p.state);
+    if (!verdicts.length) {
+      n.compliance = 'unchecked';
+      n.ghosted = true;
+      n.complianceWhy = per.length
+        ? per.map((p) => p.why).join('; ')
+        : `no shape in any edition targets ${n.types.join(', ') || 'its class'} — nothing checked it`;
+      continue;
+    }
+
+    // Worst wins. ex:gtl answers to both NF C 14-100 and NF C 15-100; being
+    // clean under one does not excuse the other.
+    verdicts.sort((a, b) => RANK[b.state] - RANK[a.state]);
+    n.compliance = verdicts[0].state;
+    // Ghosted if ANY norm in play leaves us unable to speak to the edition in
+    // force — including one that merely claims jurisdiction.
+    n.ghosted = per.some((p) => !p.assessable);
+    n.complianceWhy = per.map((p) => `${curie(p.norm)}: ${p.why}`).join('; ');
   }
 
   const nodeList = [...nodes.values()].map((n) => ({ ...n, label: n.label || n.curie }));
-  const tally = { ok: 0, gap: 0, danger: 0 };
+  const tally = { ok: 0, gap: 0, danger: 0, unchecked: 0 };
   for (const n of nodeList) tally[n.compliance]++;
+  tally.ghosted = nodeList.filter((n) => n.ghosted).length;
+  const edgeTally = {};
+  for (const l of links) edgeTally[l.kind] = (edgeTally[l.kind] ?? 0) + 1;
+  // Per-edition violation counts. The old single "violations: N" contract is
+  // ambiguous once more than one edition is checked — against 2015 the demo
+  // house has exactly one violation, against 2024 it also has the grandfathered
+  // EV circuit, and those two numbers mean opposite things.
+  const byEdition = {};
+  for (const r of runs) byEdition[curie(r.edition)] = allResults.filter((x) => x.edition === curie(r.edition)).length;
 
   return {
     graph: {
@@ -222,17 +541,28 @@ async function buildOne(rel) {
       source: rel,
       generatedAt: new Date().toISOString(),
       targetClasses: [...targetClasses].sort(),
+      editionCoverage,
       tally,
+      edgeTally,
       nodes: nodeList,
       links,
     },
     report: {
       source: rel,
       generatedAt: new Date().toISOString(),
-      profiles: shapeFiles.map((f) => f.replace('.shapes.ttl', '')),
+      editions: runs.map((r) => ({
+        edition: curie(r.edition),
+        norm: curie(r.norm),
+        profile: path.basename(shapesFileOf.get(r.edition), '.shapes.ttl'),
+        isLatest: latestEdition.get(r.norm) === r.edition,
+        targets: [...r.targets].sort(),
+      })),
+      editionCoverage,
       conforms,
       violationCount: allResults.length,
+      violationsByEdition: byEdition,
       tally,
+      edgeTally,
       results: allResults,
     },
   };
@@ -261,9 +591,18 @@ for (const rel of allAbox) {
 
   console.log(`  ${rel}`);
   console.log(`    nodes ${graph.nodes.length}  links ${graph.links.length}  circuits ${circuits}`);
-  console.log(`    compliance  ok ${graph.tally.ok}   gap ${graph.tally.gap}   danger ${graph.tally.danger}`);
-  console.log(`    conforms ${report.conforms}  violations ${report.violationCount}`);
-  for (const r of report.results) console.log(`      ✗ ${r.focusCurie ?? '?'}  ${r.shape ?? r.path ?? ''}`);
+  console.log(`    compliance  ok ${graph.tally.ok}   gap ${graph.tally.gap}   danger ${graph.tally.danger}   unchecked ${graph.tally.unchecked}   (ghosted ${graph.tally.ghosted})`);
+  console.log(`    edges       ${Object.entries(graph.edgeTally).map(([k, v]) => `${k} ${v}`).join('   ')}`);
+  // Per edition, not in aggregate. "conforms" is the verdict against the
+  // edition in force; violations under a superseded edition are the
+  // grandfathering signal, not non-compliance, and printing one number for both
+  // is how the two get confused.
+  console.log(`    conforms ${report.conforms}  (against the edition in force)`);
+  for (const e of report.editions) {
+    const rs = report.results.filter((r) => r.edition === e.edition);
+    console.log(`      ${e.edition}${e.isLatest ? ' (in force)' : ' (superseded)'}: ${rs.length} violation(s)`);
+    for (const r of rs) console.log(`        ✗ ${r.focusCurie ?? '?'}  ${r.shape ?? r.path ?? ''}`);
+  }
 
   // An A-Box with no nodes or no links renders as a clean, entirely plausible
   // empty canvas, and SHACL reports conforms:true because it selected nothing.
@@ -276,5 +615,16 @@ for (const rel of allAbox) {
 
 fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify(index, null, 2));
 console.log(`\n  shapes target: ${[...targetClasses].sort().join(', ')}`);
+for (const e of editionCoverage) {
+  if (e.assessable) {
+    console.log(`  ${e.norm}: shapes for ${e.implements.join(' → ')} — the newest IS the edition in force, so "ok" is proven against current`);
+  } else {
+    console.log(`  ⚠ ${e.norm}: shapes for ${e.implements.join(' → ')}, but the edition in force is ${e.latest ?? '(none declared)'} — no shapes implement it, so nothing under this norm can be proven current. Those nodes are drawn GHOSTED: the gap is ours, not the building's.`);
+  }
+}
+if (unclassified.size) {
+  console.log(`  ⚠ predicates with no edge kind (drawn as 'other'): ${[...unclassified].sort().join(', ')}`);
+  console.log(`    add them to EDGE_CLASS in this file — an unclassified edge is a modelling question, not a default`);
+}
 console.log(`  → js-tools/data/  (${index.sources.length} source(s) + index.json)`);
 if (anyEmpty) process.exit(1);

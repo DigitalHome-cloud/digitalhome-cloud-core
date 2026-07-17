@@ -72,11 +72,19 @@ dhc:User a owl:Class ;
     rdfs:comment "A major subdivision of a property (e.g. main building, annex, garden). No direct REC equivalent; extends rec:Architecture."@en ;
     rdfs:subClassOf rec:Person .
 
+dhc:NormEdition_NFC14100_2008 a dhc:NormEdition ;
+    rdfs:label "NF C 14-100:2008"@en ;
+    rdfs:comment "The edition the C-Box implements: cbox/electrical/nfc14100-2008.shapes.ttl declares normVersion 2008. Declared so that WHICH edition those shapes encode is recorded rather than inferred from a filename. Before this existed the only NF C 14-100 edition in the T-Box was 2021, while the shapes said 2008 — a mismatch no test could see, because nothing joined the two."@en ;
+    dhc:editionOf dhc:Norm_NFC14100 ;
+    dhc:editionYear "2008"^^xsd:gYear ;
+    dhc:shapesFile "cbox/electrical/nfc14100-2008.shapes.ttl" .
+
 dhc:NormEdition_NFC14100_2021 a dhc:NormEdition ;
     rdfs:label "NF C 14-100:2021"@en ;
-    rdfs:comment "Current edition of NF C 14-100. No dhc:shapesFile: the C-Box profile in cbox/electrical/nfc14100.shapes.ttl declares normVersion 2008, so it does not implement this edition. Per-edition shapes are the design intent; only the norm-level profile registered in cbox-manifest.json exists today."@en ;
+    rdfs:comment "Current edition of NF C 14-100, and dhc:latestEdition. Declares no dhc:shapesFile: no shapes have been authored for it, so nothing governed by NF C 14-100 can be proven compliant with the edition actually in force. The compliance viewer draws those nodes ghosted for exactly that reason — they pass the 2008 rules we hold, and we cannot speak to 2021."@en ;
     dhc:editionOf dhc:Norm_NFC14100 ;
-    dhc:editionYear "2021"^^xsd:gYear .
+    dhc:editionYear "2021"^^xsd:gYear ;
+    dhc:supersedes dhc:NormEdition_NFC14100_2008 .
 
 dhc:NormEdition_NFC15100_2002 a dhc:NormEdition ;
     rdfs:label "NF C 15-100:2002"@en ;
@@ -86,19 +94,20 @@ dhc:NormEdition_NFC15100_2002 a dhc:NormEdition ;
 
 dhc:NormEdition_NFC15100_2015 a dhc:NormEdition ;
     rdfs:label "NF C 15-100:2015"@en ;
-    rdfs:comment "Major revision with amended requirements for residential installations. Added requirements for IRVE, updated bathroom zones, revised minimum circuit counts. This is the edition the C-Box profile implements — cbox/electrical/nfc15100.shapes.ttl declares normVersion 2015-A5."@en ;
+    rdfs:comment "Major revision with amended requirements for residential installations. Added requirements for IRVE, updated bathroom zones, revised minimum circuit counts. Implemented in full by cbox/electrical/nfc15100-2015.shapes.ttl (normVersion 2015-A5), which is the base of the supersedes chain: every later edition's shapes are a delta concatenated on top of this file."@en ;
     dhc:editionEffectiveDate "2015-11-27"^^xsd:date ;
     dhc:editionOf dhc:Norm_NFC15100 ;
     dhc:editionYear "2015"^^xsd:gYear ;
-    dhc:shapesFile "cbox/electrical/nfc15100.shapes.ttl" ;
+    dhc:shapesFile "cbox/electrical/nfc15100-2015.shapes.ttl" ;
     dhc:supersedes dhc:NormEdition_NFC15100_2002 .
 
 dhc:NormEdition_NFC15100_2024 a dhc:NormEdition ;
     rdfs:label "NF C 15-100:2024"@en ;
-    rdfs:comment "Current edition. Includes updated Part 7-702 (pools/basins), revised IRVE requirements, new requirements for energy storage systems. No dhc:shapesFile: despite being dhc:latestEdition, no shapes have been authored for it — the C-Box still implements 2015-A5. Compliance is therefore validated against the 2015 rules, not these."@en ;
+    rdfs:comment "Current edition. Includes updated Part 7-702 (pools/basins), revised IRVE requirements, new requirements for energy storage systems. Its dhc:shapesFile carries only the DELTA over 2015 — the effective rule set is that file concatenated with every file down the dhc:supersedes chain. WARNING: those shapes are ILLUSTRATIVE and UNVERIFIED. They are not sourced from the published NF C 15-100:2024 text; they encode plausible stand-ins for two of the three deltas named above, so that the multi-edition machinery has something real to compute. See the header of cbox/electrical/nfc15100-2024.shapes.ttl."@en ;
     dhc:editionEffectiveDate "2024-07-01"^^xsd:date ;
     dhc:editionOf dhc:Norm_NFC15100 ;
     dhc:editionYear "2024"^^xsd:gYear ;
+    dhc:shapesFile "cbox/electrical/nfc15100-2024.shapes.ttl" ;
     dhc:supersedes dhc:NormEdition_NFC15100_2015 .
 
 dhc:Role_Designer a dhc:Role ;
@@ -579,6 +588,7 @@ dhc:Norm a owl:Class ;
 dhc:Norm_NFC14100 a dhc:Norm ;
     rdfs:label "NF C 14-100"@en ;
     rdfs:comment "Energy delivery from provider to main board (France). Covers the connection between the public distribution network and the origin of the private installation."@en ;
+    dhc:latestEdition dhc:NormEdition_NFC14100_2021 ;
     dhc:normCategory "Regulation" ;
     dhc:normCountry "FR" ;
     dhc:normDomain "electrical" ;
@@ -588,6 +598,7 @@ dhc:Norm_NFC14100 a dhc:Norm ;
 dhc:Norm_NFC15100 a dhc:Norm ;
     rdfs:label "NF C 15-100"@en ;
     rdfs:comment "Residential and commercial low-voltage electrical installation (France). The primary norm governing circuit design, protection, wiring, and zone-specific requirements (bathrooms, pools, kitchens, etc.)."@en ;
+    dhc:latestEdition dhc:NormEdition_NFC15100_2024 ;
     dhc:normCategory "Regulation" ;
     dhc:normCountry "FR" ;
     dhc:normDomain "electrical" ;
