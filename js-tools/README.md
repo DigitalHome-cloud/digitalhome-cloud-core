@@ -16,6 +16,37 @@ the viewer. Ctrl-C to stop.
 Sibling of `py-tools/`: **Python curates the T-Box, JavaScript views and
 validates it.**
 
+## Adding a model to the viewer
+
+Drop a `.ttl` under `schema/abox/` and run `npm run build:abox` (or
+`npm run preview:abox`). It appears in the picker. That is the whole mechanism —
+`build-abox.mjs` walks `schema/abox/` **recursively**, builds one graph per file
+into `data/<basename>.json`, and the viewer reads `data/index.json`. No
+registration list.
+
+**Where you put it decides how it is treated** — the subfolder is the signal:
+
+| Location | Treated as | Validated? | In tests? |
+|---|---|---|---|
+| `schema/abox/*.ttl` (top level) | **ours** | yes — against the C-Box, per edition | yes; must carry a deliberate defect |
+| `schema/abox/<folder>/*.ttl` | **reference** | no — rendered only | no |
+
+A reference model (e.g. `examples-brick-1.5/`) is external, carries no norm
+layer, and is drawn so it can be browsed — every node comes out `unchecked`,
+which is the truthful state: nothing governs a stock Brick model. Skipping
+validation also keeps the build fast (some samples are thousands of triples).
+Reference files are grouped in the picker under their folder name.
+
+**Robustness differs by treatment too.** A reference file that fails to parse, or
+has no A-Box-to-A-Box links to draw (e.g. a sensor-only sample whose relations
+all go to blank nodes), is **skipped with a warning** — one bad external file
+never takes the build down. The same failure in one of *our* top-level files is
+**fatal**, because there it is a real regression.
+
+Basenames must be unique across the whole tree (they name the generated data
+files); the build refuses a collision rather than letting one silently overwrite
+the other.
+
 ## What you see
 
 - **Nodes** — A-Box individuals. **Boxes are equipment, spheres are not.**

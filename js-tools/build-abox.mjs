@@ -50,12 +50,17 @@ const PREFIXES = {
 const curie = (iri) => {
   for (const [ns, p] of Object.entries(PREFIXES)) if (iri.startsWith(ns)) return `${p}:${iri.slice(ns.length)}`;
   // A-Box individuals live under an example base that varies per file — the DHC
-  // models use http://example.org/<slug>/ , upstream Brick examples use
-  // http://example.com/<slug># . Shorten either to a local name rather than
-  // leaving a full IRI as the node label. Split on the last / or # so the
-  // fragment ("bedroom") survives without the base ("apartment#").
-  const m = /^https?:\/\/example\.(?:org|com)\/.*[/#]([^/#]+)$/.exec(iri);
-  return m ? `ex:${m[1]}` : iri;
+  // models use http://example.org/<slug>/ ; upstream Brick examples use all of
+  // http://example.com/<slug># , http://example.com# , http://example.com/# .
+  // Shorten anything on an example.(org|com) host to its trailing local name
+  // rather than leaving a full IRI as the node label. Scoped to example hosts so
+  // it never mangles a real vocabulary IRI (those are matched by PREFIXES
+  // above; only instance IRIs reach this fallback).
+  if (/^https?:\/\/example\.(?:org|com)[/#]/.test(iri)) {
+    const local = iri.split(/[/#]/).filter(Boolean).pop();
+    if (local) return `ex:${local}`;
+  }
+  return iri;
 };
 
 // ── what kind of relationship is this edge? ───────────────────────────────
@@ -73,29 +78,50 @@ const EDGE_CLASS = {
   'rec:includes': 'spatial',
   'rec:hasPart': 'spatial',
   'brick:hasLocation': 'spatial',
+  'brick:isLocationOf': 'spatial',
 
   'brick:hasPart': 'structural',
   'brick:isPartOf': 'structural',
+  'rec:isPartOf': 'structural',
   'dhc:hasProtection': 'structural',
   'dhc:hasWiring': 'structural',
   'dhc:hasCircuit': 'structural',
   's223:hasMember': 'structural',
   's223:hasConnectionPoint': 'structural',
+  's223:contains': 'structural',
+  's223:mapsTo': 'structural',
+  // Metering topology: which meter measures / sub-meters which — structural, a
+  // fixed hierarchy, not a live flow. Common across the submeter_hierarchies
+  // and *_meter reference models.
+  'brick:meters': 'structural',
+  'brick:isMeteredBy': 'structural',
+  'brick:hasSubMeter': 'structural',
+  'brick:isSubMeterOf': 'structural',
+  // Point attachment: an equipment "hosts" / "has point" a sensor or setpoint.
+  // Which thing a point belongs to is structure; the command relation is
+  // brick:controls (below).
+  'brick:hosts': 'structural',
+  'brick:isPointOf': 'structural',
 
   'brick:feeds': 'flow',
   'brick:isFedBy': 'flow',
   's223:connectsThrough': 'flow',
   's223:connectsTo': 'flow',
   's223:cnx': 'flow',
+  'rec:sourcePoint': 'flow',
 
   'brick:controls': 'control',
   'brick:isControlledBy': 'control',
   'brick:hasPoint': 'control',
 };
+// Reported at build end so a newly-modelled predicate surfaces as a question.
+// That discipline is OURS — external reference models use whatever upstream
+// vocabulary they use, and we neither control it nor want to be nagged about it,
+// so only our own files feed this set (see the `record` arg).
 const unclassified = new Set();
-const edgeClassOf = (c) => {
+const edgeClassOf = (c, record) => {
   const k = EDGE_CLASS[c];
-  if (!k) unclassified.add(c);
+  if (!k && record) unclassified.add(c);
   return k ?? 'other';
 };
 
@@ -103,14 +129,37 @@ const edgeClassOf = (c) => {
 // a rebuild (validation is server-side — it cannot re-run in the page). An
 // argument only decides which one the viewer opens first.
 const ABOX_DIR = 'schema/abox';
-const allAbox = fs.readdirSync(path.join(repoRoot, ABOX_DIR))
-  .filter((f) => f.endsWith('.ttl'))
-  .sort()
-  .map((f) => `${ABOX_DIR}/${f}`);
+// Recursive, because reference models live in subfolders. The subfolder IS the
+// signal: a .ttl directly under schema/abox/ is OURS — validated against the
+// C-Box, held to the deliberate-defect discipline. A .ttl in any subfolder is an
+// external REFERENCE (e.g. examples-brick-1.5/) — rendered so it can be browsed,
+// but not validated (it carries no norm layer) and not held to our tests.
+const walk = (dir) => fs.readdirSync(path.join(repoRoot, dir), { withFileTypes: true })
+  .flatMap((e) => e.isDirectory() ? walk(`${dir}/${e.name}`)
+    : e.name.endsWith('.ttl') ? [`${dir}/${e.name}`] : []);
+const allAbox = walk(ABOX_DIR).sort();
+const isReference = (rel) => rel.slice(ABOX_DIR.length + 1).includes('/');
 
 if (allAbox.length === 0) {
   console.error(`✗ no .ttl files in ${ABOX_DIR}/`);
   process.exit(2);
+}
+
+// slug is a basename (subfolders flatten), so two files could collide and the
+// second would silently overwrite the first's data. Refuse rather than pick.
+{
+  const bySlug = new Map();
+  const clashes = [];
+  for (const rel of allAbox) {
+    const s = path.basename(rel, '.ttl');
+    if (bySlug.has(s)) clashes.push(`${s}: ${bySlug.get(s)} and ${rel}`);
+    bySlug.set(s, rel);
+  }
+  if (clashes.length) {
+    console.error('✗ two A-Box files share a basename — their generated data would collide:');
+    for (const c of clashes) console.error(`    ${c}`);
+    process.exit(2);
+  }
 }
 
 const arg = process.argv[2];
@@ -367,10 +416,16 @@ async function validate(aboxTtl) {
 // Blank nodes are NOT nodes — the A-Box uses them for Brick entity properties
 // (brick:tilt [ brick:hasUnit unit:DEG ; brick:value "30" ]); rendered they
 // would be ~30 unlabelled dots. They are inlined onto the subject instead.
-async function buildOne(rel) {
+async function buildOne(rel, reference = false) {
   const aboxTtl = readTtl(rel);
   const abox = parseToStore(aboxTtl);
-  const { allResults, violationsByNode, violatedEditions } = await validate(aboxTtl);
+  // Reference models are not governed by the C-Box, so validating them is both
+  // pointless (they have no dhc: focus nodes) and slow (soda_brick is 5.5k
+  // lines). Skip it: every node ends up 'unchecked', which is the truthful
+  // state — no norm layer has an opinion on a stock Brick model.
+  const { allResults, violationsByNode, violatedEditions } = reference
+    ? { allResults: [], violationsByNode: new Map(), violatedEditions: new Map() }
+    : await validate(aboxTtl);
 
   const nodes = new Map();
   const ensure = (iri) => {
@@ -431,7 +486,7 @@ async function buildOne(rel) {
     if (q.object.termType === 'NamedNode') {
       if (nodes.has(q.object.value)) {
         const c = curie(p);
-        links.push({ source: q.subject.value, target: q.object.value, property: c, kind: edgeClassOf(c) });
+        links.push({ source: q.subject.value, target: q.object.value, property: c, kind: edgeClassOf(c, !reference) });
       } else {
         // points at something outside the A-Box (a Norm, a NormEdition, a
         // medium, a unit) — an attribute of this node, not a topology edge
@@ -745,20 +800,53 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const index = { generatedAt: new Date().toISOString(), first: slug(firstRel), sources: [] };
 let anyEmpty = false;
+let refOk = 0, refSkipped = 0;
 
 for (const rel of allAbox) {
-  const { graph, report } = await buildOne(rel);
+  const ref = isReference(rel);
   const s = slug(rel);
+
+  // A reference file is external and unverified, so its failure must not take
+  // the build down — warn and skip. Our own files stay fatal: a parse error or
+  // empty graph in electrical-installation-house.ttl is a real regression.
+  let built;
+  try {
+    built = await buildOne(rel, ref);
+  } catch (err) {
+    if (ref) { console.warn(`  ⚠ skipped ${rel} — ${err.message.split('\n')[0]}`); refSkipped++; continue; }
+    throw err;
+  }
+  const { graph, report } = built;
+
+  if (!graph.nodes.length || !graph.links.length) {
+    // An empty graph renders as a clean, plausible, empty canvas while SHACL
+    // reports conforms:true — the silent-green failure this repo keeps hitting.
+    // Fatal for our files; for a reference model (e.g. a sensor-only Brick
+    // sample with no relationships) it is just not worth showing.
+    if (ref) { console.warn(`  ⚠ skipped ${rel} — no nodes or no links to draw`); refSkipped++; continue; }
+    console.error(`  ✗ ${rel} EMPTY — the viewer would render nothing and look fine doing it`);
+    anyEmpty = true;
+    continue;
+  }
+
   fs.writeFileSync(path.join(outDir, `${s}.graph.json`), JSON.stringify(graph, null, 2));
   fs.writeFileSync(path.join(outDir, `${s}.report.json`), JSON.stringify(report, null, 2));
-
-  const circuits = graph.nodes.filter((n) => n.types.includes('dhc:Circuit')).length;
   index.sources.push({
-    slug: s, source: rel, label: s.replace(/-/g, ' '),
+    slug: s, source: rel, label: s.replace(/[-_]/g, ' '),
+    reference: ref,
+    group: ref ? path.basename(path.dirname(rel)) : null,
     nodes: graph.nodes.length, links: graph.links.length,
     conforms: report.conforms, violations: report.violationCount, tally: graph.tally,
   });
 
+  if (ref) {
+    // Terse — 30 of these, none validated, all 'unchecked'. One line each.
+    refOk++;
+    console.log(`  · ${s}  (${graph.nodes.length} nodes, ${graph.links.length} links) — reference, not validated`);
+    continue;
+  }
+
+  const circuits = graph.nodes.filter((n) => n.types.includes('dhc:Circuit')).length;
   console.log(`  ${rel}`);
   console.log(`    nodes ${graph.nodes.length}  links ${graph.links.length}  circuits ${circuits}`);
   console.log(`    compliance  ok ${graph.tally.ok}   gap ${graph.tally.gap}   danger ${graph.tally.danger}   unchecked ${graph.tally.unchecked}   (ghosted ${graph.tally.ghosted})`);
@@ -773,15 +861,8 @@ for (const rel of allAbox) {
     console.log(`      ${e.edition}${e.isLatest ? ' (in force)' : ' (superseded)'}: ${rs.length} violation(s)`);
     for (const r of rs) console.log(`        ✗ ${r.focusCurie ?? '?'}  ${r.shape ?? r.path ?? ''}`);
   }
-
-  // An A-Box with no nodes or no links renders as a clean, entirely plausible
-  // empty canvas, and SHACL reports conforms:true because it selected nothing.
-  // Fail loudly — that exact silent-green failure has shipped here repeatedly.
-  if (!graph.nodes.length || !graph.links.length) {
-    console.error(`    ✗ EMPTY — the viewer would render nothing and look fine doing it`);
-    anyEmpty = true;
-  }
 }
+if (refOk || refSkipped) console.log(`  reference models: ${refOk} shown, ${refSkipped} skipped`);
 
 fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify(index, null, 2));
 console.log(`\n  shapes target: ${[...targetClasses].sort().join(', ')}`);

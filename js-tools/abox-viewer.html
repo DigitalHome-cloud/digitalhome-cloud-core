@@ -435,10 +435,17 @@
           .onNodeClick((n) => inspect(n));
 
         // Source picker — every A-Box in schema/abox/ is prebuilt, so switching
-        // is a fetch, not a revalidation.
+        // is a fetch, not a revalidation. Our own models sit at the top; the
+        // external reference sets (schema/abox/<subfolder>/) are grouped under
+        // their folder name, so 27 Brick samples don't bury the two that matter.
         const sel = document.getElementById('source-select');
-        sel.innerHTML = index.sources.map((s) =>
-          `<option value="${s.slug}">${s.label}${s.conforms ? '' : ` — ${s.violations}⚠`}</option>`).join('');
+        const opt = (s) => `<option value="${s.slug}">${s.label}${!s.reference && !s.conforms ? ` — ${s.violations}⚠` : ''}</option>`;
+        const ours = index.sources.filter((s) => !s.reference);
+        const groups = {};
+        for (const s of index.sources.filter((s) => s.reference)) (groups[s.group] ??= []).push(s);
+        sel.innerHTML = ours.map(opt).join('')
+          + Object.entries(groups).map(([g, ss]) =>
+              `<optgroup label="${g} — reference, not validated">${ss.map(opt).join('')}</optgroup>`).join('');
         const wanted = params.get('model');
         sel.value = index.sources.some((s) => s.slug === wanted) ? wanted : index.first;
         document.getElementById('colour-mode').value = colourMode;
