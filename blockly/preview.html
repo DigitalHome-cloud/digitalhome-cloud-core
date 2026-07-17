@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DHC Spatial — Blockly Preview</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; background: #1e293b; color: #e2e8f0; }
+    header { padding: 8px 16px; background: #0f172a; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #334155; }
+    header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+    header .meta { font-size: 12px; color: #94a3b8; }
+    header .status { margin-left: auto; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+    header .status.ok    { background: #064e3b; color: #6ee7b7; }
+    header .status.error { background: #7f1d1d; color: #fca5a5; }
+    header label { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+    header select, header button { font: 12px system-ui, sans-serif; background: #1e293b; color: #e2e8f0;
+                                   border: 1px solid #334155; border-radius: 4px; padding: 2px 8px; }
+    header button { cursor: pointer; }
+    header button:hover { background: #334155; }
+    #blockly-host { position: absolute; top: 40px; left: 0; right: 0; bottom: 200px; }
+    #log { position: absolute; left: 0; right: 0; bottom: 0; height: 200px; padding: 8px 16px; background: #0f172a; border-top: 1px solid #334155; overflow: auto; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+    #log .line { white-space: pre-wrap; margin: 0 0 2px; }
+    #log .err  { color: #fca5a5; }
+    #log .info { color: #94a3b8; }
+    #log .ok   { color: #6ee7b7; }
+  </style>
+  <!-- Blockly v11 — single bundle, no separate msg/blocks files needed -->
+  <script src="https://unpkg.com/blockly@11.2.2/blockly.min.js"></script>
+  <!-- DHC mutators / extensions — must load AFTER Blockly, BEFORE block defs -->
+  <script src="./registerPlugins.js"></script>
+</head>
+<body>
+  <header>
+    <h1>DHC Spatial — Blockly Preview</h1>
+    <span class="meta">repos/core/blockly/</span>
+    <label>renderer
+      <select id="renderer-select">
+        <option value="geras">geras (classic, square)</option>
+        <option value="thrasos">thrasos (default, rounded edges)</option>
+        <option value="zelos">zelos (Scratch-style, large)</option>
+        <option value="minimalist">minimalist (flat)</option>
+      </select>
+    </label>
+    <button id="view-json"     title="Open the current workspace JSON in a new tab">View JSON</button>
+    <button id="download-json" title="Download the current workspace JSON">Download</button>
+    <span id="status" class="status">loading…</span>
+  </header>
+  <div id="blockly-host"></div>
+  <div id="log"></div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    function log(msg, cls = 'info') {
+      const line = document.createElement('div');
+      line.className = 'line ' + cls;
+      line.textContent = msg;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    function setStatus(text, cls) {
+      statusEl.textContent = text;
+      statusEl.className = 'status ' + cls;
+    }
+
+    async function fetchJson(path) {
+      const r = await fetch(path);
+      if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
+      return r.json();
+    }
+
+    const RENDERER_KEY = 'dhc.blockly.renderer';
+    const VALID_RENDERERS = ['geras', 'thrasos', 'zelos', 'minimalist'];
+    function getRenderer() {
+      const stored = localStorage.getItem(RENDERER_KEY);
+      return VALID_RENDERERS.includes(stored) ? stored : 'thrasos';
+    }
+
+    let workspace = null;
+    let toolboxConfig = null;
+    let blockDefs = null;
+
+    function injectWorkspace(renderer, restoreState) {
+      if (workspace) {
+        // Capture current state if we're swapping renderers in-place
+        if (!restoreState) restoreState = Blockly.serialization.workspaces.save(workspace);
+        workspace.dispose();
+      }
+      workspace = Blockly.inject('blockly-host', {
+        toolbox: toolboxConfig,
+        renderer: renderer,
+        theme: 'classic',
+        grid: { spacing: 24, length: 3, colour: '#334155', snap: true },
+        zoom: { controls: true, wheel: true, startScale: 0.95, maxScale: 2, minScale: 0.5 },
+        trashcan: true,
+      });
+      if (restoreState) Blockly.serialization.workspaces.load(restoreState, workspace);
+
+      // Reflect edits back to the log so you can see the round-trip
+      workspace.addChangeListener((ev) => {
+        if (ev.isUiEvent) return;
+        if (ev.type === Blockly.Events.BLOCK_CREATE)  log(`+ created  ${ev.json?.type || ev.blockId}`);
+        if (ev.type === Blockly.Events.BLOCK_DELETE)  log(`− deleted  ${ev.oldJson?.type || ev.blockId}`);
+        if (ev.type === Blockly.Events.BLOCK_CHANGE)  log(`~ changed  ${ev.blockId}.${ev.name} = ${JSON.stringify(ev.newValue)}`);
+        if (ev.type === Blockly.Events.BLOCK_MOVE)    log(`→ moved    ${ev.blockId}`);
+      });
+      log(`✓ rendered with '${renderer}'`, 'ok');
+    }
+
+    async function load() {
+      try {
+        log('Fetching JSON artifacts…');
+        const [blocksDoc, toolbox, workspaceState] = await Promise.all([
+          fetchJson('./dhc-spatial-blocks.json'),
+          fetchJson('./dhc-spatial-toolbox.json'),
+          fetchJson('./dhc-spatial-workspace.json'),
+        ]);
+
+        blockDefs = blocksDoc.blocks || [];
+        toolboxConfig = toolbox;
+
+        log(`✓ blocks.json    → ${blockDefs.length} block definition(s)`, 'ok');
+        log(`✓ toolbox.json   → ${(toolbox.contents || []).length} category/categories`, 'ok');
+        log(`✓ workspace.json → top-level: ${(workspaceState.blocks?.blocks || []).map(b => b.type).join(', ') || '(empty)'}`, 'ok');
+
+        Blockly.defineBlocksWithJsonArray(blockDefs);
+        log(`✓ registered: ${blockDefs.map(b => b.type).join(', ')}`, 'ok');
+
+        // Wire renderer dropdown — sync UI to stored choice, then attach handler
+        const select = document.getElementById('renderer-select');
+        const initial = getRenderer();
+        select.value = initial;
+        select.addEventListener('change', (e) => {
+          const r = e.target.value;
+          if (!VALID_RENDERERS.includes(r)) return;
+          localStorage.setItem(RENDERER_KEY, r);
+          log(`switching renderer → ${r}…`);
+          injectWorkspace(r);  // preserves current workspace state
+        });
+
+        // View / download — both operate on the LIVE workspace (post-edits),
+        // not the on-disk seed. Use these to capture an edited workspace
+        // back into dhc-spatial-workspace.json.
+        const currentJson = () => JSON.stringify(
+          Blockly.serialization.workspaces.save(workspace), null, 2);
+
+        document.getElementById('view-json').addEventListener('click', () => {
+          const text = currentJson();
+          // Open as text/plain so the browser shows it raw (not as parsed JSON).
+          const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+          const w = window.open(url, '_blank');
+          if (!w) log('✗ popup blocked — allow popups for localhost', 'err');
+          else    log(`opened JSON in new tab (${text.length} chars)`, 'ok');
+          // Revoke after a delay so the new tab finishes loading first.
+          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        });
+
+        document.getElementById('download-json').addEventListener('click', () => {
+          const text = currentJson();
+          const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+          const filename = `dhc-spatial-workspace-${stamp}.json`;
+          const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+          const a = document.createElement('a');
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 5_000);
+          log(`↓ downloaded ${filename} (${text.length} chars)`, 'ok');
+        });
+
+        injectWorkspace(initial, workspaceState);
+        setStatus('ready', 'ok');
+      } catch (e) {
+        log(String(e), 'err');
+        setStatus('error', 'error');
+        console.error(e);
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

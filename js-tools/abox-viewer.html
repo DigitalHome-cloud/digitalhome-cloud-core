@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DHC A-Box — Graph Viewer</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; background: #1e293b; color: #e2e8f0; overflow: hidden; }
+    header { position: absolute; top: 0; left: 0; right: 0; height: 40px; box-sizing: border-box; padding: 8px 16px; background: #0f172a; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #334155; z-index: 10; }
+    header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+    header .meta { font-size: 12px; color: #94a3b8; }
+    header label { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+    header select, header button { font: 12px system-ui, sans-serif; background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; padding: 2px 8px; }
+    header button { cursor: pointer; }
+    header button:hover { background: #334155; }
+    header .status { margin-left: auto; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+    header .status.ok    { background: #064e3b; color: #6ee7b7; }
+    header .status.warn  { background: #78350f; color: #fcd34d; }
+    header .status.error { background: #7f1d1d; color: #fca5a5; }
+
+    #graph-host { position: absolute; top: 40px; left: 0; right: 300px; bottom: 180px; }
+    #inspector  { position: absolute; top: 40px; right: 0; width: 300px; bottom: 180px; box-sizing: border-box;
+                  background: #0f172a; border-left: 1px solid #334155; padding: 12px 14px; overflow: auto; font-size: 12px; }
+    #inspector h2 { font-size: 13px; margin: 0 0 4px; word-break: break-word; }
+    #inspector .curie { font: 11px ui-monospace, Menlo, Consolas, monospace; color: #94a3b8; word-break: break-all; }
+    #inspector .sect { margin-top: 12px; }
+    #inspector .sect-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin-bottom: 4px; }
+    #inspector table { width: 100%; border-collapse: collapse; }
+    #inspector td { padding: 2px 0; vertical-align: top; font: 11px ui-monospace, Menlo, Consolas, monospace; }
+    #inspector td.k { color: #94a3b8; padding-right: 8px; white-space: nowrap; }
+    #inspector td.v { color: #e2e8f0; word-break: break-word; }
+    #inspector .viol { background: #7f1d1d; color: #fecaca; border-radius: 4px; padding: 8px; margin-bottom: 6px; }
+    #inspector .viol .shape { font-weight: 600; }
+    #inspector .empty { color: #64748b; font-style: italic; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+    #legend { position: absolute; left: 12px; top: 52px; z-index: 5; background: rgba(15,23,42,.85); border: 1px solid #334155;
+              border-radius: 6px; padding: 8px 10px; font-size: 11px; line-height: 1.7; min-width: 140px; }
+    #legend .row { cursor: pointer; user-select: none; border-radius: 3px; padding: 0 4px; margin: 0 -4px; display: flex; align-items: center; }
+    #legend .row:hover { background: #1e293b; }
+    #legend .row.off { opacity: .35; text-decoration: line-through; }
+    #legend .row .n { margin-left: auto; color: #64748b; padding-left: 10px; }
+    #legend .hint { color: #64748b; font-size: 10px; margin-top: 4px; border-top: 1px solid #334155; padding-top: 4px; }
+    #log { position: absolute; left: 0; right: 0; bottom: 0; height: 180px; box-sizing: border-box; padding: 8px 16px; background: #0f172a;
+           border-top: 1px solid #334155; overflow: auto; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+    #log .line { white-space: pre-wrap; margin: 0 0 2px; }
+    #log .err  { color: #fca5a5; }
+    #log .info { color: #94a3b8; }
+    #log .ok   { color: #6ee7b7; }
+    #log .warn { color: #fcd34d; }
+  </style>
+  <!-- 3d-force-graph 1.79.1 — vendored UMD, three.js inlined. No network at
+       runtime, by design: the Blockly harnesses this is modelled on load their
+       library from unpkg and silently require internet. -->
+  <script src="./vendor/3d-force-graph.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>DHC A-Box</h1>
+    <label>model
+      <select id="source-select"></select>
+    </label>
+    <label>colour
+      <select id="colour-mode">
+        <option value="view">design view</option>
+        <option value="compliance">compliance</option>
+        <option value="ns">standard (rdf:type ns)</option>
+      </select>
+    </label>
+    <button id="fit">Fit</button>
+    <button id="reset-filter" title="Show all">All</button>
+    <span id="status" class="status">loading…</span>
+  </header>
+
+  <div id="graph-host"></div>
+  <div id="legend"></div>
+  <aside id="inspector"><p class="empty">Click a node to inspect it.</p></aside>
+  <div id="log"></div>
+
+  <script>
+    // House palette — docs/design/patterns/semantic-views.md. Same map the
+    // Modeler uses, so an A-Box reads like the ontology graph.
+    const VIEW_COLOURS = {
+      spatial:    '#22c55e',
+      building:   '#f59e0b',
+      electrical: '#3b82f6',
+      plumbing:   '#06b6d4',
+      heating:    '#ef4444',
+      network:    '#a855f7',
+      governance: '#f97316',
+      automation: '#ec4899',
+    };
+    const SHARED   = '#e5e7eb';   // cross-view / unannotated
+    const VIOLATION = '#ef4444';  // a node the C-Box rejected
+
+    // Namespace of the node's rdf:type — i.e. which standard defines it.
+    // NOT the namespace of the individual's own IRI: every A-Box individual is
+    // an ex:, so that colours all 45 nodes identically and says nothing. By
+    // type you get dhc 29 / brick 10 / rec 3 / s223 3 — the "dhc: only fills
+    // gaps" principle, made visible.
+    const NS_COLOURS = { dhc: '#3b82f6', brick: '#22c55e', rec: '#f59e0b', s223: '#a855f7', unit: '#06b6d4', other: '#818cf8' };
+
+    // Compliance — a prototype of what the Designer will show properly.
+    //   ok     a shape actually looked at this node and did not complain
+    //   gap    NO shape targets its class — nothing checked it. This is the
+    //          honest state, not a pass: SHACL reports only failures, so
+    //          silence means "unknown".
+    //   danger a shape rejected it
+    const COMPLIANCE_COLOURS = { ok: '#22c55e', gap: '#eab308', danger: '#ef4444' };
+    const COMPLIANCE_HELP = {
+      ok:     'checked by a shape, conforms',
+      gap:    'no shape targets this class — unchecked, not approved',
+      danger: 'violates a C-Box rule',
+    };
+
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    const log = (msg, cls = 'info') => {
+      const d = document.createElement('div');
+      d.className = 'line ' + cls; d.textContent = msg;
+      logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
+    };
+    const setStatus = (t, c) => { statusEl.textContent = t; statusEl.className = 'status ' + c; };
+
+    async function fetchJson(p) {
+      const r = await fetch(p);
+      if (!r.ok) throw new Error(`${p}: HTTP ${r.status} — run scripts/preview-abox.sh (it builds these)`);
+      return r.json();
+    }
+
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    let graph = null, report = null, Graph = null, colourMode = 'view';
+    let hidden = new Set();   // legend keys toggled off
+
+    // Which legend bucket a node falls in, for the active colour mode.
+    const keyOf = (n) =>
+      colourMode === 'ns'           ? ((n.types[0] ?? '').split(':')[0] || 'other')
+      : colourMode === 'compliance' ? n.compliance
+      : (n.designView ?? 'shared');
+
+    const paletteFor = (mode) =>
+      mode === 'ns' ? NS_COLOURS : mode === 'compliance' ? COMPLIANCE_COLOURS : { ...VIEW_COLOURS, shared: SHARED };
+
+    const nodeColour = (n) => {
+      // In compliance mode the violation IS the signal, so don't override it.
+      if (colourMode !== 'compliance' && n.violations?.length) return VIOLATION;
+      return paletteFor(colourMode)[keyOf(n)] ?? SHARED;
+    };
+
+    const visible = (n) => !hidden.has(keyOf(n));
+
+    function applyFilter() {
+      const nodes = graph.nodes.filter(visible);
+      const ids = new Set(nodes.map((n) => n.id));
+      const links = graph.links.filter((l) => ids.has(l.source.id ?? l.source) && ids.has(l.target.id ?? l.target));
+      Graph.graphData({ nodes: nodes.map((n) => ({ ...n })), links: links.map((l) => ({ ...l })) });
+      log(`filter → ${nodes.length}/${graph.nodes.length} nodes, ${links.length}/${graph.links.length} links`);
+    }
+
+    function renderLegend() {
+      const el = document.getElementById('legend');
+      const pal = paletteFor(colourMode);
+      // Only buckets that actually occur — a legend of absent colours is noise.
+      const present = new Set(graph.nodes.map(keyOf));
+      const counts = {};
+      for (const n of graph.nodes) counts[keyOf(n)] = (counts[keyOf(n)] || 0) + 1;
+
+      const rows = Object.entries(pal).filter(([k]) => present.has(k));
+      el.innerHTML = rows.map(([k, c]) => `
+        <div class="row ${hidden.has(k) ? 'off' : ''}" data-key="${k}" title="${COMPLIANCE_HELP[k] ?? 'click to show/hide'}">
+          <span class="dot" style="background:${c}"></span>${k}<span class="n">${counts[k]}</span>
+        </div>`).join('');
+
+      el.querySelectorAll('.row').forEach((r) => r.addEventListener('click', () => {
+        const k = r.dataset.key;
+        hidden.has(k) ? hidden.delete(k) : hidden.add(k);
+        renderLegend();
+        applyFilter();
+      }));
+    }
+
+    function inspect(n) {
+      const el = document.getElementById('inspector');
+      if (!n) { el.innerHTML = '<p class="empty">Click a node to inspect it.</p>'; return; }
+      const lits = Object.entries(n.literals || {});
+      el.innerHTML = `
+        <h2><span class="dot" style="background:${nodeColour(n)}"></span>${esc(n.label)}</h2>
+        <div class="curie">${esc(n.curie)}</div>
+        ${n.violations?.length ? `<div class="sect">
+          <div class="sect-h">C-Box violations</div>
+          ${n.violations.map((v) => `<div class="viol">
+            <div class="shape">${esc(v.shape || v.path || v.profile)}</div>
+            ${v.message ? `<div>${esc(v.message)}</div>` : `<div>reported by ${esc(v.profile)}</div>`}
+          </div>`).join('')}
+        </div>` : ''}
+        <div class="sect">
+          <div class="sect-h">rdf:type</div>
+          <table>${n.types.map((t) => `<tr><td class="v">${esc(t)}</td></tr>`).join('')}</table>
+        </div>
+        <div class="sect">
+          <div class="sect-h">design view</div>
+          <div class="curie">${esc(n.designView ?? '(none — shared)')}</div>
+        </div>
+        <div class="sect">
+          <div class="sect-h">compliance</div>
+          <div class="curie">
+            <span class="dot" style="background:${COMPLIANCE_COLOURS[n.compliance]}"></span>${esc(n.compliance)}
+            — ${esc(COMPLIANCE_HELP[n.compliance])}
+          </div>
+        </div>
+        ${lits.length ? `<div class="sect">
+          <div class="sect-h">properties</div>
+          <table>${lits.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}</table>
+        </div>` : ''}
+      `;
+    }
+
+    async function loadSource(slug) {
+      hidden = new Set();
+      const [g, r] = await Promise.all([
+        fetchJson(`./data/${slug}.graph.json`),
+        fetchJson(`./data/${slug}.report.json`),
+      ]);
+      graph = g; report = r;
+      logEl.innerHTML = '';
+
+      log(`✓ ${g.source}`, 'ok');
+      log(`✓ ${g.nodes.length} nodes, ${g.links.length} links (built ${g.generatedAt})`, 'ok');
+
+      const circuits = g.nodes.filter((n) => n.types.includes('dhc:Circuit')).length;
+      if (!g.nodes.length || !g.links.length) {
+        log('✗ graph is EMPTY — nothing to validate. A failure, not an empty house.', 'err');
+        setStatus('empty', 'error');
+        return;
+      }
+      log(`✓ ${circuits} dhc:Circuit node(s) — shapes have focus nodes to select`, 'ok');
+      log(`profiles: ${r.profiles.join(', ')}  |  shapes target: ${g.targetClasses.join(', ')}`);
+      log(`compliance: ${g.tally.ok} ok · ${g.tally.gap} gap (nothing checks them) · ${g.tally.danger} danger`,
+          g.tally.danger ? 'warn' : 'info');
+
+      if (r.conforms) {
+        log('⚠ conforms: true — no violations. If this A-Box carries a deliberate defect, the chain is DEAD.', 'warn');
+        setStatus('conforms', 'ok');
+      } else {
+        log(`✗ conforms: false — ${r.violationCount} violation(s):`, 'warn');
+        for (const x of r.results) log(`    ${x.focusCurie ?? '?'}  ${x.shape ?? x.path ?? ''}  ${x.message ?? ''}`, 'err');
+        setStatus(`${r.violationCount} violation(s)`, 'warn');
+      }
+
+      Graph.graphData({ nodes: g.nodes.map((n) => ({ ...n })), links: g.links.map((l) => ({ ...l })) });
+      renderLegend();
+      let fitted = false;
+      const fit = () => { if (!fitted) { fitted = true; Graph.zoomToFit(600, 60); } };
+      Graph.onEngineStop(fit);
+      setTimeout(fit, 4000);
+    }
+
+    async function load() {
+      try {
+        log('Fetching generated artifacts…');
+        const index = await fetchJson('./data/index.json');
+
+        // The graph instance is created once; switching source only swaps data.
+        Graph = ForceGraph3D()(document.getElementById('graph-host'))
+          .backgroundColor('#1e293b')
+          .nodeId('id')
+          .nodeLabel((n) => `${n.label}\n${n.curie}`
+            + (n.violations?.length ? `\n⚠ ${n.violations[0].shape ?? n.violations[0].path}` : '')
+            + (n.compliance === 'gap' ? '\n· no shape checks this class' : ''))
+          .nodeColor(nodeColour)
+          .nodeVal((n) => (n.violations?.length ? 6 : 2))
+          .nodeOpacity(0.95)
+          .linkColor(() => '#475569')
+          .linkLabel((l) => l.property)
+          .linkWidth(0.6)
+          .linkDirectionalArrowLength(2.5)
+          .linkDirectionalArrowRelPos(1)
+          .onNodeClick((n) => inspect(n));
+
+        // Source picker — every A-Box in schema/abox/ is prebuilt, so switching
+        // is a fetch, not a revalidation.
+        const sel = document.getElementById('source-select');
+        sel.innerHTML = index.sources.map((s) =>
+          `<option value="${s.slug}">${s.label}${s.conforms ? '' : ` — ${s.violations}⚠`}</option>`).join('');
+        sel.value = index.first;
+        sel.addEventListener('change', async (e) => {
+          inspect(null);
+          await loadSource(e.target.value);
+        });
+
+        document.getElementById('colour-mode').addEventListener('change', (e) => {
+          colourMode = e.target.value;
+          hidden = new Set();          // buckets differ per mode; a stale filter would hide the wrong things
+          Graph.nodeColor(nodeColour);
+          renderLegend();
+          applyFilter();
+          log(`colour → ${colourMode}`);
+        });
+        document.getElementById('fit').addEventListener('click', () => Graph.zoomToFit(600, 60));
+        document.getElementById('reset-filter').addEventListener('click', () => {
+          hidden = new Set(); renderLegend(); applyFilter();
+        });
+
+        await loadSource(index.first);
+        log(`${index.sources.length} model(s) available — switch with the "model" picker`);
+        log('click a legend colour to filter');
+      } catch (e) {
+        log(String(e), 'err');
+        setStatus('error', 'error');
+        console.error(e);
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

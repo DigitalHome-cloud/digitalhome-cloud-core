@@ -4,6 +4,7 @@
 @prefix rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl:      <http://www.w3.org/2002/07/owl#> .
+@prefix rec:      <https://w3id.org/rec#> .
 @prefix nfc14100: <https://digitalhome.cloud/cbox/nfc14100#> .
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -29,7 +30,7 @@ nfc14100:EnergyMeterGovernanceShape
   dhc:normId "nfc14100" ;
   rdfs:label "Energy meter must be located in an ElectricalTechnicalSpace"@en ;
   sh:property [
-    sh:path dhc:locatedIn ;
+    sh:path rec:locatedIn ;
     sh:minCount 1 ;
     sh:class dhc:ElectricalTechnicalSpace ;
     sh:message "NF C 14-100: EnergyMeter must be located in an ElectricalTechnicalSpace."@en ;

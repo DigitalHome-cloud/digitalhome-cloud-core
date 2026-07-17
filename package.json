@@ -1,6 +1,6 @@
 {
   "name": "@dhc/digitalhome-cloud-core",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "description": "DigitalHome.Cloud Core — schema-only T-Box + per-norm C-Box SHACL profiles (DH-SPEC-200). Also hosts the platform's AWS Amplify Gen 2 backend (amplify/) — moved here so there is exactly one amplify/ level per repo.",
@@ -11,7 +11,9 @@
     "amplify:sandbox": "ampx sandbox",
     "amplify:sandbox:delete": "ampx sandbox delete",
     "amplify:generate": "ampx generate graphql-client-code",
-    "amplify:pipeline-deploy": "ampx pipeline-deploy"
+    "amplify:pipeline-deploy": "ampx pipeline-deploy",
+    "preview:abox": "bash scripts/preview-abox.sh",
+    "build:abox": "node js-tools/build-abox.mjs"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.16.0",

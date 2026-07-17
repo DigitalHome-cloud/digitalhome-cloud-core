@@ -1,0 +1,350 @@
+{
+  "blocks": [
+    {
+      "type": "dhc:DigitalHome",
+      "message0": "🏡 SmartHome %1",
+      "args0": [
+        { "type": "field_input", "name": "smartHomeId", "text": "DE-DEMO-01" }
+      ],
+      "message1": "language %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "preferredLanguage",
+          "options": [
+            ["English", "en"],
+            ["Deutsch", "de"],
+            ["Français", "fr"]
+          ]
+        }
+      ],
+      "mutator": "dhc_digital_home_mutator",
+      "inputsInline": false,
+      "colour": 100,
+      "tooltip": "Tenant root of a SmartHome (rec:Site). Holds buildings and outdoor spaces via rec:hasPart. Click the gear icon to add/remove places.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:DigitalHome"
+    },
+
+    {
+      "type": "dhc:DetachedHouse",
+      "message0": "🏠 detached house %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "House" }
+      ],
+      "message1": "area %1 m² level %2",
+      "args1": [
+        { "type": "field_number", "name": "area_M2", "value": 150, "min": 0, "precision": 0.01 },
+        {
+          "type": "input_statement",
+          "name": "NAME"
+        }
+      ],
+      "previousStatement": "rec:Architecture",
+      "nextStatement": "rec:Architecture",
+      "inputsInline": true,
+      "colour": 230,
+      "tooltip": "A free-standing single-family residence (rec:Building).",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=rec:Building"
+    },
+
+    {
+      "type": "rec:Level",
+      "message0": "🏢 level %1  number %2 %3",
+      "args0": [
+        { "type": "field_input",  "name": "name",        "text": "Level" },
+        { "type": "field_number", "name": "levelNumber", "value": 0, "precision": 1 },
+        {
+          "type": "input_statement",
+          "name": "NAME"
+        }
+      ],
+      "previousStatement": "rec:Architecture",
+      "nextStatement": "rec:Architecture",
+      "inputsInline": true,
+      "colour": 230,
+      "inputsInline": false,
+      "tooltip": "A floor / storey of a building (rec:Level). designView=building, surfaced in the spatial workspace via dhc:blocklyCategory=spatial.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=rec:Level"
+    },
+
+        {
+      "type": "rec:Room",
+      "message0": "🏢 Room %1 %2",
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "rec:RoomType",
+          "options": [
+            ["Home Office", "dhc:HomeOffice"],
+            ["Atrium", "rec:Atrium"],
+            ["Auditorium", "rec:Auditorium"],
+            ["Back office", "rec:BackOffice"],
+            ["Bathroom", "rec:Bathroom"],
+            ["Bedroom", "rec:Bedroom"],
+            ["Cinema", "rec:Cinema"],
+            ["Cleaning room", "rec:CleaningRoom"],
+            ["Cloak room", "rec:CloakRoom"],
+            ["Conference room", "rec:ConferenceRoom"],
+            ["Conversation room", "rec:ConversationRoom"],
+            ["Copying room", "rec:CopyingRoom"],
+            ["Dressing room", "rec:DressingRoom"],
+            ["Educational room", "rec:EducationalRoom"],
+            ["Elevator room", "rec:ElevatorRoom"],
+            ["Elevator shaft", "rec:ElevatorShaft"],
+            ["Entrance", "rec:Entrance"],
+            ["Exercise room", "rec:ExerciseRoom"],
+            ["Exhibition room", "rec:ExhibitionRoom"],
+            ["Food-handling room", "rec:FoodHandlingRoom"],
+            ["Garage", "rec:Garage"],
+            ["Hallway", "rec:Hallway"],
+            ["Healthcare room", "rec:HealthcareRoom"],
+            ["Laboratory", "rec:Laboratory"],
+            ["Laundry room", "rec:LaundryRoom"],
+            ["Library", "rec:Library"],
+            ["Living room", "rec:LivingRoom"],
+            ["Loading/receiving room", "rec:LoadingReceivingRoom"],
+            ["Lobby", "rec:Lobby"],
+            ["Locker room", "rec:LockerRoom"],
+            ["Lounge", "rec:Lounge"],
+            ["Meditation room", "rec:MeditationRoom"],
+            ["Mothers' room", "rec:MothersRoom"],
+            ["Multi-purpose room", "rec:MultiPurposeRoom"],
+            ["Office", "rec:Office"],
+            ["Personal hygiene room", "rec:PersonalHygiene"],
+            ["Reception", "rec:Reception"],
+            ["Recording room", "rec:RecordingRoom"],
+            ["Recreational room", "rec:RecreationalRoom"],
+            ["Resting room", "rec:RestingRoom"],
+            ["Retail room", "rec:RetailRoom"],
+            ["Security room", "rec:SecurityRoom"],
+            ["Service shaft", "rec:ServiceShaft"],
+            ["Shelter", "rec:Shelter"],
+            ["Staff room", "rec:StaffRoom"],
+            ["Stairwell", "rec:Stairwell"],
+            ["Storage", "rec:Storage"],
+            ["Team Room", "rec:TeamRoom"],
+            ["Theater", "rec:Theater"],
+            ["Treatment room", "rec:TreatmentRoom"],
+            ["Utilities room", "rec:UtilitiesRoom"],
+            ["Waste management room", "rec:WasteManagementRoom"],
+            ["Workshop", "rec:Workshop"]
+          ]
+        },
+        {
+          "type": "input_value",
+          "name": "NAME"
+        }
+      ],
+      "previousStatement": "rec:Architecture",
+      "nextStatement": "rec:Architecture",
+      "inputsInline": true,
+      "colour": 230,
+      "inputsInline": false,
+      "tooltip": "A floor / storey of a building (rec:Level). designView=building, surfaced in the spatial workspace via dhc:blocklyCategory=spatial.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=rec:Level"
+    },
+    {
+  "type": "brick:Setpoint",
+  "tooltip": "",
+  "helpUrl": "",
+  "message0": "%1 %2 %3",
+  "args0": [
+    {
+      "type": "field_label_serializable",
+      "text": "SetPoint",
+      "name": "brick:Setpoint"
+    },
+    {
+      "type": "field_dropdown",
+      "name": "NAME",
+      "options": [
+        [ "CO2 Setpoint", "brick:CO2_Setpoint"],
+        [ "Current Ratio Setpoint", "brick:Current_Ratio_Setpoint"],
+        [ "Damper Position Setpoint", "brick:Damper_Position_Setpoint" ],
+        [ "Deadband Setpoint", "brick:Deadband_Setpoint" ],
+        [ "Demand Setpoint ", "brick:Demand_Setpoint" ],
+        [ "Dewpoint Setpoint", "brick:Dewpoint_Setpoint" ],
+        [ "Differential Setpoint ", "brick:Differential_Setpoint" ],
+        [ "Enthalpy Setpoint", "brick:Enthalpy_Setpoint" ],
+        [ "Flow Setpoint ", "brick:Flow_Setpoint" ],
+        [ "Frequency Setpoint", "brick:Frequency_Setpoint" ],
+        [ "Humidity Setpoint ", "brick:Humidity_Setpoint" ],
+        [ "Illuminance Setpoint", "brick:Illuminance_Setpoint" ],
+        [ "Load Setpoint", "brick:Load_Setpoint" ],
+        [ "Luminance Setpoint", "brick:Luminance_Setpoint" ],
+        [ "Pressure Setpoint ", "brick:Pressure_Setpoint" ],
+        [ "Reset Setpoint ", "brick:Reset_Setpoint" ],
+        [ "Speed Setpoint", "brick:Speed_Setpoint" ],
+        [ "Temperature Setpoint", "brick:Temperature_Setpoint" ],
+        [ "Time Setpoint", "brick:Time_Setpoint" ],
+        [ "Voltage Ratio Setpoint", "brick:Voltage_Ratio_Setpoint" ]
+      ]
+    },
+    {
+      "type": "input_dummy",
+      "name": "NAME"
+    }
+  ],
+  "output": null,
+  "colour": 225,
+  "inputsInline": false
+},
+
+    {
+  "type": "brick:Alarm",
+  "tooltip": "",
+  "helpUrl": "",
+  "message0": "%1 %2 %3",
+  "args0": [
+    {
+      "type": "field_label_serializable",
+      "text": "Alarm",
+      "name": "brick:Alarm"
+    },
+    {
+      "type": "field_dropdown",
+      "name": "NAME",
+      "options": [
+    [ "Air Alarm", "brick:Air_Alarm" ],
+    [ "CO2 Alarm", "brick:CO2_Alarm" ],
+    [ "Change Filter Alarm", "brick:Change_Filter_Alarm" ],
+    [ "Communication Loss Alarm", "brick:Communication_Loss_Alarm" ],
+    [ "Cycle Alarm", "brick:Cycle_Alarm" ],
+    [ "Emergency Alarm", "brick:Emergency_Alarm" ],
+    [ "Failure Alarm", "brick:Failure_Alarm" ],
+    [ "Humidity Alarm", "brick:Humidity_Alarm" ],
+    [ "Leak Alarm", "brick:Leak_Alarm" ],
+    [ "Liquid Detection Alarm", "brick:Liquid_Detection_Alarm" ],
+    [ "Low Battery Alarm", "brick:Low_Battery_Alarm" ],
+    [ "Luminance Alarm", "brick:Luminance_Alarm" ],
+    [ "Maintenance Required Alarm", "brick:Maintenance_Required_Alarm" ],
+    [ "Overload Alarm", "brick:Overload_Alarm" ],
+    [ "Power Alarm", "brick:Power_Alarm" ],
+    [ "Pressure Alarm", "brick:Pressure_Alarm" ],
+    [ "Smoke Alarm", "brick:Smoke_Alarm" ],
+    [ "Temperature Alarm", "brick:Temperature_Alarm" ],
+    [ "Valve Position Alarm", "brick:Valve_Position_Alarm" ],
+    [ "Voltage Alarm", "brick:Voltage_Alarm" ],
+    [ "Water Alarm", "brick:Water_Alarm" ]
+      ]
+    },
+    {
+      "type": "input_dummy",
+      "name": "NAME"
+    }
+  ],
+  "output": null,
+  "colour": 225,
+  "inputsInline": false
+},
+
+    {
+  "type": "brick:Sensor",
+  "tooltip": "",
+  "helpUrl": "",
+  "message0": "%1 %2 %3",
+  "args0": [
+    {
+      "type": "field_label_serializable",
+      "text": "Sensor",
+      "name": "brick:Sensor"
+    },
+    {
+      "type": "field_dropdown",
+      "name": "NAME",
+      "options": [
+    [ "Adjust Sensor", "brick:Adjust_Sensor" ],
+    [ "Air Grains Sensor", "brick:Air_Grains_Sensor" ],
+    [ "Air Quality Sensor", "brick:Air_Quality_Sensor" ],
+    [ "Angle Sensor", "brick:Angle_Sensor" ],
+    [ "Capacity Sensor", "brick:Capacity_Sensor" ],
+    [ "Conductivity Sensor", "brick:Conductivity_Sensor" ],
+    [ "Contact Sensor", "brick:Contact_Sensor" ],
+    [ "Current Sensor", "brick:Current_Sensor" ],
+    [ "Demand Sensor", "brick:Demand_Sensor" ],
+    [ "Dewpoint Sensor", "brick:Dewpoint_Sensor" ],
+    [ "Direction Sensor", "brick:Direction_Sensor" ],
+    [ "Duration Sensor", "brick:Duration_Sensor" ],
+    [ "Energy Sensor", "brick:Energy_Sensor" ],
+    [ "Enthalpy Sensor", "brick:Enthalpy_Sensor" ],
+    [ "Fire Sensor", "brick:Fire_Sensor" ],
+    [ "Flow Sensor", "brick:Flow_Sensor" ],
+    [ "Frequency Sensor", "brick:Frequency_Sensor" ],
+    [ "Frost Sensor", "brick:Frost_Sensor" ],
+    [ "Gas Sensor", "brick:Gas_Sensor" ],
+    [ "Generation Sensor", "brick:Generation_Sensor" ],
+    [ "Hail Sensor", "brick:Hail_Sensor" ],
+    [ "Heat Sensor", "brick:Heat_Sensor" ],
+    [ "Humidity Sensor", "brick:Humidity_Sensor" ],
+    [ "Illuminance Sensor", "brick:Illuminance_Sensor" ],
+    [ "Imbalance Sensor", "brick:Imbalance_Sensor" ],
+    [ "Lighting Correlated Color Temperature Sensor", "brick:Lighting_Correlated_Color_Temperature_Sensor" ],
+    [ "Luminance Sensor", "brick:Luminance_Sensor" ],
+    [ "Motion Sensor", "brick:Motion_Sensor" ],
+    [ "Occupancy Count Sensor", "brick:Occupancy_Count_Sensor" ],
+    [ "Occupancy Sensor", "brick:Occupancy_Sensor" ],
+    [ "Piezoelectric Sensor", "brick:Piezoelectric_Sensor" ],
+    [ "Position Sensor", "brick:Position_Sensor" ],
+    [ "Power Factor Sensor", "brick:Power_Factor_Sensor" ],
+    [ "Power Sensor", "brick:Power_Sensor" ],
+    [ "Pressure Sensor", "brick:Pressure_Sensor" ],
+    [ "Rain Level Sensor", "brick:Rain_Level_Sensor" ],
+    [ "Refrigerant Level Sensor", "brick:Refrigerant_Level_Sensor" ],
+    [ "Solar Irradiance Sensor", "brick:Solar_Irradiance_Sensor" ],
+    [ "Solar Radiance Sensor", "brick:Solar_Radiance_Sensor" ],
+    [ "Speed Sensor", "brick:Speed_Sensor" ],
+    [ "Temperature Sensor", "brick:Temperature_Sensor" ],
+    [ "Torque Sensor", "brick:Torque_Sensor" ],
+    [ "Usage Sensor", "brick:Usage_Sensor" ],
+    [ "Voltage Sensor", "brick:Voltage_Sensor" ],
+    [ "Waste Amount Sensor", "brick:Waste_Amount_Sensor" ],
+    [ "Water Level Sensor", "brick:Water_Level_Sensor" ]
+      ]
+    },
+    {
+      "type": "input_dummy",
+      "name": "NAME"
+    }
+  ],
+  "output": null,
+  "colour": 225,
+  "inputsInline": false
+},
+
+
+
+    {
+      "type": "dhc:Garden",
+      "message0": "🌳 garden %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Garden" }
+      ],
+      "message1": "area %1 m²  surface %2  fenced %3",
+      "args1": [
+        { "type": "field_number", "name": "area_M2", "value": 100, "min": 0, "precision": 0.01 },
+        {
+          "type": "field_dropdown",
+          "name": "surfaceType",
+          "options": [
+            ["lawn",   "lawn"],
+            ["gravel", "gravel"],
+            ["paving", "paving"],
+            ["mixed",  "mixed"]
+          ]
+        },
+        { "type": "field_checkbox", "name": "fenced", "checked": true }
+      ],
+      "previousStatement": "rec:Architecture",
+      "nextStatement": "rec:Architecture",
+      "inputsInline": false,
+      "colour": 230,
+      "tooltip": "An outdoor area on the site (dhc:OutdoorArea → rec:OutdoorSpace).",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:OutdoorArea"
+    }
+  ]
+}

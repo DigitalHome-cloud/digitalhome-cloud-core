@@ -4,6 +4,7 @@
 @prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rec:     <https://w3id.org/rec#> .
 @prefix nfc15100: <https://digitalhome.cloud/cbox/nfc15100#> .
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -511,7 +512,7 @@ nfc15100:IRVE32AMonoShape
   rdfs:label "IRVE EV charging — 32 A single-phase (NF C 15-100)"@en ;
   sh:or (
     [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_IRVE ] ] ]
-    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:hasValue 32 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:hasValue "32"^^xsd:decimal ] ] ]
     [ sh:not [ sh:property [ sh:path dhc:phase ; sh:hasValue 1 ] ] ]
     [ sh:property [
         sh:path dhc:crossSection ;
@@ -529,7 +530,7 @@ nfc15100:IRVE32ATriShape
   rdfs:label "IRVE EV charging — 32 A three-phase (NF C 15-100)"@en ;
   sh:or (
     [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_IRVE ] ] ]
-    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:hasValue 32 ] ] ]
+    [ sh:not [ sh:property [ sh:path dhc:ratedCurrent ; sh:hasValue "32"^^xsd:decimal ] ] ]
     [ sh:not [ sh:property [ sh:path dhc:phase ; sh:hasValue 3 ] ] ]
     [ sh:property [
         sh:path dhc:crossSection ;
@@ -548,7 +549,7 @@ nfc15100:GTLShape
   dhc:normId "nfc15100" ;
   rdfs:label "GTL — electrical technical space houses ≥1 DistributionBoard"@en ;
   sh:property [
-    sh:path dhc:contains ;
+    sh:path rec:isLocationOf ;
     sh:qualifiedValueShape [ sh:class dhc:DistributionBoard ] ;
     sh:qualifiedMinCount 1 ;
     sh:message "NF C 15-100: GTL (electrical technical space) must contain at least one DistributionBoard."@en ;
@@ -571,3 +572,68 @@ nfc15100:NormGovernanceShape
     sh:message "Jeder Stromkreis muss über dhc:governedBy mindestens eine dhc:Norm referenzieren."@de ;
     sh:message "Chaque circuit doit référencer au moins une dhc:Norm via dhc:governedBy."@fr ;
   ] .
+
+# ── Shapes 23–25/25: Residual-current (differential) protection ──────────
+#
+# NF C 15-100 mandates 30 mA differential protection on all final circuits,
+# with Type A required where a load can inject pulsating DC (EV charging /
+# IRVE, induction hobs). Neither Brick 1.5 nor ASHRAE 223P models residual
+# current at all, so dhc:RCD + dhc:sensitivityMA + dhc:rcdType carry it.
+#
+# Datatype note: dhc:sensitivityMA is xsd:decimal. sh:maxInclusive compares
+# numerically and is immune to the term-matching trap that silently disabled
+# the IRVE shapes; tests/cbox/guards.test.js enforces this.
+
+nfc15100:RCDSensitivityShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:RCD ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "RCD sensitivity ≤ 30 mA (NF C 15-100)"@en ;
+  rdfs:label "RCD-Ansprechstrom ≤ 30 mA (NF C 15-100)"@de ;
+  rdfs:label "Sensibilité du différentiel ≤ 30 mA (NF C 15-100)"@fr ;
+  sh:property [
+    sh:path dhc:sensitivityMA ;
+    sh:minCount 1 ;
+    sh:maxInclusive 30 ;
+    sh:message "NF C 15-100: residual current device must declare a sensitivity of at most 30 mA."@en ;
+    sh:message "NF C 15-100: Fehlerstromschutzschalter muss einen Ansprechstrom von höchstens 30 mA angeben."@de ;
+    sh:message "NF C 15-100 : le dispositif différentiel doit déclarer une sensibilité d'au plus 30 mA."@fr ;
+  ] .
+
+nfc15100:CircuitRCDProtectionShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "Every circuit is protected by an RCD (NF C 15-100)"@en ;
+  rdfs:label "Jeder Stromkreis ist durch einen FI-Schutzschalter geschützt (NF C 15-100)"@de ;
+  rdfs:label "Chaque circuit est protégé par un différentiel (NF C 15-100)"@fr ;
+  sh:property [
+    sh:path dhc:hasProtection ;
+    sh:qualifiedValueShape [ sh:class dhc:RCD ] ;
+    sh:qualifiedMinCount 1 ;
+    sh:message "NF C 15-100: every final circuit must be protected by a 30 mA residual current device (standalone RCD or RCBO)."@en ;
+    sh:message "NF C 15-100: jeder Endstromkreis muss durch einen 30-mA-FI-Schutzschalter (FI oder FI/LS) geschützt sein."@de ;
+    sh:message "NF C 15-100 : chaque circuit terminal doit être protégé par un différentiel 30 mA (interrupteur différentiel ou disjoncteur différentiel)."@fr ;
+  ] .
+
+nfc15100:TypeARCDShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "nfc15100" ;
+  rdfs:label "IRVE circuits require a Type A RCD (NF C 15-100)"@en ;
+  rdfs:label "IRVE-Stromkreise erfordern einen FI Typ A (NF C 15-100)"@de ;
+  rdfs:label "Les circuits IRVE exigent un différentiel de type A (NF C 15-100)"@fr ;
+  sh:or (
+    # Guard: no-op unless this is an EV-charging circuit
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_IRVE ] ] ]
+    [
+      sh:property [
+        sh:path ( dhc:hasProtection dhc:rcdType ) ;
+        sh:minCount 1 ;
+        sh:in ( "A" "B" ) ;
+        sh:message "NF C 15-100: an IRVE (EV charging) circuit requires a Type A or Type B RCD — Type AC does not detect the pulsating DC an on-board charger can inject."@en ;
+        sh:message "NF C 15-100: ein IRVE-Stromkreis erfordert einen FI vom Typ A oder B — Typ AC erkennt den pulsierenden Gleichfehlerstrom nicht."@de ;
+        sh:message "NF C 15-100 : un circuit IRVE exige un différentiel de type A ou B — le type AC ne détecte pas le courant continu pulsé."@fr ;
+      ]
+    ]
+  ) .

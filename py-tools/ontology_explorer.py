@@ -43,7 +43,7 @@ Usage:
 Requires: pip install rdflib
 """
 
-import sys, os, csv, io, json as _json
+import sys, os, csv, io, argparse, json as _json
 from collections import defaultdict
 from pathlib import Path
 from typing import Optional
@@ -93,6 +93,11 @@ APP_ANNOTATION_PREDS: set = set()
 # § Application annotation property definitions section instead of an
 # arbitrary alphabetical sort.
 APP_ANNOTATION_ORDER: list = []
+# Same as APP_ANNOTATION_ORDER but INCLUDES meta-properties (dhc:isMetaProperty
+# true). Used by the structured serializer so the § section is rewritten in
+# the user's curated order — critical because annotations with sh:condition
+# depend on the order in which their guard predicate appears.
+APP_ANNOTATION_FILE_ORDER: list = []
 LOCALIZED_LANGS = {"de", "fr"}
 
 # Match a turtle subject at the start of a line, e.g. "dhc:appMode" — used
@@ -122,6 +127,22 @@ def _annotation_decl_order_in_file(path, known_preds):
         out.append(uri)
     return out
 
+def _is_meta_property(pred, *graphs):
+    """True if `pred` is flagged with `dhc:isMetaProperty true` in any of the
+    given graphs. Meta-properties are configuration knobs for other annotation
+    properties (e.g. dhc:choicesFrom) and must be excluded from the per-class
+    prompt loop."""
+    flag = DHC["isMetaProperty"]
+    for g in graphs:
+        for _, _, o in g.triples((pred, flag, None)):
+            if isinstance(o, Literal):
+                try:
+                    if bool(o.toPython()):
+                        return True
+                except Exception:
+                    pass
+    return False
+
 def _refresh_app_annotation_preds(*meta_graphs):
     """Repopulate APP_ANNOTATION_PREDS from one or more metadata graphs.
     Call after load_graph() and after every _reload()."""
@@ -131,18 +152,27 @@ def _refresh_app_annotation_preds(*meta_graphs):
             if isinstance(s, URIRef) and str(s).startswith(DHC_NS_STR):
                 APP_ANNOTATION_PREDS.add(s)
     # Recover declaration order from the underlying TTL files. tbox first,
-    # then draft, mirroring the load order.
+    # then draft, mirroring the load order. Two lists are produced:
+    #   - APP_ANNOTATION_FILE_ORDER: every annotation property in file order
+    #     (used by the serializer to preserve curated layout).
+    #   - APP_ANNOTATION_ORDER: meta-properties (dhc:isMetaProperty true)
+    #     filtered out (used by the per-class prompt loop).
     APP_ANNOTATION_ORDER.clear()
+    APP_ANNOTATION_FILE_ORDER.clear()
     seen = set()
     for path in (TBOX_METADATA, DRAFT_METADATA):
         for uri in _annotation_decl_order_in_file(path, APP_ANNOTATION_PREDS):
             if uri in seen: continue
             seen.add(uri)
-            APP_ANNOTATION_ORDER.append(uri)
+            APP_ANNOTATION_FILE_ORDER.append(uri)
+            if not _is_meta_property(uri, *meta_graphs):
+                APP_ANNOTATION_ORDER.append(uri)
     # Fallback: any predicate not found in either file (e.g. discovered via
     # an unexpected source) lands at the end, sorted by URI for stability.
     for p in sorted(APP_ANNOTATION_PREDS - seen, key=str):
-        APP_ANNOTATION_ORDER.append(p)
+        APP_ANNOTATION_FILE_ORDER.append(p)
+        if not _is_meta_property(p, *meta_graphs):
+            APP_ANNOTATION_ORDER.append(p)
 
 # ── Namespaces ────────────────────────────────────────────────────────────────
 KNOWN_NS = {
@@ -576,17 +606,25 @@ def write_structured_ttl(file_graph, path, kind, lookup_graphs):
                          URIRef("https://digitalhome.cloud/ontology/app-metadata")}
         all_subjects = [s for s in all_subjects if s not in ontology_uris]
 
-        # For metadata: split out app-annotation-property defs (rendered first)
+        # For metadata: split out app-annotation-property defs (rendered first).
+        # Order is critical: annotations with sh:condition (e.g.
+        # dhc:blocklyBlockTemplate gated by dhc:isInstantiated) need their
+        # guard predicate to appear earlier so the curator can set it before
+        # the dependent prompt fires. We preserve the curated file order via
+        # APP_ANNOTATION_FILE_ORDER instead of re-sorting alphabetically.
         if kind == "metadata":
-            annot_props = [s for s in all_subjects
-                           if _is_annot_prop(file_graph, s) and _is_dhc(s)]
+            annot_in_file = {s for s in all_subjects
+                             if _is_annot_prop(file_graph, s) and _is_dhc(s)}
+            ordered = [p for p in APP_ANNOTATION_FILE_ORDER if p in annot_in_file]
+            tail = sorted(annot_in_file - set(ordered), key=str)  # any newcomers
+            annot_props = ordered + tail
             f.write("# ────────────────────────────────────────────────────────────\n")
             f.write("# § Application annotation property definitions\n")
             f.write("# ────────────────────────────────────────────────────────────\n\n")
             for s in annot_props:
                 txt = _render_subject(file_graph, s)
                 if txt: f.write(txt + "\n")
-            all_subjects = [s for s in all_subjects if s not in annot_props]
+            all_subjects = [s for s in all_subjects if s not in annot_in_file]
 
         # Bucket remaining subjects by view
         buckets = {v: [] for v in VIEWS}
@@ -771,6 +809,61 @@ def _condition_satisfied(union, cls, pred, *graphs):
         actual = _annotation_default(union, path)  # fall back to default
     return _value_matches(actual, expected)
 
+# Allowed scopes for dhc:choicesFrom — kept here as the canonical list rather
+# than re-deriving from the meta-property's sh:in (which is the source of truth
+# for the curator UI but not the runtime). Keep these in sync.
+_CHOICES_FROM_SCOPES = {
+    "selfAndAncestors", "ancestors", "selfAndDescendants", "descendants",
+}
+
+def _annotation_choices_from(g, pred):
+    """Return the dhc:choicesFrom scope string for an annotation predicate, or
+    None. Recognized scopes: selfAndAncestors, ancestors, selfAndDescendants,
+    descendants."""
+    val = g.value(pred, DHC["choicesFrom"])
+    if val is None:
+        return None
+    scope = str(val)
+    if scope not in _CHOICES_FROM_SCOPES:
+        return None
+    return scope
+
+def _build_choice_chain(cls, scope, g, sh):
+    """Build the per-class enum menu for a `dhc:choicesFrom`-driven annotation.
+    Returns a list of (uri, curie_str) pairs in BFS order (most-specific first
+    for ancestors, most-general first for descendants). Blank nodes are
+    skipped; deduplication is by URI."""
+    cls_uri = cls if isinstance(cls, URIRef) else URIRef(cls)
+    chain = []  # ordered URIRefs
+    seen = set()
+
+    def walk(start, neighbours, include_start):
+        q = [start]
+        while q:
+            cur = q.pop(0)
+            if cur in seen:
+                continue
+            seen.add(cur)
+            if isinstance(cur, URIRef) and (cur != start or include_start):
+                chain.append(cur)
+            for nxt in neighbours(cur):
+                if isinstance(nxt, URIRef) and nxt not in seen:
+                    q.append(nxt)
+
+    if scope in ("selfAndAncestors", "ancestors"):
+        # rdfs:subClassOf points up: cur → parent
+        def parents(cur):
+            return [o for _, _, o in g.triples((cur, RDFS.subClassOf, None))]
+        walk(cls_uri, parents, include_start=(scope == "selfAndAncestors"))
+    elif scope in ("selfAndDescendants", "descendants"):
+        def children(cur):
+            return [s for s, _, _ in g.triples((None, RDFS.subClassOf, cur))]
+        walk(cls_uri, children, include_start=(scope == "selfAndDescendants"))
+    else:
+        return []
+
+    return [(u, sh(u)) for u in chain]
+
 def _bool_from_input(ans):
     """Parse a user-typed boolean. Accepts 1/0, true/false, yes/no, t/f, y/n.
     Returns True, False, or None for unrecognized input."""
@@ -891,6 +984,21 @@ def enrich_external_class(cls, drafts_core, drafts_meta, tbox_meta, union, sh):
         is_boolean = _annotation_range(union, pred) == XSD.boolean
         choices = _annotation_in(union, pred) if not is_boolean else []
         default = _annotation_default(union, pred)
+        # Dynamic, class-relative menu (dhc:choicesFrom) — used in place of
+        # sh:in when the choices depend on the focus class. Static sh:in wins
+        # if both happen to be declared.
+        scope = None
+        if not choices and not is_boolean:
+            scope = _annotation_choices_from(union, pred)
+            if scope:
+                chain = _build_choice_chain(cls, scope, union, sh)
+                if chain:
+                    # Display CURIEs as the menu; the chosen value is stored
+                    # as the same string literal (matching the existing
+                    # blocklyBlockTemplate "rec:Building" pattern in the data).
+                    choices = [c for _, c in chain]
+                else:
+                    scope = None  # orphan class → fall through to free text
         if choices:
             default_str = str(default) if default is not None else ""
             ans = _prompt_enum(label, choices, cur_str, default_str)
@@ -1034,6 +1142,141 @@ def _serialize_all(file_graphs, union):
     write_structured_ttl(file_graphs[TBOX_METADATA], TBOX_METADATA, "metadata", lookup)
     write_structured_ttl(file_graphs[DRAFT_CORE],    DRAFT_CORE,    "draft",    lookup)
     write_structured_ttl(file_graphs[DRAFT_METADATA],DRAFT_METADATA,"draft",    lookup)
+
+# ════════════════════════════════════════════════════════════════════════════
+#  Non-interactive CLI  (--promote / --purge)
+# ════════════════════════════════════════════════════════════════════════════
+#
+# The interactive menu is built for humans and stays the primary interface.
+# These flags exist because agents and scripts drove the menu by piping stdin
+# ("<class>\n4\ny\nn\nq\n"), which is brittle in two specific ways:
+#
+#   * a prompt count that shifts by one silently desynchronises the whole
+#     stream, and the wrong answer lands on the wrong question;
+#   * on EOF _ask() returns "", the class prompt falls back to `last`, and the
+#     menu loops forever rather than exiting.
+#
+# They are a thin wrapper, NOT a second implementation: same load_graph(), same
+# promote_dhc_class()/purge_dhc_class_everywhere(), same _serialize_all() +
+# _reload(). There is exactly one writer for the four DHC files, which is what
+# keeps the view banners, the core-vs-metadata split and the deterministic
+# serialization identical whoever calls it.
+#
+# Annotation review is skipped (equivalent to answering "n"): promote_dhc_class
+# already moves the annotations that exist. The interactive loop is for *adding
+# or changing* them, which is a human judgement call.
+
+def _cli_promote(uri_arg):
+    """Promote one subject drafts → tbox. Returns a process exit code.
+
+    Accepts a class URI/CURIE, and also a property or enum-instance URI —
+    promote_dhc_class() is subject-based, so `--promote dhc:governedBy` works.
+    That matters: dhc:governedBy deliberately has no rdfs:domain (it spans
+    classes with no common ancestor), so no class promotion would ever reach it.
+    """
+    g, file_graphs = load_graph()
+    _refresh_app_annotation_preds(file_graphs[TBOX_METADATA], file_graphs[DRAFT_METADATA])
+    sh = make_shortener(g)
+
+    subj = resolve_name(uri_arg, g)
+    if subj is None:
+        print(f"  ✗ {uri_arg} not found in any loaded graph.")
+        return 2
+    if not _is_dhc(subj):
+        print(f"  ✗ {sh(subj)} is not in the dhc: namespace.")
+        print("    External classes (rec:/brick:/s223:) take annotations only —")
+        print("    use the interactive menu [4], which prompts for them.")
+        return 2
+
+    drafts_core, drafts_meta = file_graphs[DRAFT_CORE], file_graphs[DRAFT_METADATA]
+    tbox_core, tbox_meta = file_graphs[TBOX_CORE], file_graphs[TBOX_METADATA]
+
+    in_drafts = (any(drafts_core.triples((subj, None, None)))
+                 or any(drafts_meta.triples((subj, None, None))))
+    if not in_drafts:
+        in_tbox = (any(tbox_core.triples((subj, None, None)))
+                   or any(tbox_meta.triples((subj, None, None))))
+        if in_tbox:
+            print(f"  = {sh(subj)} already in tbox/, nothing in drafts/ to move.")
+            return 0
+        print(f"  ✗ {sh(subj)} is not present in drafts/ or tbox/. Nothing to promote.")
+        return 2
+
+    summ = promote_dhc_class(subj, drafts_core, drafts_meta, tbox_core, tbox_meta, g)
+    _serialize_all(file_graphs, g)
+    _reload(g, file_graphs)
+    print(f"  ✅ {sh(subj)}: {summ['core']} → dhc-core.ttl, {summ['meta']} → dhc-app-metadata.ttl")
+    if summ["props"]:
+        print(f"     properties: {', '.join(sh(URIRef(p)) for p in summ['props'])}")
+    if summ["enums"]:
+        print(f"     enum instances: {len(summ['enums'])}")
+    return 0
+
+
+def _cli_purge(uri_arg):
+    """Purge one dhc: subject from BOTH tbox files AND drafts. Exit code."""
+    g, file_graphs = load_graph()
+    _refresh_app_annotation_preds(file_graphs[TBOX_METADATA], file_graphs[DRAFT_METADATA])
+    sh = make_shortener(g)
+
+    subj = resolve_name(uri_arg, g)
+    if subj is None:
+        print(f"  ✗ {uri_arg} not found in any loaded graph.")
+        return 2
+
+    counts = purge_dhc_class_everywhere(
+        subj, file_graphs[TBOX_CORE], file_graphs[TBOX_METADATA],
+        file_graphs[DRAFT_CORE], file_graphs[DRAFT_METADATA],
+    )
+    if counts is None:          # refused: non-dhc: URI
+        return 2
+    _serialize_all(file_graphs, g)
+    _reload(g, file_graphs)
+    total = sum(counts.values()) if isinstance(counts, dict) else 0
+    print(f"  ✅ purged {sh(subj)}: {counts}")
+    if total == 0:
+        print("     (nothing matched — already absent)")
+    return 0
+
+
+def _run_cli(argv):
+    """Handle --promote/--purge. Returns an exit code, or None to fall through
+    to the interactive menu."""
+    ap = argparse.ArgumentParser(
+        prog="ontology_explorer.py",
+        description="DHC T-Box curator. Run with no arguments for the interactive menu.",
+        epilog=(
+            "Examples:\n"
+            "  ontology_explorer.py                      # interactive menu (humans)\n"
+            "  ontology_explorer.py --promote dhc:Circuit\n"
+            "  ontology_explorer.py --promote dhc:governedBy   # properties work too\n"
+            "  ontology_explorer.py --purge   dhc:Norm_BS7671\n\n"
+            "Both flags are repeatable and run in order; the first failure stops the run.\n"
+            "Annotation review is skipped — use the interactive menu to add or change\n"
+            "annotations. Writes go through the same splitter and serializer as [4]/[6]."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ap.add_argument("--promote", action="append", metavar="URI", default=[],
+                    help="promote a dhc: subject drafts → tbox (repeatable)")
+    ap.add_argument("--purge", action="append", metavar="URI", default=[],
+                    help="purge a dhc: subject from tbox AND drafts (repeatable)")
+    args = ap.parse_args(argv)
+
+    if not args.promote and not args.purge:
+        return None                     # → interactive
+
+    # purge before promote: re-adding a corrected definition is purge-then-promote
+    for uri in args.purge:
+        rc = _cli_purge(uri)
+        if rc:
+            return rc
+    for uri in args.promote:
+        rc = _cli_promote(uri)
+        if rc:
+            return rc
+    return 0
+
 
 def main():
     print("╔══════════════════════════════════════════════════════╗")
@@ -1239,4 +1482,8 @@ def main():
         print()
 
 if __name__ == "__main__":
-    main()
+    _rc = _run_cli(sys.argv[1:])
+    if _rc is None:
+        main()
+    else:
+        sys.exit(_rc)

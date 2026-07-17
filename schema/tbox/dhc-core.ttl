@@ -33,13 +33,39 @@
                 <https://w3id.org/rec> ;
     owl:versionInfo "3.0.0" .
 
+
 # ════════════════════════════════════════════════════════════
 # VIEW: governance
 # ════════════════════════════════════════════════════════════
 
+dhc:Contactor a owl:Class ;
+    rdfs:label "Contactor"@en ;
+    rdfs:comment "An electrically controlled switch used for remote or automatic switching of circuits. In residential installations, typically used as a contacteur heures creuses (FR) to switch the water heater on/off based on off-peak tariff signals from the energy provider. Has a control input (tariff signal) and a power output (switched load)."@en ;
+    rdfs:subClassOf s223:Equipment,
+        brick:Switchgear .
+
+dhc:EquipotentialBonding a owl:Class ;
+    rdfs:label "Equipotential Bonding"@en ;
+    rdfs:comment "A protective conductor that connects exposed conductive parts and extraneous conductive parts to the earthing system, ensuring they remain at the same potential. Known as liaison équipotentielle (FR), Potentialausgleich (DE). Required in bathrooms (NF C 15-100 Part 7-701), pool areas (Part 7-702), and as main bonding at the distribution board."@en ;
+    rdfs:subClassOf s223:Connection .
+
 dhc:NormEdition a owl:Class ;
     rdfs:label "Norm Edition"@en ;
     rdfs:comment "A specific version/revision of a Norm (e.g. NF C 15-100:2015, NF C 15-100:2024). Each edition has a corresponding C-Box SHACL shape file. New editions are not retroactive — existing installations remain governed by the edition they were built under."@en .
+
+dhc:Role a owl:Class ;
+    rdfs:label "Role"@en ;
+    rdfs:comment "A type of role (Owner, Operator, Installer, Maintainer, Occupant, etc.)."@en .
+
+dhc:RoleAssignment a owl:Class ;
+    rdfs:label "Role Assignment"@en ;
+    rdfs:comment "Agent X plays Role Y in Context Z (optionally during time window T)."@en .
+
+dhc:SurgeProtector a owl:Class ;
+    rdfs:label "Surge Protector"@en ;
+    rdfs:comment "A Surge Protective Device (SPD) that limits transient overvoltages from lightning or switching. Known as parafoudre (FR), Überspannungsschutz (DE). Mandatory per NF C 15-100 §443 since 2002. Typically installed at the main distribution board, downstream of the main circuit breaker."@en ;
+    rdfs:subClassOf s223:Equipment,
+        brick:Switchgear .
 
 dhc:User a owl:Class ;
     rdfs:label "Application User"@en ;
@@ -48,35 +74,68 @@ dhc:User a owl:Class ;
 
 dhc:NormEdition_NFC14100_2021 a dhc:NormEdition ;
     rdfs:label "NF C 14-100:2021"@en ;
-    rdfs:comment "Current edition of NF C 14-100."@en ;
+    rdfs:comment "Current edition of NF C 14-100. No dhc:shapesFile: the C-Box profile in cbox/electrical/nfc14100.shapes.ttl declares normVersion 2008, so it does not implement this edition. Per-edition shapes are the design intent; only the norm-level profile registered in cbox-manifest.json exists today."@en ;
     dhc:editionOf dhc:Norm_NFC14100 ;
-    dhc:editionYear "2021"^^xsd:gYear ;
-    dhc:shapesFile "cbox/nfc14100/nfc14100-2021.shapes.ttl" .
+    dhc:editionYear "2021"^^xsd:gYear .
 
 dhc:NormEdition_NFC15100_2002 a dhc:NormEdition ;
     rdfs:label "NF C 15-100:2002"@en ;
-    rdfs:comment "Edition in force 2002–2015. Many existing installations were built under this edition."@en ;
+    rdfs:comment "Edition in force 2002–2015. Many existing installations were built under this edition. No dhc:shapesFile: shapes for this edition have not been authored."@en ;
     dhc:editionOf dhc:Norm_NFC15100 ;
-    dhc:editionYear "2002"^^xsd:gYear ;
-    dhc:shapesFile "cbox/nfc15100/nfc15100-2002.shapes.ttl" .
+    dhc:editionYear "2002"^^xsd:gYear .
 
 dhc:NormEdition_NFC15100_2015 a dhc:NormEdition ;
     rdfs:label "NF C 15-100:2015"@en ;
-    rdfs:comment "Major revision with amended requirements for residential installations. Added requirements for IRVE, updated bathroom zones, revised minimum circuit counts."@en ;
+    rdfs:comment "Major revision with amended requirements for residential installations. Added requirements for IRVE, updated bathroom zones, revised minimum circuit counts. This is the edition the C-Box profile implements — cbox/electrical/nfc15100.shapes.ttl declares normVersion 2015-A5."@en ;
     dhc:editionEffectiveDate "2015-11-27"^^xsd:date ;
     dhc:editionOf dhc:Norm_NFC15100 ;
     dhc:editionYear "2015"^^xsd:gYear ;
-    dhc:shapesFile "cbox/nfc15100/nfc15100-2015.shapes.ttl" ;
+    dhc:shapesFile "cbox/electrical/nfc15100.shapes.ttl" ;
     dhc:supersedes dhc:NormEdition_NFC15100_2002 .
 
 dhc:NormEdition_NFC15100_2024 a dhc:NormEdition ;
     rdfs:label "NF C 15-100:2024"@en ;
-    rdfs:comment "Current edition. Includes updated Part 7-702 (pools/basins), revised IRVE requirements, new requirements for energy storage systems."@en ;
+    rdfs:comment "Current edition. Includes updated Part 7-702 (pools/basins), revised IRVE requirements, new requirements for energy storage systems. No dhc:shapesFile: despite being dhc:latestEdition, no shapes have been authored for it — the C-Box still implements 2015-A5. Compliance is therefore validated against the 2015 rules, not these."@en ;
     dhc:editionEffectiveDate "2024-07-01"^^xsd:date ;
     dhc:editionOf dhc:Norm_NFC15100 ;
     dhc:editionYear "2024"^^xsd:gYear ;
-    dhc:shapesFile "cbox/nfc15100/nfc15100-2024.shapes.ttl" ;
     dhc:supersedes dhc:NormEdition_NFC15100_2015 .
+
+dhc:Role_Designer a dhc:Role ;
+    rdfs:label "Designer / Architect"@en ;
+    rdfs:comment "Architect or designer responsible for plans."@en .
+
+dhc:Role_Installer a dhc:Role ;
+    rdfs:label "Installer"@en ;
+    rdfs:comment "Contractor performing installation."@en .
+
+dhc:Role_Maintainer a dhc:Role ;
+    rdfs:label "Maintainer"@en ;
+    rdfs:comment "Responsible for ongoing maintenance."@en .
+
+dhc:Role_MaitreOuvrage a dhc:Role ;
+    rdfs:label "Client / Sponsor"@en ;
+    rdfs:comment "Client or sponsor commissioning a project."@en .
+
+dhc:Role_Occupant a dhc:Role ;
+    rdfs:label "Occupant"@en ;
+    rdfs:comment "Person living in or using the property."@en .
+
+dhc:Role_Operator a dhc:Role ;
+    rdfs:label "Operator"@en ;
+    rdfs:comment "Day-to-day operator of the property or system."@en .
+
+dhc:Role_Owner a dhc:Role ;
+    rdfs:label "Owner"@en ;
+    rdfs:comment "Property owner."@en .
+
+dhc:Role_ProjectManager a dhc:Role ;
+    rdfs:label "Project Manager"@en ;
+    rdfs:comment "Manages a design, construction, or renovation project."@en .
+
+dhc:Role_SafetyResponsible a dhc:Role ;
+    rdfs:label "Safety Responsible"@en ;
+    rdfs:comment "Person or organization responsible for safety compliance."@en .
 
 dhc:AWSCognitoGroups a owl:DatatypeProperty ;
     rdfs:label "external ID"@en ;
@@ -88,6 +147,27 @@ dhc:AWSCognitoId a owl:DatatypeProperty ;
     rdfs:label "external ID"@en ;
     rdfs:comment "Link to IAM/CRM/ERP identity key (Cognito subject, SAP BP, etc.)."@en ;
     rdfs:domain dhc:User ;
+    rdfs:range xsd:string .
+
+dhc:assignedAgent a owl:ObjectProperty ;
+    rdfs:label "assigned agent"@en ;
+    rdfs:domain dhc:RoleAssignment ;
+    rdfs:range rec:Agent .
+
+dhc:assignedRole a owl:ObjectProperty ;
+    rdfs:label "assigned role"@en ;
+    rdfs:domain dhc:RoleAssignment ;
+    rdfs:range dhc:Role .
+
+dhc:assignmentContext a owl:ObjectProperty ;
+    rdfs:label "assignment context"@en ;
+    rdfs:comment "Context of the role: RealEstate, Project, Equipment, or a system (HVACSystem, PlumbingSystem, etc.)."@en ;
+    rdfs:domain dhc:RoleAssignment .
+
+dhc:assignmentStatus a owl:DatatypeProperty ;
+    rdfs:label "assignment status"@en ;
+    rdfs:comment "One of: planned, active, ended."@en ;
+    rdfs:domain dhc:RoleAssignment ;
     rdfs:range xsd:string .
 
 dhc:editionEffectiveDate a owl:DatatypeProperty ;
@@ -109,6 +189,11 @@ dhc:editionYear a owl:DatatypeProperty ;
     rdfs:domain dhc:NormEdition ;
     rdfs:range xsd:gYear .
 
+dhc:powerRating a owl:DatatypeProperty ;
+    rdfs:label "power rating (W)"@en ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range xsd:decimal .
+
 dhc:shapesFile a owl:DatatypeProperty ;
     rdfs:label "shapes file"@en ;
     rdfs:comment "Relative path to the C-Box SHACL shapes file for this edition (e.g. 'cbox/nfc15100/nfc15100-2024.shapes.ttl')."@en ;
@@ -120,6 +205,16 @@ dhc:supersedes a owl:ObjectProperty ;
     rdfs:comment "Links a NormEdition to the previous edition it replaces. Used by the compliance engine to identify the upgrade path."@en ;
     rdfs:domain dhc:NormEdition ;
     rdfs:range dhc:NormEdition .
+
+dhc:validFrom a owl:DatatypeProperty ;
+    rdfs:label "valid from"@en ;
+    rdfs:domain dhc:RoleAssignment ;
+    rdfs:range xsd:dateTime .
+
+dhc:validTo a owl:DatatypeProperty ;
+    rdfs:label "valid to"@en ;
+    rdfs:domain dhc:RoleAssignment ;
+    rdfs:range xsd:dateTime .
 
 
 # ════════════════════════════════════════════════════════════
@@ -141,10 +236,25 @@ dhc:DigitalHome a owl:Class ;
     rdfs:comment "The tenant boundary of a smart home digital twin. A physical property (house, apartment, land with buildings) managed as a single unit with shared IoT edge, power grid, and governance. Extends rec:Site."@en ;
     rdfs:subClassOf rec:Site .
 
+dhc:Garden a owl:Class ;
+    rdfs:label "Garden"@en ;
+    rdfs:comment "A cultivated outdoor area for growing plants, vegetables, or ornamental landscaping."@en ;
+    rdfs:subClassOf dhc:OutdoorArea .
+
 dhc:GrandTownhouse a owl:Class ;
     rdfs:label "Grand Townhouse"@en ;
     rdfs:comment "An imposing, high-standard row house typical of Brussels, often featuring an enfilade of three rooms and a grand facade."@en ;
     rdfs:subClassOf dhc:RowHouse .
+
+dhc:OutdoorArea a owl:Class ;
+    rdfs:label "Outdoor Area"@en ;
+    rdfs:comment "A distinct outdoor zone of a residential property. May contain equipment (lighting, irrigation, EV charger) placed via rec:locatedIn."@en ;
+    rdfs:subClassOf rec:OutdoorSpace .
+
+dhc:Patio a owl:Class ;
+    rdfs:label "Patio"@en ;
+    rdfs:comment "A paved outdoor seating area, often enclosed on several sides by the building."@en ;
+    rdfs:subClassOf dhc:OutdoorArea .
 
 dhc:RowHouse a owl:Class ;
     rdfs:label "Row House"@en ;
@@ -172,21 +282,17 @@ dhc:creationStatus a owl:DatatypeProperty ;
     rdfs:domain dhc:DigitalHome ;
     rdfs:range xsd:string .
 
+dhc:fenced a owl:DatatypeProperty ;
+    rdfs:label "Fenced"@en ;
+    rdfs:comment "Whether the outdoor area is enclosed by a fence or wall."@en ;
+    rdfs:domain dhc:OutdoorArea ;
+    rdfs:range xsd:boolean .
+
 dhc:geocodeVerified a owl:DatatypeProperty ;
     rdfs:label "Geocode verified"@en ;
     rdfs:comment "True if lat/lng come from a provider geocode call."@en ;
     rdfs:domain dhc:DigitalHome ;
     rdfs:range xsd:boolean .
-
-dhc:hasChargingStation a owl:ObjectProperty ;
-    rdfs:label "has charging station"@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range brick:Electric_Vehicle_Charging_Station .
-
-dhc:hasElectricVehicle a owl:ObjectProperty ;
-    rdfs:label "has electric vehicle"@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range dhc:ElectricVehicle .
 
 dhc:hasVehicle a owl:ObjectProperty ;
     rdfs:label "has vehicle"@en ;
@@ -223,6 +329,12 @@ dhc:smartHomeId a owl:DatatypeProperty ;
     rdfs:domain dhc:DigitalHome ;
     rdfs:range xsd:string .
 
+dhc:surfaceType a owl:DatatypeProperty ;
+    rdfs:label "Surface Type"@en ;
+    rdfs:comment "Primary ground surface: grass, gravel, paved, stone, natural, composite, water."@en ;
+    rdfs:domain dhc:OutdoorArea ;
+    rdfs:range xsd:string .
+
 dhc:updatedAt a owl:DatatypeProperty ;
     rdfs:label "Updated at"@en ;
     rdfs:domain dhc:DigitalHome ;
@@ -233,10 +345,207 @@ dhc:updatedAt a owl:DatatypeProperty ;
 # VIEW: building
 # ════════════════════════════════════════════════════════════
 
+dhc:Door a owl:Class ;
+    rdfs:label "Door"@en ;
+    rdfs:subClassOf rec:BuildingElement .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: electrical
 # ════════════════════════════════════════════════════════════
+
+dhc:BusBar a owl:Class ;
+    rdfs:label "Bus Bar"@en ;
+    rdfs:comment "A conductive bar inside a distribution board where incoming supply splits into multiple outgoing circuits. Modeled as s223:Junction — joins two or more s223:Connection instances (dhc:WiringSegment)."@en ;
+    rdfs:subClassOf s223:Junction .
+
+dhc:Circuit a owl:Class ;
+    rdfs:label "Circuit"@en ;
+    rdfs:comment "A logical electrical circuit: a named grouping of a protection device, wiring, and downstream equipment on a distribution board. The physical connection path is expressed via s223:ConnectionPoint chains on the constituent equipment and wiring."@en ;
+    rdfs:subClassOf s223:System .
+
+dhc:CircuitType a owl:Class ;
+    rdfs:label "Circuit Type"@en ;
+    rdfs:comment "Classification: lighting, sockets, dedicated, etc. Instances are used as dropdown values."@en .
+
+dhc:Distribution a owl:Class ;
+    rdfs:label "Distribution"@en ;
+    rdfs:comment "An intermediate distribution node (junction box, sub-distribution). Modeled as s223:Junction."@en ;
+    rdfs:subClassOf s223:Junction .
+
+dhc:DistributionBoard a owl:Class ;
+    rdfs:label "Distribution Board"@en ;
+    rdfs:comment "The consumer unit / breaker panel housing the protection devices of an installation (e.g. Schneider Resi9). Subclasses brick:Breaker_Panel; holds its protection devices via brick:hasPart. Referenced by nfc15100:GTLShape, which requires the GTL to house at least one."@en ;
+    rdfs:subClassOf brick:Breaker_Panel .
+
+dhc:ElectricalTechnicalSpace a owl:Class ;
+    rdfs:label "Electrical Technical Space"@en ;
+    rdfs:comment "A generic technical space for electrical installation (e.g. GTL, electrical closet)."@en ;
+    rdfs:subClassOf rec:Room .
+
+dhc:EmergencyDisconnect a owl:Class ;
+    rdfs:label "Emergency Disconnect"@en ;
+    rdfs:comment "The main disconnect at the origin of the installation — in France the AGCP / disjoncteur d'abonné, owned by the distributor. Subclasses brick:Building_Disconnect_Switch (already annotated as the AGCP in dhc-app-metadata.ttl). Referenced by nfc14100:EmergencyDisconnectShape, which requires a declared dhc:ratedCurrent."@en ;
+    rdfs:subClassOf brick:Building_Disconnect_Switch .
+
+dhc:EnergyDelivery a owl:Class ;
+    rdfs:label "Energy Delivery"@en ;
+    rdfs:comment "Root entry point: contractual and physical energy supply to the property. Modeled as s223:Equipment with one s223:OutletConnectionPoint (downstream to main breaker)."@en ;
+    rdfs:subClassOf s223:Equipment .
+
+dhc:EnergyMeter a owl:Class ;
+    rdfs:label "Energy Meter"@en ;
+    rdfs:comment "The billing meter at the delivery point (e.g. Linky). Subclasses brick:Electrical_Meter rather than s223:ElectricityMeter: the 223P class mandates at least one contained VoltageSensor and ElectricCurrentSensor, which is telemetry the design model does not carry. Referenced by nfc14100:EnergyMeterGovernanceShape."@en ;
+    rdfs:subClassOf brick:Electrical_Meter .
+
+dhc:ProtectionDevice a owl:Class ;
+    rdfs:label "Protection Device"@en ;
+    rdfs:comment "Circuit breaker, RCD, fuse, surge protector. Subclasses s223:ElectricityBreaker — inherits the constraint that it must have at least one s223:OutletConnectionPoint with Constituent-Electricity."@en ;
+    rdfs:subClassOf s223:ElectricityBreaker,
+        brick:Switchgear .
+
+dhc:RCBO a owl:Class ;
+    rdfs:label "RCBO"@en ;
+    rdfs:comment "A combined Residual Current Device and Miniature Circuit Breaker in a single unit. Provides both differential (leakage) and overcurrent protection. Known as disjoncteur différentiel (FR), FI/LS-Schalter (DE). Each RCBO protects one circuit independently."@en ;
+    rdfs:subClassOf dhc:RCD .
+
+dhc:RCD a owl:Class ;
+    rdfs:label "Residual Current Device"@en ;
+    rdfs:comment "A protection device that disconnects the circuit when it detects leakage current (differential current) exceeding a threshold (typically 30mA for residential). Known as interrupteur différentiel (FR), FI-Schutzschalter (DE), aardlekschakelaar (NL/BE). Mandatory per NF C 15-100. Models both standalone RCDs (head-of-row differential switches) and can be specialized as dhc:RCBO for combined RCD+MCB units. Subclasses dhc:ProtectionDevice — which dhc:hasProtection ranges over — and thereby inherits s223:ElectricityBreaker and brick:Switchgear transitively."@en ;
+    rdfs:subClassOf dhc:ProtectionDevice .
+
+dhc:Socket a owl:Class ;
+    rdfs:label "Socket"@en ;
+    rdfs:comment "An electrical socket/outlet. Subclasses s223:ElectricityOutlet — inherits the constraint of one inlet and at least one outlet ConnectionPoint with Constituent-Electricity."@en ;
+    rdfs:subClassOf s223:ElectricityOutlet .
+
+dhc:WiringSegment a owl:Class ;
+    rdfs:label "Wiring Segment"@en ;
+    rdfs:comment "A run of cable between two connection points. Subclasses s223:Connection — the 223P construct for a conductor conveying a Medium; inherits the constraint that its ConnectionPoints carry a compatible Constituent-Electricity medium. Physical routing through building elements is expressed via dhc:routedThrough."@en ;
+    rdfs:subClassOf s223:Connection .
+
+dhc:CircuitType_Cooking a dhc:CircuitType ;
+    rdfs:label "Cooking"@en .
+
+dhc:CircuitType_DedicatedAppliance a dhc:CircuitType ;
+    rdfs:label "Dedicated Appliance"@en .
+
+dhc:CircuitType_FloorHeating a dhc:CircuitType ;
+    rdfs:label "Floor Heating"@en .
+
+dhc:CircuitType_Heating a dhc:CircuitType ;
+    rdfs:label "Heating"@en .
+
+dhc:CircuitType_IRVE a dhc:CircuitType ;
+    rdfs:label "EV Charging (IRVE)"@en .
+
+dhc:CircuitType_Lighting a dhc:CircuitType ;
+    rdfs:label "Lighting"@en .
+
+dhc:CircuitType_Socket a dhc:CircuitType ;
+    rdfs:label "Socket"@en .
+
+dhc:CircuitType_WaterHeater a dhc:CircuitType ;
+    rdfs:label "Water Heater"@en .
+
+dhc:circuitTopology a owl:DatatypeProperty ;
+    rdfs:label "circuit topology"@en ;
+    rdfs:comment "Physical wiring topology: radial (continental European standard) or ring (UK). Affects cable sizing and protection requirements."@en ;
+    rdfs:domain dhc:Circuit ;
+    rdfs:range xsd:string .
+
+dhc:contractedPowerKVA a owl:DatatypeProperty ;
+    rdfs:label "contracted power (kVA)"@en ;
+    rdfs:domain dhc:EnergyDelivery ;
+    rdfs:range xsd:decimal .
+
+dhc:crossSection a owl:DatatypeProperty ;
+    rdfs:label "cross section (mm²)"@en ;
+    rdfs:comment "Conductor cross-section in mm². Deliberately has no rdfs:domain: it carries design intent on a dhc:Circuit (what the C-Box shapes read) AND device fact on a dhc:WiringSegment. Neither Brick 1.5 nor ASHRAE 223P defines any conductor-size property, which is why this is a dhc: term at all."@en ;
+    rdfs:range xsd:decimal .
+
+dhc:currentType a owl:DatatypeProperty ;
+    rdfs:label "current type"@en ;
+    rdfs:comment "SinglePhase or ThreePhase. See also s223:NumberOfElectricalPhases-SinglePhase / -ThreePhase and s223:ElectricalPhaseIdentifier-A / -B / -C for the 223P-native representation."@en ;
+    rdfs:domain dhc:EnergyDelivery ;
+    rdfs:range xsd:string .
+
+dhc:dedicated a owl:DatatypeProperty ;
+    rdfs:label "dedicated"@en ;
+    rdfs:comment "True if this circuit is dedicated to a single appliance or kitchen/specialized zone."@en ;
+    rdfs:domain dhc:Circuit ;
+    rdfs:range xsd:boolean .
+
+dhc:energyProviderName a owl:DatatypeProperty ;
+    rdfs:label "energy provider name"@en ;
+    rdfs:domain dhc:EnergyDelivery ;
+    rdfs:range xsd:string .
+
+dhc:feedsEquipment a owl:ObjectProperty ;
+    rdfs:label "feeds equipment"@en ;
+    rdfs:domain dhc:Circuit ;
+    rdfs:range brick:Equipment .
+
+dhc:hasCircuitType a owl:ObjectProperty ;
+    rdfs:label "has circuit type"@en ;
+    rdfs:domain dhc:Circuit ;
+    rdfs:range dhc:CircuitType .
+
+dhc:hasProtection a owl:ObjectProperty ;
+    rdfs:label "has protection"@en ;
+    rdfs:domain dhc:Circuit ;
+    rdfs:range dhc:ProtectionDevice .
+
+dhc:hasWiring a owl:ObjectProperty ;
+    rdfs:label "has wiring"@en ;
+    rdfs:domain dhc:Circuit ;
+    rdfs:range dhc:WiringSegment .
+
+dhc:maxPoints a owl:DatatypeProperty ;
+    rdfs:label "max points on circuit"@en ;
+    rdfs:comment "Maximum number of endpoints (governed by national standards via C-Box)."@en ;
+    rdfs:domain dhc:Circuit ;
+    rdfs:range xsd:integer .
+
+dhc:neutralSystem a owl:DatatypeProperty ;
+    rdfs:label "neutral system"@en ;
+    rdfs:comment "Star (TT, TN-S, TN-C, IT)."@en ;
+    rdfs:domain dhc:EnergyDelivery ;
+    rdfs:range xsd:string .
+
+dhc:phase a owl:DatatypeProperty ;
+    rdfs:label "phase"@en ;
+    rdfs:comment "Phase count: 1 for single-phase, 3 for three-phase."@en ;
+    rdfs:domain dhc:Circuit ;
+    rdfs:range xsd:integer .
+
+dhc:ratedCurrent a owl:DatatypeProperty ;
+    rdfs:label "rated current (A)"@en ;
+    rdfs:comment "Rated current in amperes. Deliberately has no rdfs:domain: it carries design intent on a dhc:Circuit (what the circuit is rated for, which is what the C-Box shapes read) AND device fact on a dhc:ProtectionDevice or dhc:EmergencyDisconnect. A domain would make any RDFS reasoner infer that every Circuit is also a ProtectionDevice. The two assertions must agree."@en ;
+    rdfs:range xsd:decimal .
+
+dhc:rcdType a owl:DatatypeProperty ;
+    rdfs:label "RCD type"@en ;
+    rdfs:comment "RCD classification: Type AC (sinusoidal), Type A (pulsating DC + AC, required for EV charging and induction hobs), Type B (smooth DC), Type F (high-frequency)."@en ;
+    rdfs:domain dhc:RCD ;
+    rdfs:range xsd:string .
+
+dhc:routedThrough a owl:ObjectProperty ;
+    rdfs:label "routed through"@en ;
+    rdfs:comment "Traces the physical path of a wiring segment through building elements (wall cavity, conduit, cable tray, ceiling void). Used for placement validation and collision detection."@en ;
+    rdfs:domain dhc:WiringSegment ;
+    rdfs:range rec:BuildingElement .
+
+dhc:sensitivityMA a owl:DatatypeProperty ;
+    rdfs:label "sensitivity (mA)"@en ;
+    rdfs:comment "RCD trip threshold in milliamps. Residential standard is 30mA. Some applications require 10mA (e.g. outdoor sockets in wet zones)."@en ;
+    rdfs:domain dhc:RCD ;
+    rdfs:range xsd:decimal .
+
+dhc:wiring a owl:DatatypeProperty ;
+    rdfs:label "wiring"@en ;
+    rdfs:comment "Cable specification, e.g. 3G2.5, 5G6."@en ;
+    rdfs:range xsd:string .
 
 
 # ════════════════════════════════════════════════════════════
@@ -270,8 +579,6 @@ dhc:Norm a owl:Class ;
 dhc:Norm_NFC14100 a dhc:Norm ;
     rdfs:label "NF C 14-100"@en ;
     rdfs:comment "Energy delivery from provider to main board (France). Covers the connection between the public distribution network and the origin of the private installation."@en ;
-    dhc:hasEdition dhc:NormEdition_NFC14100_2021 ;
-    dhc:latestEdition dhc:NormEdition_NFC14100_2021 ;
     dhc:normCategory "Regulation" ;
     dhc:normCountry "FR" ;
     dhc:normDomain "electrical" ;
@@ -281,15 +588,16 @@ dhc:Norm_NFC14100 a dhc:Norm ;
 dhc:Norm_NFC15100 a dhc:Norm ;
     rdfs:label "NF C 15-100"@en ;
     rdfs:comment "Residential and commercial low-voltage electrical installation (France). The primary norm governing circuit design, protection, wiring, and zone-specific requirements (bathrooms, pools, kitchens, etc.)."@en ;
-    dhc:hasEdition dhc:NormEdition_NFC15100_2002,
-        dhc:NormEdition_NFC15100_2015,
-        dhc:NormEdition_NFC15100_2024 ;
-    dhc:latestEdition dhc:NormEdition_NFC15100_2024 ;
     dhc:normCategory "Regulation" ;
     dhc:normCountry "FR" ;
     dhc:normDomain "electrical" ;
     dhc:normId "nfc15100" ;
     dhc:normWeight 1.0 .
+
+dhc:governedBy a owl:ObjectProperty ;
+    rdfs:label "governed by"@en ;
+    rdfs:comment "Links an A-Box entity to the Norm it is designed/installed under. Deliberately has no rdfs:domain: it applies to Circuit, EnergyMeter, EnergyDelivery, DistributionBoard and ElectricalTechnicalSpace, which share no common ancestor, and a domain would wrongly infer types. Range is dhc:Norm, matching nfc15100:NormGovernanceShape (sh:class dhc:Norm). Edition-level precision is a planned refinement — see dhc:hasEdition / dhc:latestEdition."@en ;
+    rdfs:range dhc:Norm .
 
 dhc:hasEdition a owl:ObjectProperty ;
     rdfs:label "has edition"@en ;

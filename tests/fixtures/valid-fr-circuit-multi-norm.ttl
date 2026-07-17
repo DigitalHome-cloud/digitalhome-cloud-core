@@ -9,4 +9,12 @@ ex:multi-norm-circuit a dhc:Circuit ;
   dhc:governedBy     dhc:Norm_NFC14100 , dhc:Norm_NFC15100 ;
   dhc:maxPoints      "6"^^xsd:integer ;
   dhc:ratedCurrent   "10"^^xsd:decimal ;
-  dhc:crossSection   "1.5"^^xsd:decimal .
+  dhc:crossSection   "1.5"^^xsd:decimal ;
+  dhc:hasProtection  ex:multi-norm-rcd .
+
+# NF C 15-100 mandates 30 mA differential protection on final circuits. This
+# fixture originally omitted it — it was named "valid" but was not compliant;
+# nothing checked until nfc15100:CircuitRCDProtectionShape existed.
+ex:multi-norm-rcd a dhc:RCD ;
+  dhc:sensitivityMA "30"^^xsd:decimal ;
+  dhc:rcdType       "AC" .

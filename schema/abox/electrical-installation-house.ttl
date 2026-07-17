@@ -1,0 +1,375 @@
+@prefix dhc:   <https://digitalhome.cloud/ontology#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix rec:   <https://w3id.org/rec#> .
+@prefix s223:  <http://data.ashrae.org/standard223#> .
+@prefix unit:  <http://qudt.org/vocab/unit/> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:    <http://example.org/electrical-installation-house/> .
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Electrical installation — a French detached house (prototype / POC)
+#
+#  A schema example, not tenant data and not an app demo home: real per-home
+#  A-Box lives in S3 under the Designer's control, and the demo homes the v1.0
+#  apps ship with belong to those apps. See CLAUDE.md § schema/abox/.
+#
+#  Purpose: demonstrate the v3 layering end-to-end — generator to consumers —
+#  and prove the C-Box shapes actually fire.
+#
+#  NOTE ON SIZE: at ~370 lines this fuses a dozen concepts and is deliberately
+#  NOT the template for future examples. Those follow experimental/Brick/examples:
+#  one concept, end to end, 30–70 lines. Read this file as a decomposition map
+#  of the examples still to be extracted (lighting circuit, meter/submeter,
+#  PV + inverter, EVSE).
+#
+#    REC    — site, building, rooms
+#    Brick  — equipment (PV, inverter, luminaires, EV charger, controller)
+#    223P   — connectivity: ConnectionPoints, Connections, L/N/PE media
+#    dhc:   — only the norm layer Brick/REC/223P do not define
+#
+#  ┌─ THIS FILE DOES NOT CONFORM, BY DESIGN ────────────────────────────────┐
+#  │ ex:circuit-ev-legacy is deliberately non-compliant: a 32 A single-phase │
+#  │ IRVE circuit wired in 1.5 mm², where NF C 15-100 demands ≥ 10 mm².      │
+#  │ It MUST be reported by nfc15100:IRVE32AMonoShape.                       │
+#  │                                                                         │
+#  │ This is load-bearing. Every seam in this stack fails silently: a shape  │
+#  │ whose sh:targetClass matches nothing reports "conforms" and validates   │
+#  │ nothing. The six compliant circuits prove there are no false positives; │
+#  │ this one proves the validator is alive. If this file ever conforms, the │
+#  │ chain is broken — do not "fix" it by correcting the cross-section.      │
+#  └─────────────────────────────────────────────────────────────────────────┘
+#
+#  Conductor convention (one s223:Connection per conductor):
+#    L  → s223:hasMedium s223:AC-230VLN-1Ph-50Hz   (230 V L-N, 1-phase, 50 Hz)
+#    N  → s223:hasMedium s223:Electricity-Neutral
+#    PE → s223:hasMedium s223:Electricity-Earth
+#  Chain: Equipment –hasConnectionPoint→ CP –connectsThrough→ Connection
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+# ── Site, building, spaces (REC) ─────────────────────────────────────────
+
+ex:home a dhc:DigitalHome ;
+    rdfs:label "Demo Smart Villa (FR)" ;
+    dhc:smartHomeId "FR-DEMO-01" ;
+    dhc:isDemo true ;
+    dhc:preferredLanguage "fr" ;
+    dhc:creationStatus "active" ;
+    rec:hasPart ex:villa .
+
+ex:villa a dhc:DetachedHouse ;
+    rdfs:label "Main building" .
+
+ex:gtl a dhc:ElectricalTechnicalSpace ;
+    rdfs:label "Gaine Technique Logement (utility room)" ;
+    dhc:governedBy dhc:Norm_NFC14100, dhc:Norm_NFC15100 ;
+    rec:isLocationOf ex:board-resi9 .
+
+ex:garage a rec:Room ;
+    rdfs:label "Garage" .
+
+ex:living-room a rec:Room ;
+    rdfs:label "Living room" .
+
+ex:kitchen a rec:Room ;
+    rdfs:label "Kitchen" .
+
+
+# ── Energy delivery — NF C 14-100 (grid side) ────────────────────────────
+
+ex:delivery a dhc:EnergyDelivery ;
+    rdfs:label "Enedis 9 kVA single-phase supply" ;
+    dhc:governedBy         dhc:Norm_NFC14100 ;
+    dhc:energyProviderName "Enedis" ;
+    dhc:contractedPowerKVA "9"^^xsd:decimal ;
+    dhc:currentType        "SinglePhase" ;
+    dhc:neutralSystem      "TT" .
+
+ex:meter a dhc:EnergyMeter ;
+    rdfs:label "Linky billing meter" ;
+    dhc:governedBy dhc:Norm_NFC14100 ;
+    rec:locatedIn  ex:gtl ;
+    brick:feeds    ex:agcp .
+
+ex:agcp a dhc:EmergencyDisconnect ;
+    rdfs:label "AGCP — disjoncteur d'abonné 63 A" ;
+    dhc:governedBy   dhc:Norm_NFC14100 ;
+    dhc:ratedCurrent "63"^^xsd:decimal ;
+    rec:locatedIn    ex:gtl ;
+    brick:feeds      ex:board-resi9 .
+
+
+# ── Generation — PV + hybrid inverter (Brick) ────────────────────────────
+
+ex:pv-system a brick:PV_Generation_System ;
+    rdfs:label "6 kW rooftop PV" ;
+    rec:includes ex:pv-array ;
+    brick:feeds  ex:inverter .
+
+ex:pv-array a brick:PV_Array ;
+    rdfs:label "South array" ;
+    rec:includes ex:pv-panel-1 ;
+    brick:tilt    [ brick:hasUnit unit:DEG ; brick:value "30"^^xsd:decimal ] ;
+    brick:azimuth [ brick:hasUnit unit:DEG ;
+                    brick:referenceDirection "North" ;
+                    brick:value "180"^^xsd:decimal ] .
+
+ex:pv-panel-1 a brick:PV_Panel ;
+    rdfs:label "PV panel (×15, 400 W)" ;
+    brick:ratedPowerOutput [ brick:hasUnit unit:W ; brick:value "400"^^xsd:decimal ] .
+
+ex:inverter a brick:Photovoltaic_Inverter ;
+    rdfs:label "Deye hybrid inverter" ;
+    brick:hasLocation ex:gtl ;
+    brick:ratedPowerOutput [ brick:hasUnit unit:KiloW ; brick:value "6"^^xsd:decimal ] ;
+    brick:feeds ex:board-resi9 .
+
+
+# ── Distribution board + head-of-row differential ────────────────────────
+
+ex:board-resi9 a dhc:DistributionBoard ;
+    rdfs:label "Schneider Resi9 — 5 rows, 58 modules" ;
+    dhc:governedBy dhc:Norm_NFC15100 ;
+    rec:locatedIn  ex:gtl ;
+    brick:hasPart  ex:rcd-main,
+                   ex:brk-lgt-lr, ex:brk-lgt-kit,
+                   ex:brk-soc-lr, ex:brk-soc-kit,
+                   ex:brk-wm, ex:brk-ev, ex:brk-ev-legacy .
+
+ex:rcd-main a dhc:RCD ;
+    rdfs:label "30 mA Type A differential switch (head of row)" ;
+    dhc:ratedCurrent  "63"^^xsd:decimal ;
+    dhc:sensitivityMA "30"^^xsd:decimal ;
+    dhc:rcdType       "A" ;
+    brick:isPartOf    ex:board-resi9 .
+    # Every circuit below lists this device in dhc:hasProtection alongside its
+    # own MCB: the head-of-row differential protects all of them. That is what
+    # nfc15100:CircuitRCDProtectionShape checks, and what makes the Type A
+    # requirement on the IRVE circuits satisfiable.
+
+
+# ── Circuits — NF C 15-100 ───────────────────────────────────────────────
+#
+# dhc:ratedCurrent / dhc:crossSection are asserted on the Circuit because that
+# is what the C-Box shapes read (sh:path dhc:ratedCurrent on dhc:Circuit) and
+# what every tests/fixtures/*.ttl does. They express *design intent*. The
+# device-level facts live on the breaker (brick:ratedCurrentOutput) and the
+# wiring segment (dhc:crossSection), which must agree.
+
+ex:circuit-lgt-lr a dhc:Circuit ;
+    rdfs:label "Lighting — living room" ;
+    dhc:hasCircuitType dhc:CircuitType_Lighting ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:maxPoints      "6"^^xsd:integer ;
+    dhc:ratedCurrent   "10"^^xsd:decimal ;
+    dhc:crossSection   "1.5"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:dedicated      false ;
+    dhc:hasProtection  ex:brk-lgt-lr, ex:rcd-main ;
+    dhc:hasWiring      ex:wire-lgt-lr-L, ex:wire-lgt-lr-N, ex:wire-lgt-lr-PE ;
+    s223:hasMember     ex:brk-lgt-lr, ex:lum-lr-1 .
+
+ex:circuit-lgt-kit a dhc:Circuit ;
+    rdfs:label "Lighting — kitchen" ;
+    dhc:hasCircuitType dhc:CircuitType_Lighting ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:maxPoints      "5"^^xsd:integer ;
+    dhc:ratedCurrent   "10"^^xsd:decimal ;
+    dhc:crossSection   "1.5"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:dedicated      false ;
+    dhc:hasProtection  ex:brk-lgt-kit, ex:rcd-main ;
+    s223:hasMember     ex:brk-lgt-kit, ex:lum-kit-1 .
+
+ex:circuit-soc-lr a dhc:Circuit ;
+    rdfs:label "Sockets — living room" ;
+    dhc:hasCircuitType dhc:CircuitType_Socket ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:maxPoints      "8"^^xsd:integer ;
+    dhc:ratedCurrent   "16"^^xsd:decimal ;
+    dhc:crossSection   "2.5"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:dedicated      false ;
+    dhc:hasProtection  ex:brk-soc-lr, ex:rcd-main ;
+    s223:hasMember     ex:brk-soc-lr, ex:socket-lr-1 .
+
+ex:circuit-soc-kit a dhc:Circuit ;
+    rdfs:label "Sockets — kitchen" ;
+    dhc:hasCircuitType dhc:CircuitType_Socket ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:maxPoints      "6"^^xsd:integer ;
+    dhc:ratedCurrent   "16"^^xsd:decimal ;
+    dhc:crossSection   "2.5"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:dedicated      false ;
+    dhc:hasProtection  ex:brk-soc-kit, ex:rcd-main ;
+    s223:hasMember     ex:brk-soc-kit, ex:socket-kit-1 .
+
+ex:circuit-wm a dhc:Circuit ;
+    rdfs:label "Washing machine — dedicated" ;
+    dhc:hasCircuitType dhc:CircuitType_DedicatedAppliance ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:maxPoints      "1"^^xsd:integer ;
+    dhc:ratedCurrent   "20"^^xsd:decimal ;
+    dhc:crossSection   "2.5"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:dedicated      true ;
+    dhc:hasProtection  ex:brk-wm, ex:rcd-main ;
+    s223:hasMember     ex:brk-wm, ex:washing-machine .
+
+ex:circuit-ev a dhc:Circuit ;
+    rdfs:label "EV charger — garage (IRVE, compliant)" ;
+    dhc:hasCircuitType dhc:CircuitType_IRVE ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:maxPoints      "1"^^xsd:integer ;
+    dhc:ratedCurrent   "32"^^xsd:decimal ;
+    dhc:crossSection   "10.0"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:dedicated      true ;
+    dhc:hasProtection  ex:brk-ev, ex:rcd-main ;
+    s223:hasMember     ex:brk-ev, ex:evse .
+
+# ⚠ THE DELIBERATE DEFECT — see the header. 32 A IRVE on 1.5 mm²; NF C 15-100
+# requires ≥ 10 mm². Must be flagged by nfc15100:IRVE32AMonoShape.
+ex:circuit-ev-legacy a dhc:Circuit ;
+    rdfs:label "EV charger — legacy run installed by previous owner (NON-COMPLIANT)" ;
+    dhc:hasCircuitType dhc:CircuitType_IRVE ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:maxPoints      "1"^^xsd:integer ;
+    dhc:ratedCurrent   "32"^^xsd:decimal ;
+    dhc:crossSection   "1.5"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:dedicated      true ;
+    dhc:hasProtection  ex:brk-ev-legacy, ex:rcd-main ;
+    s223:hasMember     ex:brk-ev-legacy, ex:evse-legacy .
+
+
+# ── Protection devices ───────────────────────────────────────────────────
+
+ex:brk-lgt-lr a dhc:ProtectionDevice ;
+    rdfs:label "MCB 10 A — lighting LR" ;
+    dhc:ratedCurrent "10"^^xsd:decimal ;
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "10"^^xsd:decimal ] ;
+    s223:hasConnectionPoint ex:brk-lgt-lr-in, ex:brk-lgt-lr-out .
+
+ex:brk-lgt-kit a dhc:ProtectionDevice ;
+    rdfs:label "MCB 10 A — lighting kitchen" ;
+    dhc:ratedCurrent "10"^^xsd:decimal ;
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "10"^^xsd:decimal ] .
+
+ex:brk-soc-lr a dhc:ProtectionDevice ;
+    rdfs:label "MCB 16 A — sockets LR" ;
+    dhc:ratedCurrent "16"^^xsd:decimal ;
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "16"^^xsd:decimal ] .
+
+ex:brk-soc-kit a dhc:ProtectionDevice ;
+    rdfs:label "MCB 16 A — sockets kitchen" ;
+    dhc:ratedCurrent "16"^^xsd:decimal ;
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "16"^^xsd:decimal ] .
+
+ex:brk-wm a dhc:ProtectionDevice ;
+    rdfs:label "MCB 20 A — washing machine" ;
+    dhc:ratedCurrent "20"^^xsd:decimal ;
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "20"^^xsd:decimal ] .
+
+ex:brk-ev a dhc:ProtectionDevice ;
+    rdfs:label "MCB 32 A + RCD Type A — EV" ;
+    dhc:ratedCurrent "32"^^xsd:decimal ;
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "32"^^xsd:decimal ] .
+
+ex:brk-ev-legacy a dhc:ProtectionDevice ;
+    rdfs:label "MCB 32 A — EV legacy run" ;
+    dhc:ratedCurrent "32"^^xsd:decimal ;
+    brick:ratedCurrentOutput [ brick:hasUnit unit:A ; brick:value "32"^^xsd:decimal ] .
+
+
+# ── 223P connectivity — worked example on the living-room lighting circuit ─
+#
+# Conductor-level topology: one Connection per conductor, each carrying its own
+# medium. This is what makes an automated single-line/wiring diagram possible —
+# brick:feeds alone only says "upstream of".
+
+ex:brk-lgt-lr-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:busbar-feed-L .
+
+ex:brk-lgt-lr-out a s223:OutletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-lgt-lr-L .
+
+ex:busbar a dhc:BusBar ;
+    rdfs:label "Board busbar" ;
+    brick:isPartOf ex:board-resi9 .
+
+ex:busbar-feed-L a dhc:WiringSegment ;
+    rdfs:label "Busbar → MCB (L)" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "10.0"^^xsd:decimal .
+
+ex:wire-lgt-lr-L a dhc:WiringSegment ;
+    rdfs:label "R2V 3G1.5 — line conductor" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "1.5"^^xsd:decimal ;
+    dhc:wiring       "R2V 3G1.5" .
+
+ex:wire-lgt-lr-N a dhc:WiringSegment ;
+    rdfs:label "R2V 3G1.5 — neutral conductor" ;
+    s223:hasMedium   s223:Electricity-Neutral ;
+    dhc:crossSection "1.5"^^xsd:decimal .
+
+ex:wire-lgt-lr-PE a dhc:WiringSegment ;
+    rdfs:label "R2V 3G1.5 — protective earth" ;
+    s223:hasMedium   s223:Electricity-Earth ;
+    dhc:crossSection "1.5"^^xsd:decimal .
+
+ex:lum-lr-1 a brick:Luminaire ;
+    rdfs:label "Living-room luminaire (×6)" ;
+    brick:hasLocation       ex:living-room ;
+    s223:hasConnectionPoint ex:lum-lr-1-in .
+
+ex:lum-lr-1-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-lgt-lr-L .
+
+
+# ── Remaining loads (design level) ───────────────────────────────────────
+
+ex:lum-kit-1 a brick:Luminaire ;
+    rdfs:label "Kitchen luminaire (×5)" ;
+    brick:hasLocation ex:kitchen .
+
+ex:socket-lr-1 a dhc:Socket ;
+    rdfs:label "Living-room sockets (×8)" ;
+    brick:hasLocation ex:living-room .
+
+ex:socket-kit-1 a dhc:Socket ;
+    rdfs:label "Kitchen sockets (×6)" ;
+    brick:hasLocation ex:kitchen .
+
+ex:washing-machine a brick:Equipment ;
+    rdfs:label "Washing machine" ;
+    brick:hasLocation ex:gtl ;
+    dhc:powerRating "2300"^^xsd:decimal .
+
+ex:evse a brick:Electric_Vehicle_Charging_Station ;
+    rdfs:label "Wallbox 7.4 kW" ;
+    brick:hasLocation ex:garage ;
+    brick:electricVehicleChargerType     [ brick:value "Level 2"^^xsd:string ] ;
+    brick:electricVehicleConnectorType   [ brick:value "Type 2 (IEC 62196)"^^xsd:string ] ;
+    brick:currentFlowType                [ brick:value "AC"^^xsd:string ] ;
+    brick:electricalPhaseCount           [ brick:value 1 ] .
+
+ex:evse-legacy a brick:Electric_Vehicle_Charging_Station ;
+    rdfs:label "Legacy wallbox (previous owner)" ;
+    brick:hasLocation ex:garage ;
+    brick:currentFlowType      [ brick:value "AC"^^xsd:string ] ;
+    brick:electricalPhaseCount [ brick:value 1 ] .
+
+
+# ── Automation (Brick) ───────────────────────────────────────────────────
+
+ex:ccu3 a brick:Controller ;
+    rdfs:label "Homematic IP CCU3" ;
+    brick:hasLocation ex:gtl ;
+    brick:controls    ex:lum-lr-1, ex:lum-kit-1 .

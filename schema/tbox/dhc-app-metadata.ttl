@@ -38,16 +38,18 @@
 # ────────────────────────────────────────────────────────────
 # § Application annotation property definitions
 # ────────────────────────────────────────────────────────────
-dhc:appMode
-  a owl:AnnotationProperty ;
-  rdfs:label "App Mode"@en, "App-Modus"@de, "Mode d'application"@fr ;
-  rdfs:comment """Tailors the application interface:
+
+dhc:appMode a owl:AnnotationProperty ;
+    rdfs:label "App-Modus"@de,
+        "App Mode"@en,
+        "Mode d'application"@fr ;
+    rdfs:comment """Tailors the application interface:
 - private: Simplified UI for homeowners.
 - residential-pro: For installers/electricians.
 - tertiary: For building managers.
 - industrial: For high-power/factory environments."""@en ;
-  sh:defaultValue "private" ;
-  sh:in ("private" "residential-pro" "tertiary" "industrial") .
+    sh:defaultValue "private" ;
+    sh:in ( "private" "residential-pro" "tertiary" "industrial" ) .
 
 dhc:isInstantiated a owl:AnnotationProperty ;
     rdfs:label "Wird instanziiert"@de,
@@ -61,38 +63,45 @@ dhc:blocklyBlockTemplate a owl:AnnotationProperty ;
     rdfs:label "Blockly-Block-Vorlage"@de,
         "Blockly Block Template"@en,
         "Modèle de bloc Blockly"@fr ;
-    rdfs:comment "Pointer to a block template in dhc-blockly-blockTemplates.json, consumed by the Modeller pipeline."@en ;
-    sh:condition [
-    sh:property [
-      sh:path dhc:isInstantiated ;
-      sh:hasValue "true"^^xsd:boolean ;
-    ]
-  ] .
+    rdfs:comment "Pointer to a block template in dhc-blockly-blockTemplates.json, consumed by the Modeller pipeline. The chosen template is one of the focus class's own ancestors (rdfs:subClassOf*), resolved at prompt time."@en ;
+    sh:condition [ sh:property [ sh:hasValue true ;
+                    sh:path dhc:isInstantiated ] ] ;
+    dhc:choicesFrom "selfAndAncestors" .
+
 dhc:blocklyCategory a owl:AnnotationProperty ;
     rdfs:label "Blockly-Kategorie"@de,
         "Blockly Category"@en,
         "Catégorie Blockly"@fr ;
-    rdfs:comment "Optional override for the Blockly toolbox category name."@en .
+    rdfs:comment "Optional override for the Blockly toolbox category name. The default, if not defined, is dhc:designView "@en ;
+    sh:condition [ sh:property [ sh:hasValue true ;
+                    sh:path dhc:isInstantiated ] ] ;
+    sh:in ( "governance" "spatial" "building" "electrical" "plumbing" "heating" "network" "automation" "compliance" ) .
 
 dhc:blocklyDisposition a owl:AnnotationProperty ;
     rdfs:label "Blockly-Disposition"@de,
         "Blockly Disposition"@en,
         "Disposition Blockly"@fr ;
     rdfs:comment "How this class appears in the Blockly toolbox: block (draggable), variable (cross-cutting), excluded (hidden)."@en ;
-    sh:in ("block" "variable" "excluded") .
+    sh:condition [ sh:property [ sh:hasValue true ;
+                    sh:path dhc:isInstantiated ] ] ;
+    sh:in ( "block" "variable" "excluded" ) .
 
 dhc:blocklyFieldType a owl:AnnotationProperty ;
     rdfs:label "Blockly-Feldtyp"@de,
         "Blockly Field Type"@en,
         "Type de champ Blockly"@fr ;
     rdfs:comment "Field widget type in Blockly: number, text, dropdown, checkbox."@en ;
-    sh:in ("text" "number" "dropdown" "checkbox") .
+    sh:condition [ sh:property [ sh:hasValue true ;
+                    sh:path dhc:isInstantiated ] ] ;
+    sh:in ( "text" "number" "dropdown" "checkbox" ) .
 
-dhc:blocklyParentProperty a owl:AnnotationProperty ;
-    rdfs:label "Blockly-Elterneigenschaft"@de,
-        "Blockly Parent Property"@en,
-        "Propriété parent Blockly"@fr ;
-    rdfs:comment "The object property that drives Blockly nesting (e.g. a Circuit block nests inside the DistributionBoard that has dhc:hasCircuit)."@en .
+dhc:choicesFrom a owl:AnnotationProperty ;
+    rdfs:label "Auswahl aus"@de,
+        "Choices from"@en,
+        "Choix à partir de"@fr ;
+    rdfs:comment "Dynamic enum source for an annotation property: choices are computed from the focus class's hierarchy at prompt time. Use in place of sh:in when the menu is class-relative (e.g. blocklyBlockTemplate). Allowed values: selfAndAncestors, ancestors, selfAndDescendants, descendants."@en ;
+    sh:in ( "selfAndAncestors" "ancestors" "selfAndDescendants" "descendants" ) ;
+    dhc:isMetaProperty true .
 
 dhc:defaultValue a owl:AnnotationProperty ;
     rdfs:label "Standardwert"@de,
@@ -105,8 +114,16 @@ dhc:designView a owl:AnnotationProperty ;
         "Design View"@en,
         "Vue de conception"@fr ;
     rdfs:comment "Assigns a class or property to a toolbox tab in the SmartHome Designer: governance, spatial, building, electrical, plumbing, heating, network, automation, compliance."@en ;
-    sh:in ("governance" "spatial" "building" "electrical" "plumbing" "heating" "network" "automation" "compliance") .
+    sh:in ( "governance" "spatial" "building" "electrical" "plumbing" "heating" "network" "automation" "compliance" ) .
 
+dhc:isMetaProperty a owl:AnnotationProperty ;
+    rdfs:label "Ist Meta-Eigenschaft"@de,
+        "Is meta-property"@en,
+        "Est méta-propriété"@fr ;
+    rdfs:comment "Marks an annotation property as a configuration knob for other annotation properties. Excluded from the per-class prompt loop in py-tools/ontology_explorer.py."@en ;
+    rdfs:range xsd:boolean ;
+    sh:defaultValue false ;
+    dhc:isMetaProperty true .
 
 
 # ════════════════════════════════════════════════════════════
@@ -123,10 +140,72 @@ dhc:AWSCognitoId rdfs:label "claude_to_do"@fr ;
     dhc:blocklyDisposition "excluded" ;
     dhc:designView "governance" .
 
+dhc:Role rdfs:label "Rolle"@de,
+        "Rôle"@fr ;
+    dhc:designView "governance" .
+
+dhc:RoleAssignment rdfs:label "Rollenzuweisung"@de,
+        "Attribution de rôle"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_Designer rdfs:label "Planer / Architekt"@de,
+        "Architecte / Concepteur"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_Installer rdfs:label "Installateur"@de,
+        "Installateur"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_Maintainer rdfs:label "Wartungsfirma"@de,
+        "Mainteneur"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_MaitreOuvrage rdfs:label "Bauherr"@de,
+        "Maître d'ouvrage"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_Occupant rdfs:label "Bewohner"@de,
+        "Occupant"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_Operator rdfs:label "Betreiber"@de,
+        "Exploitant"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_Owner rdfs:label "Eigentümer"@de,
+        "Propriétaire"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_ProjectManager rdfs:label "Projektleiter"@de,
+        "Chef de projet"@fr ;
+    dhc:designView "governance" .
+
+dhc:Role_SafetyResponsible rdfs:label "Sicherheitsbeauftragter"@de,
+        "Responsable sécurité"@fr ;
+    dhc:designView "governance" .
+
 dhc:User rdfs:label "claude_to_do"@fr ;
     rdfs:comment "claude_to_do"@fr ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "governance" .
+
+dhc:assignedAgent dhc:designView "governance" .
+
+dhc:assignedRole dhc:designView "governance" .
+
+dhc:assignmentContext dhc:designView "governance" .
+
+dhc:assignmentStatus dhc:designView "governance" .
+
+dhc:hasChargingStation dhc:appMode "private" ;
+    dhc:isInstantiated true .
+
+dhc:hasElectricVehicle dhc:appMode "private" ;
+    dhc:isInstantiated true .
+
+dhc:validFrom dhc:designView "governance" .
+
+dhc:validTo dhc:designView "governance" .
 
 rec:Person rdfs:label "claude_to_do"@en ;
     rdfs:comment "claude_to_do"@fr ;
@@ -147,20 +226,48 @@ dhc:Barbecue rdfs:label "Grill"@de,
 dhc:DetachedHouse rdfs:label "Freistehendes Haus"@de,
         "Maison isolée"@fr ;
     rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
     dhc:blocklyBlockTemplate "rec:Building" ;
+    dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
     dhc:isInstantiated true .
 
 dhc:DigitalHome rdfs:label "Digitales Zuhause"@de,
         "Maison numérique"@fr ;
     rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "dhc:DigitalHome" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
     dhc:isInstantiated "1" .
 
+dhc:Garden rdfs:label "Garten"@de,
+        "Jardin"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "dhc:OutdoorArea" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
 dhc:GrandTownhouse rdfs:label "claude_to_do"@fr ;
     rdfs:comment "claude_to_do"@fr ;
     dhc:blocklyBlockTemplate "rec:Building" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:OutdoorArea rdfs:label "Außenbereich"@de,
+        "Espace extérieur"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated false .
+
+dhc:Patio rdfs:label "Innenhof"@de,
+        "Patio"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "dhc:OutdoorArea" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" ;
     dhc:isInstantiated true .
@@ -182,16 +289,58 @@ dhc:SemiDetachedHouse rdfs:label "Doppelhaushälfte"@de,
     dhc:isInstantiated true .
 
 dhc:createdAt rdfs:label "claude_to_do"@fr ;
-    rdfs:comment "claude_to_do"@fr .
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:isInstantiated true .
 
-dhc:geocodeVerified dhc:designView "spatial" .
+dhc:createdBy dhc:appMode "private" ;
+    dhc:isInstantiated true .
 
-dhc:placeId dhc:designView "spatial" .
+dhc:creationStatus dhc:appMode "private" ;
+    dhc:isInstantiated true .
 
-dhc:placeIdProvider dhc:designView "spatial" .
+dhc:fenced rdfs:label "Eingezäunt"@de,
+        "Clôturé"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyFieldType "checkbox" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:geocodeVerified dhc:appMode "private" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:hasVehicle dhc:appMode "private" ;
+    dhc:isInstantiated true .
+
+dhc:isDemo dhc:appMode "private" ;
+    dhc:isInstantiated true .
+
+dhc:placeId dhc:appMode "private" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:placeIdProvider dhc:appMode "private" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
 
 dhc:preferredLanguage rdfs:label "Bevorzugte Sprache"@de,
-        "Langue préférée"@fr .
+        "Langue préférée"@fr ;
+    dhc:appMode "private" ;
+    dhc:isInstantiated true .
+
+dhc:smartHomeId dhc:appMode "private" ;
+    dhc:isInstantiated true .
+
+dhc:surfaceType rdfs:label "Bodenbelag"@de,
+        "Type de surface"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyFieldType "dropdown" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
+dhc:updatedAt dhc:appMode "private" ;
+    dhc:isInstantiated true .
 
 rec:Apartment rdfs:label "claude_to_do"@en ;
     rdfs:comment "claude_to_do"@fr ;
@@ -213,6 +362,12 @@ rec:Building rdfs:label "claude_to_do"@fr ;
     dhc:designView "spatial" ;
     dhc:isInstantiated false .
 
+rec:BuildingElement rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated false .
+
 rec:Hospital rdfs:label "claude_to_do"@fr ;
     rdfs:comment "claude_to_do"@fr ;
     dhc:blocklyBlockTemplate "rec:Building" ;
@@ -225,6 +380,14 @@ rec:MeditationRoom rdfs:label "claude_to_do"@fr ;
     dhc:blocklyBlockTemplate "dhc_blockly_room_template" ;
     dhc:blocklyDisposition "block" ;
     dhc:designView "spatial" .
+
+rec:School rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "tertiary" ;
+    dhc:blocklyBlockTemplate "rec:Building" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
 
 rec:Space rdfs:label "claude_to_do"@fr ;
     rdfs:comment "claude_to_do"@fr ;
@@ -240,10 +403,27 @@ rec:SubBuilding rdfs:label "Nebengebäude"@de,
     dhc:defaultValue "0" ;
     dhc:designView "spatial" .
 
+rec:Wing rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "residential-pro" ;
+    dhc:blocklyBlockTemplate "rec:Wing" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "spatial" ;
+    dhc:isInstantiated true .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: building
 # ════════════════════════════════════════════════════════════
+
+dhc:Door rdfs:label "Tür"@de,
+        "Porte"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "rec:BuildingElement" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "building" ;
+    dhc:isInstantiated true .
 
 rec:Bedroom rdfs:label "Schlafzimmer"@de,
         "Chambre"@fr ;
@@ -254,8 +434,23 @@ rec:Bedroom rdfs:label "Schlafzimmer"@de,
 rec:Level rdfs:label "Stockwerk"@de,
         "Étage"@fr ;
     rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "rec:Level" ;
+    dhc:blocklyCategory "spatial" ;
     dhc:blocklyDisposition "block" ;
-    dhc:designView "building" .
+    dhc:defaultValue "0" ;
+    dhc:designView "building" ;
+    dhc:isInstantiated true .
+
+rec:Room rdfs:label "Raum"@de,
+        "Pièce"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "rec:Room" ;
+    dhc:blocklyCategory "spatial" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "building" ;
+    dhc:isInstantiated true .
 
 
 # ════════════════════════════════════════════════════════════
@@ -265,6 +460,170 @@ rec:Level rdfs:label "Stockwerk"@de,
 brick:Building_Disconnect_Switch rdfs:label "Agent de Coupure Générale de la Couronne (AGCP)"@fr ;
     rdfs:comment "Le sectionneur de bâtiment, généralement appelé « Agent de Coupure Générale de la Couronne » (AGCP) ou « disjoncteur d'abonné », est le principal dispositif de sécurité qui coupe l'alimentation électrique de l'ensemble d'un bâtiment."@fr ;
     dhc:blocklyDisposition "block" ;
+    dhc:designView "electrical" .
+
+brick:Inverter rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "brick:Inverter" ;
+    dhc:blocklyCategory "electrical" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "electrical" ;
+    dhc:isInstantiated true .
+
+brick:PV_Array rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "brick:PV_Array" ;
+    dhc:blocklyCategory "spatial" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "electrical" ;
+    dhc:isInstantiated true .
+
+brick:PV_Panel rdfs:label "Photovoltaikmodul"@de,
+        "Panneau photovoltaïque"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "brick:PV_Panel" ;
+    dhc:blocklyCategory "spatial" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "electrical" ;
+    dhc:isInstantiated true .
+
+dhc:BusBar rdfs:label "Sammelschiene"@de,
+        "Barre de distribution"@fr ;
+    dhc:designView "electrical" .
+
+dhc:Circuit rdfs:label "Stromkreis"@de,
+        "Circuit"@fr ;
+    dhc:blocklyDisposition "block" ;
+    dhc:blocklyParentProperty dhc:hasCircuit ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType rdfs:label "Stromkreistyp"@de,
+        "Type de circuit"@fr ;
+    dhc:blocklyDisposition "excluded" ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType_Cooking rdfs:label "Kochen"@de,
+        "Cuisson"@fr ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType_DedicatedAppliance rdfs:label "Spezialisiertes Gerät"@de,
+        "Appareil spécialisé"@fr ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType_FloorHeating rdfs:label "Fußbodenheizung"@de,
+        "Plancher chauffant"@fr ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType_Heating rdfs:label "Heizung"@de,
+        "Chauffage"@fr ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType_IRVE rdfs:label "Elektrofahrzeug-Ladung (IRVE)"@de,
+        "Recharge véhicule électrique (IRVE)"@fr ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType_Lighting rdfs:label "Beleuchtung"@de,
+        "Éclairage"@fr ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType_Socket rdfs:label "Steckdose"@de,
+        "Prise de courant"@fr ;
+    dhc:designView "electrical" .
+
+dhc:CircuitType_WaterHeater rdfs:label "Warmwasserbereiter"@de,
+        "Chauffe-eau"@fr ;
+    dhc:designView "electrical" .
+
+dhc:Distribution rdfs:label "Verteilung"@de,
+        "Distribution"@fr ;
+    dhc:designView "electrical" .
+
+dhc:DistributionBoard rdfs:label "Verteilerkasten"@de,
+        "Tableau électrique"@fr ;
+    dhc:designView "electrical" .
+
+dhc:ElectricalTechnicalSpace rdfs:label "Elektro-Technikraum"@de,
+        "Espace technique électrique"@fr ;
+    dhc:designView "electrical" .
+
+dhc:EmergencyDisconnect rdfs:label "Notabschaltung"@de,
+        "Appareil Général de Commande et de Protection (AGCP)"@fr,
+        "Coupure d'urgence"@fr ;
+    dhc:designView "electrical" .
+
+dhc:EnergyDelivery rdfs:label "Energieeinspeisung"@de,
+        "Livraison d'énergie"@fr ;
+    dhc:designView "electrical" .
+
+dhc:EnergyMeter rdfs:label "Stromzähler"@de,
+        "Compteur d'énergie"@fr ;
+    dhc:designView "electrical" .
+
+dhc:ProtectionDevice rdfs:label "Schutzeinrichtung"@de,
+        "Dispositif de protection"@fr ;
+    dhc:designView "electrical" .
+
+dhc:Socket rdfs:label "Steckdose"@de,
+        "Prise"@fr ;
+    dhc:designView "electrical" .
+
+dhc:WiringSegment rdfs:label "Leitungsabschnitt"@de,
+        "Segment de câblage"@fr ;
+    dhc:designView "electrical" .
+
+dhc:contractedPowerKVA rdfs:label "Vertragsleistung (kVA)"@de,
+        "puissance souscrite (kVA)"@fr ;
+    dhc:designView "electrical" .
+
+dhc:crossSection rdfs:label "Leiterquerschnitt (mm²)"@de,
+        "section (mm²)"@fr ;
+    dhc:designView "electrical" .
+
+dhc:currentType rdfs:label "Stromart"@de,
+        "type de courant"@fr ;
+    dhc:designView "electrical" .
+
+dhc:dedicated rdfs:label "dediziert"@de,
+        "dédié"@fr ;
+    dhc:designView "electrical" .
+
+dhc:energyProviderName rdfs:label "Energieversorger"@de,
+        "fournisseur d'énergie"@fr ;
+    dhc:designView "electrical" .
+
+dhc:feedsEquipment dhc:designView "electrical" .
+
+dhc:hasCircuitType dhc:designView "electrical" .
+
+dhc:hasProtection dhc:designView "electrical" .
+
+dhc:hasWiring dhc:designView "electrical" .
+
+dhc:maxPoints rdfs:label "max. Punkte pro Stromkreis"@de,
+        "points max. par circuit"@fr ;
+    dhc:designView "electrical" .
+
+dhc:neutralSystem rdfs:label "Erdungssystem"@de,
+        "régime de neutre"@fr ;
+    dhc:designView "electrical" .
+
+dhc:phase rdfs:label "Phase"@de,
+        "phase"@fr ;
+    dhc:designView "electrical" .
+
+dhc:ratedCurrent rdfs:label "Nennstrom (A)"@de,
+        "courant assigné (A)"@fr ;
+    dhc:designView "electrical" .
+
+dhc:routedThrough rdfs:label "geführt durch"@de,
+        "acheminé par"@fr ;
+    dhc:designView "electrical" .
+
+dhc:wiring rdfs:label "Verdrahtung"@de,
+        "câblage"@fr ;
     dhc:designView "electrical" .
 
 
@@ -277,6 +636,16 @@ brick:Building_Disconnect_Switch rdfs:label "Agent de Coupure Générale de la C
 # VIEW: heating
 # ════════════════════════════════════════════════════════════
 
+brick:Water_Heater rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "brick:Water_Heater" ;
+    dhc:blocklyCategory "electrical" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:blocklyParentProperty "n" ;
+    dhc:designView "heating" ;
+    dhc:isInstantiated true .
+
 
 # ════════════════════════════════════════════════════════════
 # VIEW: network
@@ -286,6 +655,39 @@ brick:Building_Disconnect_Switch rdfs:label "Agent de Coupure Générale de la C
 # ════════════════════════════════════════════════════════════
 # VIEW: automation
 # ════════════════════════════════════════════════════════════
+
+brick:Alarm rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "brick:Point" ;
+    dhc:blocklyCategory "spatial" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "automation" ;
+    dhc:isInstantiated true .
+
+brick:Point rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:designView "automation" ;
+    dhc:isInstantiated false .
+
+brick:Sensor rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "brick:Point" ;
+    dhc:blocklyCategory "spatial" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "automation" ;
+    dhc:isInstantiated true .
+
+brick:Setpoint rdfs:label "claude_to_do"@fr ;
+    rdfs:comment "claude_to_do"@fr ;
+    dhc:appMode "private" ;
+    dhc:blocklyBlockTemplate "brick:Point" ;
+    dhc:blocklyCategory "spatial" ;
+    dhc:blocklyDisposition "block" ;
+    dhc:designView "automation" ;
+    dhc:isInstantiated true .
 
 
 # ════════════════════════════════════════════════════════════
@@ -302,6 +704,10 @@ dhc:Norm_NFC14100 rdfs:label "NF C 14-100"@de,
 
 dhc:Norm_NFC15100 rdfs:label "NF C 15-100"@de,
         "NF C 15-100"@fr ;
+    dhc:designView "compliance" .
+
+dhc:governedBy rdfs:label "geregelt durch"@de,
+        "régi par"@fr ;
     dhc:designView "compliance" .
 
 dhc:normCategory rdfs:label "Norm-Kategorie"@de,

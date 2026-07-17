@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readTtl, parseToStore, validateAgainst } from '../_helpers/loadGraph.js';
 
 const shapesTtl = readTtl('schema/cbox/electrical/nfc14100.shapes.ttl');
-const tboxTtl = readTtl('schema/tbox/dhc-core.schema.ttl');
+const tboxTtl = readTtl('schema/tbox/dhc-core.ttl');
 const withTbox = (fixture) => tboxTtl + '\n' + fixture;
 
 describe('C-Box — nfc14100.shapes.ttl', () => {

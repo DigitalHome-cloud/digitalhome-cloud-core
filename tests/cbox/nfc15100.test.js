@@ -5,7 +5,7 @@ const SHACL = 'http://www.w3.org/ns/shacl#';
 const DHC = 'https://digitalhome.cloud/ontology#';
 
 const shapesTtl = readTtl('schema/cbox/electrical/nfc15100.shapes.ttl');
-const tboxTtl = readTtl('schema/tbox/dhc-core.schema.ttl');
+const tboxTtl = readTtl('schema/tbox/dhc-core.ttl');
 const withTbox = (fixture) => tboxTtl + '\n' + fixture;
 
 describe('C-Box — nfc15100.shapes.ttl', () => {
@@ -81,6 +81,59 @@ describe('C-Box — nfc15100.shapes.ttl', () => {
       const { conforms, results } = await validateAgainst(shapesTtl, withTbox(data));
       expect(conforms).toBe(false);
       expect(results.some(r => /CookingTriShape/.test(r.sourceShape || ''))).toBe(true);
+    });
+
+    // ── IRVE (EV charging) ────────────────────────────────────────────────
+    // These fixtures did not exist, which is exactly why IRVE32AMonoShape sat
+    // permanently dead: its guard compared an xsd:integer literal against an
+    // xsd:decimal property, so it could never fire and nothing ever noticed.
+
+    it('conforms for valid 32 A IRVE circuit', async () => {
+      const data = readTtl('tests/fixtures/valid-fr-irve-32a.ttl');
+      const { conforms, results } = await validateAgainst(shapesTtl, withTbox(data));
+      expect(conforms, JSON.stringify(results, null, 2)).toBe(true);
+    });
+
+    it('flags undersized wire on 32 A single-phase IRVE circuit', async () => {
+      const data = readTtl('tests/fixtures/invalid-fr-irve-32a-undersized.ttl');
+      const { conforms, results } = await validateAgainst(shapesTtl, withTbox(data));
+      expect(conforms).toBe(false);
+      expect(results.some(r => /IRVE32AMonoShape/.test(r.sourceShape || ''))).toBe(true);
+    });
+
+    // ── Residual-current protection ───────────────────────────────────────
+
+    it('conforms for an RCD-protected circuit', async () => {
+      const data = readTtl('tests/fixtures/valid-fr-rcd-protected-circuit.ttl');
+      const { conforms, results } = await validateAgainst(shapesTtl, withTbox(data));
+      expect(conforms, JSON.stringify(results, null, 2)).toBe(true);
+    });
+
+    // NB: RCDSensitivityShape and CircuitRCDProtectionShape are plain
+    // sh:property shapes, not sh:or guards. The validator therefore reports
+    // the inner *blank node* as sourceShape — but does surface sh:path and
+    // sh:message. That is the mirror image of the sh:or case (named
+    // sourceShape, no message). Assert on path here, on sourceShape there.
+
+    it('flags an RCD coarser than 30 mA', async () => {
+      const data = readTtl('tests/fixtures/invalid-fr-rcd-oversensitive.ttl');
+      const { conforms, results } = await validateAgainst(shapesTtl, withTbox(data));
+      expect(conforms).toBe(false);
+      expect(results.some(r => r.path === `${DHC}sensitivityMA`)).toBe(true);
+    });
+
+    it('flags a circuit with no residual current device', async () => {
+      const data = readTtl('tests/fixtures/invalid-fr-circuit-no-rcd.ttl');
+      const { conforms, results } = await validateAgainst(shapesTtl, withTbox(data));
+      expect(conforms).toBe(false);
+      expect(results.some(r => r.path === `${DHC}hasProtection`)).toBe(true);
+    });
+
+    it('flags a Type AC RCD on an IRVE circuit', async () => {
+      const data = readTtl('tests/fixtures/invalid-fr-irve-type-ac-rcd.ttl');
+      const { conforms, results } = await validateAgainst(shapesTtl, withTbox(data));
+      expect(conforms).toBe(false);
+      expect(results.some(r => /TypeARCDShape/.test(r.sourceShape || ''))).toBe(true);
     });
 
     it('conforms for multi-norm circuit (composability)', async () => {

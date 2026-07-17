@@ -2,17 +2,19 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
 
-ex:fr-lighting-1 a dhc:Circuit ;
+# Lighting circuit protected by a 30 mA Type AC RCD. Type AC is fine here —
+# only IRVE / induction loads demand Type A.
+ex:fr-rcd-ok-circuit a dhc:Circuit ;
   dhc:hasCircuitType dhc:CircuitType_Lighting ;
   dhc:governedBy     dhc:Norm_NFC15100 ;
-  dhc:maxPoints      "8"^^xsd:integer ;
+  dhc:maxPoints      "6"^^xsd:integer ;
   dhc:ratedCurrent   "10"^^xsd:decimal ;
   dhc:crossSection   "1.5"^^xsd:decimal ;
-  dhc:hasProtection  ex:fr-lighting-1-rcd .
+  dhc:hasProtection  ex:fr-rcd-ok-mcb, ex:fr-rcd-ok-rcd .
 
-# NF C 15-100 mandates 30 mA differential protection on final circuits. This
-# fixture originally omitted it — it was named "valid" but was not compliant;
-# nothing checked until nfc15100:CircuitRCDProtectionShape existed.
-ex:fr-lighting-1-rcd a dhc:RCD ;
+ex:fr-rcd-ok-mcb a dhc:ProtectionDevice ;
+  dhc:ratedCurrent "10"^^xsd:decimal .
+
+ex:fr-rcd-ok-rcd a dhc:RCD ;
   dhc:sensitivityMA "30"^^xsd:decimal ;
   dhc:rcdType       "AC" .
