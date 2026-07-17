@@ -136,10 +136,12 @@ for (const q of tbox.match(null, namedNode(`${DHC}designView`), null)) {
 // the latest is GRANDFATHERED — lawful as built, re-qualified the moment anyone
 // modifies it, which is the state most of a real building is in.
 //
-// The alternative, asserting dhc:builtUnder per element, was tried and removed:
-// it asks the modeller to know something they usually do not (a surveyed
-// installation rarely records its edition), and it cannot say WHAT the delta to
-// current is — only that there is one. Two shapes files can.
+// dhc:builtUnder does NOT decide this. An earlier design made it the verdict
+// source, which asked the modeller to know something a surveyed installation
+// rarely records. It is back on a narrower footing — optional EVIDENCE that
+// only refines what "fails the edition in force" means (grandfathered vs.
+// illegal-as-built vs. unknown). The computation above is what actually judges
+// compliance; see the state machine in buildOne().
 //
 //   dhc:editionOf     edition → its norm
 //   dhc:latestEdition norm    → the edition in force
@@ -536,6 +538,13 @@ async function buildOne(rel) {
 
     const bad = violatedEditions.get(n.id) ?? new Set();
 
+    // dhc:builtUnder is EVIDENCE, not a verdict. It only refines what "fails the
+    // edition in force" means: with it, the failure is checkable (did the thing
+    // pass the edition it claims to have been built to?); without it — the
+    // normal case for a reverse-engineered installation — grandfathering cannot
+    // be asserted, only suspected, and the node is ghosted to say so.
+    const builtUnder = [...abox.match(namedNode(n.id), namedNode(`${DHC}builtUnder`), null)].map((q) => q.object.value);
+
     // THE FLOOR, and it is unconditional. If a shape rejected this node, it is
     // 'danger' — full stop, before any reasoning about which norm or edition
     // applies. The previous state machine had exactly this as its first branch;
@@ -574,20 +583,53 @@ async function buildOne(rel) {
       const oldest = rs[0], newest = rs[rs.length - 1];
       const assessable = !!latest && latest === newest.edition;
 
-      let state, why;
+      // The editions of THIS norm the node claims, split by whether we actually
+      // hold shapes for them. A claim we cannot validate is not evidence.
+      const claimed = builtUnder.filter((b) => editionOf.get(b) === norm);
+      const claimedCheckable = claimed.filter((b) => shapesFileOf.has(b));
+
+      let state, why, ghost = !assessable;
       if (bad.has(oldest.edition)) {
+        // Fails the oldest edition we hold — never lawful under anything we can
+        // check. builtUnder cannot rescue this; it can only sharpen the story.
         state = 'danger';
-        why = `rejected under ${curie(oldest.edition)}, the oldest edition we can check — it was never compliant`;
+        why = claimedCheckable.some((b) => bad.has(b))
+          ? `fails ${curie(oldest.edition)}, the oldest edition we hold — including ${claimedCheckable.filter((b) => bad.has(b)).map(curie).join(', ')}, the very edition it claims to have been built under. Never lawful, even as built.`
+          : `rejected under ${curie(oldest.edition)}, the oldest edition we can check — it was never compliant`;
       } else if (bad.has(newest.edition)) {
-        state = 'gap';
-        why = `passes ${curie(oldest.edition)} but fails ${curie(newest.edition)} — lawful as built; modifying or extending it triggers the current edition`;
+        // Passes an older edition, fails the one in force. What that MEANS
+        // depends entirely on the evidence.
+        if (claimedCheckable.some((b) => bad.has(b))) {
+          // It fails an edition it claims to have been built under → the claim
+          // is false. Not grandfathered — illegal as built. This is the state
+          // builtUnder exists to expose, and it was invisible before.
+          state = 'danger';
+          why = `declares dhc:builtUnder ${claimedCheckable.filter((b) => bad.has(b)).map(curie).join(', ')} but fails those very rules — illegal as built, not grandfathered`;
+        } else if (claimedCheckable.length) {
+          // Passes every declared edition we can check, fails only a later one
+          // → genuinely grandfathered. KNOWN, so solid, not ghosted.
+          state = 'gap'; ghost = false;
+          why = `built under ${claimedCheckable.map(curie).join(', ')}, passes it, fails ${curie(newest.edition)} — grandfathered: lawful as built, re-qualified the moment it is modified`;
+        } else if (claimed.length) {
+          // Declares an edition we hold no shapes for → the claim is
+          // unverifiable. Suspected grandfathered, not proven.
+          state = 'gap'; ghost = true;
+          why = `fails ${curie(newest.edition)}; declares dhc:builtUnder ${claimed.map(curie).join(', ')} but we hold no shapes for that edition, so the grandfathering claim cannot be checked`;
+        } else {
+          // No evidence at all — the normal reverse-engineered case. Fails
+          // current; whether it predates the tightening is simply unrecorded.
+          // Must NOT read as "don't worry, grandfathered": a brand-new
+          // undersized install produces this exact verdict.
+          state = 'gap'; ghost = true;
+          why = `fails ${curie(newest.edition)}, the edition in force, but passes ${curie(oldest.edition)}; no dhc:builtUnder, so whether it was lawful WHEN BUILT is unrecorded — grandfathered and newly-illegal look identical here`;
+        }
       } else {
         state = 'ok';
         why = assessable
           ? `passes ${curie(newest.edition)}, the edition in force`
           : `passes ${curie(newest.edition)}, but that is not ${latest ? curie(latest) : 'the edition in force'} — no shapes exist for the current edition, so this is unproven against it`;
       }
-      per.push({ norm, state, why, assessable });
+      per.push({ norm, state, why, assessable, ghost });
     }
 
     const verdicts = per.filter((p) => p.state);
@@ -604,9 +646,12 @@ async function buildOne(rel) {
     // clean under one does not excuse the other.
     verdicts.sort((a, b) => RANK[b.state] - RANK[a.state]);
     n.compliance = verdicts[0].state;
-    // Ghosted if ANY norm in play leaves us unable to speak to the edition in
-    // force — including one that merely claims jurisdiction.
-    n.ghosted = per.some((p) => !p.assessable);
+    // Ghosted if ANY reason in play leaves us unable to stand behind the
+    // colour: no shapes for the edition in force (assessable=false), a norm
+    // that merely claims jurisdiction, OR a gap we cannot confirm is
+    // grandfathered rather than newly-illegal (the per-verdict ghost flag). A
+    // KNOWN grandfathered node — builtUnder present and verified — is solid.
+    n.ghosted = per.some((p) => p.ghost || (p.state === null && !p.assessable));
     n.complianceWhy = per.map((p) => `${curie(p.norm)}: ${p.why}`).join('; ');
   }
 

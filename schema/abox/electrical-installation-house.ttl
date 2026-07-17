@@ -397,17 +397,22 @@ ex:circuit-wm a dhc:Circuit ;
     dhc:hasWiring      ex:wire-wm-L, ex:wire-wm-N, ex:wire-wm-PE ;
     s223:hasMember     ex:brk-wm, ex:washing-machine .
 
-# ★ THE GRANDFATHERING CASE. 10 mm² satisfies NF C 15-100:2015
-# (nfc15100:IRVE32AMonoShape, ≥ 10) and fails :2024
-# (nfc15100-2024:IRVE32AMono2024Shape, ≥ 16). Nothing here declares an edition
-# — the state is COMPUTED by validating against both editions' shapes. So this
-# circuit shows yellow: lawful as built, re-qualified the moment anyone extends
-# it. That is the single most common state a real installation is in, and it is
-# the one the viewer exists to make visible.
+# ★ THE GRANDFATHERING CASE, and now a KNOWN one. 10 mm² satisfies NF C
+# 15-100:2015 (nfc15100:IRVE32AMonoShape, ≥ 10) and fails :2024
+# (nfc15100-2024:IRVE32AMono2024Shape, ≥ 16). The verdict is COMPUTED by
+# validating against both editions; dhc:builtUnder is EVIDENCE that turns "fails
+# the current edition" into "lawful as built": this circuit was installed with
+# the villa, to the 2015 rules, and passes them. So it shows SOLID yellow —
+# grandfathered, re-qualified the moment anyone extends it — not the ghosted
+# yellow of a circuit whose build date we do not know. That distinction is the
+# whole reason builtUnder is optional evidence rather than a hard requirement:
+# drop the builtUnder line and this same circuit goes ghosted, because then we
+# genuinely cannot tell it from a brand-new undersized install.
 ex:circuit-ev a dhc:Circuit ;
-    rdfs:label "EV charger — garage (IRVE, compliant under 2015)" ;
+    rdfs:label "EV charger — garage (IRVE, built to 2015, grandfathered)" ;
     dhc:hasCircuitType dhc:CircuitType_IRVE ;
     dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:builtUnder     dhc:NormEdition_NFC15100_2015 ;
     dhc:maxPoints      "1"^^xsd:integer ;
     dhc:ratedCurrent   "32"^^xsd:decimal ;
     dhc:crossSection   "10.0"^^xsd:decimal ;

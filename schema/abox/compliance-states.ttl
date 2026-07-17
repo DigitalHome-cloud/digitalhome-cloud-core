@@ -1,0 +1,96 @@
+@prefix dhc:  <https://digitalhome.cloud/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:   <http://example.org/compliance-states/> .
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Compliance states — the smallest model that exercises all of them
+#
+#  A teaching example (schema/abox/ convention: one concept, end to end). Five
+#  IRVE circuits that differ ONLY in cross-section and dhc:builtUnder, so the
+#  state each lands in is attributable to exactly one thing. Compliance is
+#  COMPUTED by build-abox.mjs validating against NF C 15-100:2015 (IRVE 32 A
+#  needs ≥ 10 mm²) and :2024 (⚠ illustrative delta: ≥ 16 mm²); dhc:builtUnder is
+#  optional EVIDENCE that only refines what "fails the edition in force" means.
+#
+#  What each proves — and no two share a colour+opacity by accident:
+#
+#    ok        16 mm², passes the edition in force. builtUnder irrelevant.
+#    gap solid 10 mm², builtUnder 2015 — passes what it claims, fails current.
+#              KNOWN grandfathered. The state the whole mechanism exists for.
+#    gap ghost 10 mm², NO builtUnder — fails current, passes older, but whether
+#              it predates the tightening is unrecorded. Grandfathered and
+#              newly-illegal are indistinguishable here, so it is not asserted.
+#    danger    10 mm², builtUnder 2024 — fails the very edition it claims. The
+#     (illegal) claim is false: illegal as built, NOT grandfathered. Invisible
+#              until builtUnder made the claim checkable.
+#    danger    1.5 mm², fails even 2015, the oldest edition we hold. Never
+#     (never)  compliant under anything. The classic deliberate defect.
+#
+#  ┌─ THIS FILE DOES NOT CONFORM, BY DESIGN ────────────────────────────────┐
+#  │ Two circuits are danger. conforms = "no node is danger", so this file   │
+#  │ reports conforms:false, and that is the point — remove the two danger   │
+#  │ circuits and it must flip to true. The gap circuits never count against │
+#  │ conformance: grandfathered and unknown-but-lawful-so-far are not faults.│
+#  └─────────────────────────────────────────────────────────────────────────┘
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ok — meets the edition in force outright.
+ex:ev-current a dhc:Circuit ;
+    rdfs:label "IRVE, 16 mm² — meets 2024" ;
+    dhc:hasCircuitType dhc:CircuitType_IRVE ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:ratedCurrent   "32"^^xsd:decimal ;
+    dhc:crossSection   "16.0"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:hasProtection  ex:rcbo-a .
+
+# gap, SOLID — built to 2015, passes it, superseded by 2024. Known lawful.
+ex:ev-grandfathered a dhc:Circuit ;
+    rdfs:label "IRVE, 10 mm², built 2015 — grandfathered" ;
+    dhc:hasCircuitType dhc:CircuitType_IRVE ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:builtUnder     dhc:NormEdition_NFC15100_2015 ;
+    dhc:ratedCurrent   "32"^^xsd:decimal ;
+    dhc:crossSection   "10.0"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:hasProtection  ex:rcbo-a .
+
+# gap, GHOSTED — same wire, no evidence of when it was built.
+ex:ev-unknown a dhc:Circuit ;
+    rdfs:label "IRVE, 10 mm², build date unknown" ;
+    dhc:hasCircuitType dhc:CircuitType_IRVE ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:ratedCurrent   "32"^^xsd:decimal ;
+    dhc:crossSection   "10.0"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:hasProtection  ex:rcbo-a .
+
+# danger — claims 2024, fails 2024. Illegal as built.
+ex:ev-illegal a dhc:Circuit ;
+    rdfs:label "IRVE, 10 mm², claims built 2024 — illegal as built" ;
+    dhc:hasCircuitType dhc:CircuitType_IRVE ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:builtUnder     dhc:NormEdition_NFC15100_2024 ;
+    dhc:ratedCurrent   "32"^^xsd:decimal ;
+    dhc:crossSection   "10.0"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:hasProtection  ex:rcbo-a .
+
+# danger — fails even the oldest edition we hold. Never compliant.
+ex:ev-never a dhc:Circuit ;
+    rdfs:label "IRVE, 1.5 mm² — fails even 2015" ;
+    dhc:hasCircuitType dhc:CircuitType_IRVE ;
+    dhc:governedBy     dhc:Norm_NFC15100 ;
+    dhc:ratedCurrent   "32"^^xsd:decimal ;
+    dhc:crossSection   "1.5"^^xsd:decimal ;
+    dhc:phase          "1"^^xsd:integer ;
+    dhc:hasProtection  ex:rcbo-a .
+
+# One shared 30 mA Type A RCBO keeps every circuit clear of the RCD rules, so
+# cross-section is the only thing any IRVE shape reacts to.
+ex:rcbo-a a dhc:RCBO ;
+    rdfs:label "30 mA Type A RCBO" ;
+    dhc:sensitivityMA "30"^^xsd:decimal ;
+    dhc:rcdType       "A" ;
+    dhc:ratedCurrent  "32"^^xsd:decimal .

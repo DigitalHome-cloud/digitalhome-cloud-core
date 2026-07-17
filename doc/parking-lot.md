@@ -99,9 +99,12 @@ area) need spatial data the model does not yet carry.
 
 **Resolved for NF C 15-100.** `nfc15100-2024.shapes.ttl` now exists,
 `dhc:NormEdition_NFC15100_2024` declares it, and compliance is computed by
-validating against each edition and comparing verdicts rather than by asserting
-`dhc:builtUnder` per element (that property is purged). Green now means "passes
-the edition in force". `ex:circuit-ev` is the worked grandfathering case.
+validating against each edition and comparing verdicts. Green means "passes the
+edition in force". `dhc:builtUnder` was purged as a verdict source and re-added
+as optional *evidence*: it separates a confirmed-grandfathered `gap` (solid)
+from an illegal-as-built `danger` and from an unconfirmed `gap` (ghosted) — see
+`js-tools/README.md` § gap, and the worked `schema/abox/compliance-states.ttl`.
+`ex:circuit-ev` is the grandfathering case, now with its 2015 evidence.
 
 **But the 2024 rules are ILLUSTRATIVE.** Nobody has read the published NF C
 15-100:2024 text. Two plausible stand-ins are encoded — an IRVE cross-section

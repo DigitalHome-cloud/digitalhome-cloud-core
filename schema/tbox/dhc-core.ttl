@@ -179,6 +179,11 @@ dhc:assignmentStatus a owl:DatatypeProperty ;
     rdfs:domain dhc:RoleAssignment ;
     rdfs:range xsd:string .
 
+dhc:builtUnder a owl:ObjectProperty ;
+    rdfs:label "built under"@en ;
+    rdfs:comment "Optional evidence: the dhc:NormEdition an A-Box entity's work was designed and carried out under. It does NOT decide compliance — that is computed by validating against each edition's C-Box shapes. It disambiguates ONE result: a node that fails the edition in force. With builtUnder present, that failure is checkable — if the node also fails the very edition it claims to have been built under, it was never lawful even as built (illegal as built, not grandfathered); if it passes its declared edition and only fails a later one, it is genuinely grandfathered. With builtUnder absent — the normal case when reverse-engineering an existing installation — the tool cannot tell grandfathered from newly-illegal, and must say so rather than assume the charitable reading. Deliberately has no rdfs:domain, like dhc:governedBy: it applies to Circuit, EnergyMeter, EnergyDelivery, DistributionBoard and ElectricalTechnicalSpace, which share no common ancestor. Range is dhc:NormEdition."@en ;
+    rdfs:range dhc:NormEdition .
+
 dhc:editionEffectiveDate a owl:DatatypeProperty ;
     rdfs:label "effective date"@en ;
     rdfs:comment "Date from which this edition is enforceable for new installations."@en ;

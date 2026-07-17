@@ -224,12 +224,26 @@ Consequences to remember when writing tests:
 Compliance is **computed, never declared**. `js-tools/build-abox.mjs` validates
 an A-Box against every edition that has shapes and compares the verdicts:
 passing the edition in force is compliant, passing an older one and failing the
-current is **grandfathered** — lawful as built, re-qualified the moment anyone
-modifies it, which is the state most of a real building is in. There is no
-`dhc:builtUnder`; it existed briefly and was purged.
+current means it fails today but passed when the older edition applied.
 
-Four T-Box properties carry this, and all four fail silently when broken —
-`tests/tbox/norm-editions.test.js` guards each:
+Whether that last case is **grandfathered** (lawful as built) or **illegal as
+built** depends on when the work was actually done — a fact the rule-verdicts
+cannot supply. `dhc:builtUnder` carries it, as **optional evidence**, not a
+verdict source:
+
+| `dhc:builtUnder` | fails the edition in force, passes an older one → |
+|---|---|
+| present, and the node **passes** the edition it names | 🟡 **gap**, solid — genuinely grandfathered |
+| present, and the node **fails** the edition it names | 🔴 **danger** — illegal as built; the claim is false |
+| absent (the normal reverse-engineered case) | 🟡 **gap**, **ghosted** — grandfathered and newly-illegal are indistinguishable, so neither is asserted |
+
+An earlier design made `builtUnder` the verdict source and was reverted — it
+demanded knowledge a survey rarely has. As evidence it is finally checkable:
+nothing before ever verified that a thing *declaring* "built to 2015" actually
+passed 2015.
+
+Four more T-Box properties carry the computation, and all fail silently when
+broken — `tests/tbox/norm-editions.test.js` guards each:
 
 | | |
 |---|---|

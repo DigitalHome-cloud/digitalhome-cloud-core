@@ -192,12 +192,16 @@ describe('the reference A-Box exercises every compliance state', () => {
     expect(t.danger, 'nothing fails — the deliberate defect stopped being reported').toBeGreaterThan(0);
   });
 
-  it('ex:circuit-ev is the grandfathering case: passes 2015, fails 2024', () => {
+  it('ex:circuit-ev is the KNOWN grandfathering case: gap, and solid', () => {
     // The single most important node in the model. 10 mm² satisfies :2015 and
-    // fails :2024. If this ever goes green, the 2024 delta is a no-op.
+    // fails :2024. If this ever goes green, the 2024 delta is a no-op — and if
+    // it goes ghosted, its dhc:builtUnder evidence stopped being read, so the
+    // tool can no longer tell a documented grandfathered circuit from one whose
+    // history is unknown.
     const n = built.nodes.find((x) => x.curie === 'ex:circuit-ev');
     expect(n, 'ex:circuit-ev missing from the built graph').toBeTruthy();
-    expect(n.compliance, `ex:circuit-ev should be grandfathered, got "${n?.compliance}" — the 2024 delta is not firing`).toBe('gap');
+    expect(n.compliance, `should be grandfathered, got "${n?.compliance}" — the 2024 delta is not firing`).toBe('gap');
+    expect(n.ghosted, 'it declares dhc:builtUnder 2015 and passes it, so grandfathering is KNOWN — it must be solid, not ghosted').toBe(false);
   });
 
   it('ex:circuit-ev-legacy still fails the OLDEST edition', () => {
@@ -206,5 +210,51 @@ describe('the reference A-Box exercises every compliance state', () => {
     // the opposite of what the file exists to demonstrate.
     const n = built.nodes.find((x) => x.curie === 'ex:circuit-ev-legacy');
     expect(n?.compliance, 'the deliberate defect is no longer reported as never-compliant').toBe('danger');
+  });
+});
+
+describe('compliance-states.ttl — every state, one knob apart', () => {
+  // The state machine's builtUnder logic is where the F1 design decision lives,
+  // and it is the highest-risk code in the tool. This example isolates it: five
+  // IRVE circuits differing only in cross-section and dhc:builtUnder. Asserted
+  // against the built graph, so it tests what the viewer shows.
+  const full = path.join(repoRoot, 'js-tools/data/compliance-states.graph.json');
+  const built = fs.existsSync(full) ? JSON.parse(fs.readFileSync(full, 'utf8')) : null;
+  const stateOf = (curie) => {
+    const n = built?.nodes.find((x) => x.curie === curie);
+    return n ? `${n.compliance}/${n.ghosted ? 'ghost' : 'solid'}` : '(missing)';
+  };
+
+  it('the built graph exists — run `npm run build:abox` first', () => {
+    expect(built, 'js-tools/data/compliance-states.graph.json is missing; run: npm run build:abox').toBeTruthy();
+  });
+
+  // Each case names the fact that produces it, so a regression points at a cause.
+  it('ok — meets the edition in force (16 mm²)', () => {
+    expect(stateOf('ex:ev-current')).toBe('ok/solid');
+  });
+  it('gap SOLID — builtUnder 2015, passes it, fails 2024: KNOWN grandfathered', () => {
+    expect(stateOf('ex:ev-grandfathered')).toBe('gap/solid');
+  });
+  it('gap GHOSTED — same wire, no builtUnder: cannot tell grandfathered from newly-illegal', () => {
+    // The heart of the F1 decision. If this ever reads solid, the tool is
+    // asserting a lawfulness it cannot compute.
+    expect(stateOf('ex:ev-unknown')).toBe('gap/ghost');
+  });
+  it('danger — builtUnder 2024, fails 2024: illegal as built, not grandfathered', () => {
+    // Differs from ex:ev-grandfathered by ONE triple (the claimed edition).
+    // Same cross-section; the evidence is the whole difference. This state was
+    // invisible while compliance was declared rather than checked.
+    expect(stateOf('ex:ev-illegal')).toBe('danger/solid');
+  });
+  it('danger — 1.5 mm², fails even the oldest edition: never compliant', () => {
+    expect(stateOf('ex:ev-never')).toBe('danger/solid');
+  });
+
+  it('conforms is false (two danger), and the gaps do not count against it', () => {
+    const r = JSON.parse(fs.readFileSync(path.join(repoRoot, 'js-tools/data/compliance-states.report.json'), 'utf8'));
+    expect(r.conforms, 'two circuits are danger — this must not conform').toBe(false);
+    expect(built.tally.danger).toBe(2);
+    expect(built.tally.gap).toBe(2);
   });
 });

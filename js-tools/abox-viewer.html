@@ -383,22 +383,21 @@
         else log(`⚠ ${e.norm}: shapes for ${e.implements.join(' → ')}, but ${e.latest ?? '(none)'} is in force and has no shapes — nothing under this norm can be proven current. Those nodes are ghosted: our gap, not the building's.`, 'warn');
       }
 
-      // "conforms" is the verdict against the edition IN FORCE only. Violations
-      // under a superseded edition are not non-compliance — they are the
-      // grandfathering signal, and rolling both into one count says the demo
-      // house has "4 violations" when it has one real defect and one lawful
-      // legacy circuit. So the badge counts the grandfathered separately.
+      // conforms = "no node is danger". A grandfathered circuit fails the
+      // edition in force too, but that is lawful, not a defect — so the list
+      // here is the DANGER nodes, not everything that fails the latest edition.
+      // Rolling the two together is the conflation this whole model exists to
+      // undo; the badge keeps them apart.
       const gapCount = g.tally.gap ?? 0;
       if (r.conforms) {
-        log('⚠ conforms: true — nothing fails the edition in force. If this A-Box carries a deliberate defect, the chain is DEAD.', 'warn');
+        log('⚠ conforms: true — no node is in danger. If this A-Box carries a deliberate defect, the chain is DEAD.', 'warn');
         setStatus('conforms', 'ok');
       } else {
-        log('✗ conforms: false — against the edition in force:', 'warn');
-        for (const x of r.results) {
-          const superseded = !(r.editions ?? []).find((e) => e.edition === x.edition)?.isLatest;
-          if (superseded) continue;   // already listed per-edition above
-          log(`    ${x.focusCurie ?? '?'}  ${x.shape ?? x.path ?? ''}  ${x.message ?? ''}`, 'err');
+        log(`✗ conforms: false — ${g.tally.danger} node(s) in danger (fails even the oldest edition, or fails the edition it claims):`, 'warn');
+        for (const n of g.nodes.filter((n) => n.compliance === 'danger')) {
+          log(`    ${n.curie}  ${n.complianceWhy ?? ''}`, 'err');
         }
+        if (gapCount) log(`  (${gapCount} node(s) fail the edition in force but are grandfathered — lawful, not counted against conformance)`, 'info');
         setStatus(`${g.tally.danger} fail · ${gapCount} grandfathered`, 'warn');
       }
 

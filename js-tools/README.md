@@ -73,40 +73,57 @@ edition requires, and the state falls out of the difference.
 | colour | Meaning |
 |---|---|
 | 🟢 **ok** | passes the newest edition we hold rules for |
-| 🟡 **gap** | passes an older edition, **fails the current one** — lawful as built; changing it triggers the current one |
-| 🔴 **danger** | fails even the **oldest** edition we hold — it was never compliant |
+| 🟡 **gap** | passes an older edition, **fails the current one** — fails today but passed when the older edition applied |
+| 🔴 **danger** | fails even the **oldest** edition we hold, **or** fails the very edition it claims (`dhc:builtUnder`) to have been built to |
 | ⬜ **unchecked** | no shape in any edition targets its class — nothing ever looked at it |
 
 | opacity | Meaning |
 |---|---|
-| solid | we hold rules for the edition in force, so the colour means what it says |
-| **ghosted** | we **cannot speak to the edition in force** — either nothing targets this class, or its norm's current edition has no shapes |
+| solid | the colour means what it says — we hold rules for the edition in force, or a `gap` is confirmed grandfathered by evidence |
+| **ghosted** | the colour is provisional — we cannot speak to the edition in force (nothing targets this class, or its current edition has no shapes), **or** a `gap` whose grandfathering we cannot confirm |
 
-Demo house: **11 ok · 1 gap · 1 danger · 67 unchecked**, of which **71 ghosted**
-(80 nodes).
+Demo house: **11 ok · 1 gap · 1 danger · 72 unchecked**, most ghosted (85 nodes).
+The focused `compliance-states.ttl` shows all states side by side.
 
-**Colour and opacity are separate on purpose.** Colour is the verdict against
-the best edition we hold. Opacity is whether we hold the right one. Those are
-different claims — "the rule says no" versus "we have no rule" — and this viewer
-conflated them once already, burying the one actionable state under a field of
-things nobody had checked. A node can be **green and ghosted**: the NF C 14-100
-nodes pass the 2008 rules we hold while 2021 is in force and unimplemented.
-"Passes what we checked" and "we checked the right thing" are two facts, so they
-get two channels.
+**Colour and opacity are separate on purpose.** Colour is the rule-verdict.
+Opacity is our confidence that the colour means what it says. Different claims —
+"the rule says no" versus "we cannot stand behind this" — and this viewer
+conflated them once, burying the actionable state under a field of things nobody
+had checked. A node can be **green and ghosted** (NF C 14-100 nodes pass the 2008
+rules we hold while 2021 is in force and unimplemented) or **yellow and ghosted**
+(below).
 
-**Yellow is the state most of a real building is in, and it is the useful one.**
-A pool wired to an old NF C 15-100 is legal and stays legal — until you add a
-circuit, at which point the current edition applies to the work. Same for a
-Brussels house under an old RGIE the moment you add PV. Not non-compliance, not
-ignorance: a known, dated delta, and exactly what an owner needs to see *before*
-commissioning work. `ex:circuit-ev` is the worked example — 10 mm² satisfies
-`nfc15100:IRVE32AMonoShape` (≥ 10) and fails `nfc15100-2024:IRVE32AMono2024Shape`
-(≥ 16), so it is yellow without anything in the A-Box saying so.
+### `gap` (yellow) — and why `dhc:builtUnder` is the difference between two of them
 
-An earlier cut asked the A-Box to declare `dhc:builtUnder <edition>` per element
-instead. It was removed: it asks the modeller for something they usually do not
-know (a surveyed installation rarely records its edition), and it can only say
-*that* there is a delta to current, never *what* it is. Two shapes files can.
+Yellow is the state most of a real building is in. A pool wired to an old
+NF C 15-100 is legal and stays legal — until you add a circuit, at which point
+the current edition applies to the work. Same for a Brussels house under an old
+RGIE the moment you add PV. Not non-compliance: a known, dated delta, exactly
+what an owner needs to see *before* commissioning work.
+
+But "fails the current edition, passed an older one" is not automatically
+grandfathered. A circuit installed **last week** in 10 mm² produces the identical
+rule-verdict as a 2015 pool — and it is an illegal new install, not a lawful old
+one. The rules cannot tell them apart; only *when it was built* can, and that is
+what `dhc:builtUnder` optionally supplies:
+
+| `dhc:builtUnder` present? | then a "fails-current" node is… |
+|---|---|
+| passes the edition it names | 🟡 solid — **grandfathered**, lawful as built. `ex:circuit-ev` (built 2015, passes 2015, fails 2024). |
+| **fails** the edition it names | 🔴 **illegal as built** — the claim is false. `compliance-states.ttl`'s `ex:ev-illegal` (claims 2024, fails 2024). |
+| absent (the normal survey case) | 🟡 **ghosted** — grandfathered and newly-illegal are indistinguishable, so neither is asserted. |
+
+`dhc:builtUnder` is **optional evidence, never a verdict source.** An earlier
+design made it the verdict and was reverted — it demanded a build edition a
+survey rarely records. As evidence it is finally *checkable*: nothing before
+verified that a thing declaring "built to 2015" actually passed 2015. Add it only
+when the edition is genuinely known (a designed home); leave it off a
+reverse-engineered one and accept the honest ghosted yellow.
+
+**Transparent (unchecked) is the C-Box's problem, not the building's.** No shape
+targets those classes, so nothing checked them. SHACL reports only failures, so
+an unchecked node is silent for the same reason a *conforming* one is. Colouring
+it green would be the vacuous-green mistake in `doc/prototyping-poc.md`.
 
 **Transparent is the C-Box's problem, not the building's.** No shape targets
 those classes, so nothing checked them. SHACL reports only failures, which makes
