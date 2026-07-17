@@ -267,10 +267,26 @@ edition is checked, and the two mean opposite things:
 
 | Against | Expected | Because |
 |---|---|---|
-| **:2015** (superseded) | exactly **1** — `ex:circuit-ev-legacy` / `nfc15100:IRVE32AMonoShape` | the deliberate defect. **If this ever conforms the chain is broken — do not "fix" it by correcting the cross-section.** |
+| **:2015** (superseded) | exactly **1** — `ex:circuit-ev-legacy` / `nfc15100:IRVE32AMonoShape` | the deliberate defect. **If this stops being reported the chain is broken — do not "fix" it by correcting the cross-section.** |
 | **:2024** (in force) | **`ex:circuit-ev` must be reported** | otherwise the delta is a no-op, yellow never appears, and the whole edition mechanism reports success while proving nothing |
 
-`tests/tbox/norm-editions.test.js` asserts both against the built graph, plus
-that the model exercises `ok` **and** `gap` **and** `danger`. To check the delta
-by hand: raise `ex:circuit-ev`'s `dhc:crossSection` to `16.0` and rebuild — it
-must turn **green**. If it stays yellow, the 2024 shapes are not firing.
+**`conforms` means "no node is `danger`"** — not SHACL's per-run boolean. That
+distinction is load-bearing in both directions. OR-ing the runs together could
+never be falsified by NF C 14-100 (its edition in force has no shapes, so no
+14-100 run is ever the latest one, so a failing meter still left `conforms:
+true`), and it *was* falsified by `ex:circuit-ev` — which fails :2024 **by
+design**, being grandfathered. That welded `conforms` to false and killed the
+"if this file ever conforms, the chain is broken" tripwire: it could no longer
+conform for the right reason. An alarm that cannot stop ringing is not an alarm.
+
+`tests/tbox/norm-editions.test.js` asserts both rows against the built graph,
+plus that the model exercises `ok` **and** `gap` **and** `danger`. Those tests
+used to be written with `it.runIf(built)` — and since `js-tools/data/` is
+gitignored and `npm test` did not build it, they **silently skipped** on a fresh
+clone. The guards against vacuous success were themselves vacuous. `npm test`
+now runs `build:abox` first and the tests fail loudly if the artifact is missing
+or older than the A-Box.
+
+To check the delta by hand: raise `ex:circuit-ev`'s `dhc:crossSection` to `16.0`
+and rebuild — it must turn **green**. If it stays yellow, the 2024 shapes are
+not firing.

@@ -145,14 +145,31 @@ for (const q of tbox.match(null, namedNode(`${DHC}designView`), null)) {
 //   dhc:latestEdition norm    → the edition in force
 //   dhc:supersedes    edition → the one it replaces  (the upgrade path)
 //   dhc:shapesFile    edition → the shapes implementing it
-const editionOf     = new Map();  // edition → norm
-const latestEdition = new Map();  // norm    → edition
-const supersedes    = new Map();  // edition → the edition it replaces
-const shapesFileOf  = new Map();  // edition → relative path under schema/
-for (const q of tbox.match(null, namedNode(`${DHC}editionOf`), null))     editionOf.set(q.subject.value, q.object.value);
-for (const q of tbox.match(null, namedNode(`${DHC}latestEdition`), null)) latestEdition.set(q.subject.value, q.object.value);
-for (const q of tbox.match(null, namedNode(`${DHC}supersedes`), null))    supersedes.set(q.subject.value, q.object.value);
-for (const q of tbox.match(null, namedNode(`${DHC}shapesFile`), null))    shapesFileOf.set(q.subject.value, q.object.value);
+// Each of these is functional — one norm has one edition in force, one edition
+// has one predecessor and one shapes file. RDF does not know that. A second
+// triple would make Map.set silently keep the LAST one, and the consequences
+// are all invisible: a duplicate dhc:shapesFile means one of the two files
+// never runs; a duplicate dhc:supersedes drops a branch of the chain out of
+// effectiveShapes, so an edition quietly enforces fewer rules and more nodes
+// pass. Fail on the ambiguity rather than pick.
+const single = (pred, label) => {
+  const m = new Map();
+  const dupes = [];
+  for (const q of tbox.match(null, namedNode(`${DHC}${pred}`), null)) {
+    if (m.has(q.subject.value)) dupes.push(`${curie(q.subject.value)} → ${curie(m.get(q.subject.value))} AND ${curie(q.object.value)}`);
+    m.set(q.subject.value, q.object.value);
+  }
+  if (dupes.length) {
+    console.error(`✗ dhc:${pred} is not functional in the T-Box — ${label}:`);
+    for (const d of dupes) console.error(`    ${d}`);
+    process.exit(2);
+  }
+  return m;
+};
+const editionOf     = single('editionOf', 'an edition belonging to two norms cannot be compared to either');
+const latestEdition = single('latestEdition', 'a norm with two editions in force has none');
+const supersedes    = single('supersedes', 'a dropped branch means an edition enforces fewer rules and more nodes pass');
+const shapesFileOf  = single('shapesFile', 'one of the two files would never run, and SHACL is silent about shapes that never ran');
 
 if (latestEdition.size === 0) {
   // Every governed node would silently fall back to "edition undeclared". The
@@ -236,7 +253,16 @@ function effectiveShapes(edition) {
 // One run per edition that implements shapes, ordered oldest → newest so that
 // "violates the oldest we hold" (never was compliant) can be told apart from
 // "violates only the newest" (grandfathered).
-const chainDepth = (e) => { let d = 0; for (let c = e; supersedes.get(c); c = supersedes.get(c)) d++; return d; };
+// The `seen` guard is not decoration. effectiveShapes() has one; without the
+// same here a dhc:supersedes cycle spins forever with no output — and the T-Box
+// test only rejects self-supersession (A → A), so a two-edition cycle
+// (A → B → A) passes every test and hangs the build.
+const chainDepth = (e) => {
+  const seen = new Set();
+  let d = 0;
+  for (let c = e; c && supersedes.get(c) && !seen.has(c); c = supersedes.get(c)) { seen.add(c); d++; }
+  return d;
+};
 const runs = [...shapesFileOf.keys()]
   .map((edition) => ({
     edition,
@@ -287,22 +313,21 @@ for (const [norm, rs] of implementedByNorm) {
   });
 }
 
+// Note there is no aggregate `conforms` here. SHACL's own per-run boolean is
+// the wrong shape for the question: a violation under a SUPERSEDED edition is
+// the grandfathering signal, not non-compliance, so OR-ing the runs together
+// answers nothing. Folding a four-state lattice to a boolean is only honest
+// once the states exist — so the caller does it, as "no node is danger".
 async function validate(aboxTtl) {
   const violationsByNode = new Map();
   const allResults = [];
-  let conforms = true;
   // focus IRI → Set of edition IRIs it violates
   const violatedEditions = new Map();
   for (const r of runs) {
     // The T-Box must be in the DATA graph: shapes reference dhc:Norm instances
     // by sh:class / sh:hasValue, and SHACL resolves those against the data, not
     // the shapes graph. tests/_helpers withTbox() does the same.
-    const { conforms: ok, results } = await validateAgainst(r.shapesTtl, tboxTtl + '\n' + aboxTtl);
-    // conforms is the verdict against the CURRENT edition only. Against 2015 the
-    // demo house has exactly one violation; against 2024 it also has the
-    // grandfathered EV circuit, and reporting that as non-conformance would be
-    // wrong — the installation is lawful.
-    if (!ok && latestEdition.get(r.norm) === r.edition) conforms = false;
+    const { results } = await validateAgainst(r.shapesTtl, tboxTtl + '\n' + aboxTtl);
     for (const res of results) {
       const rec = {
         edition: curie(r.edition),
@@ -326,7 +351,7 @@ async function validate(aboxTtl) {
       }
     }
   }
-  return { conforms, allResults, violationsByNode, violatedEditions };
+  return { allResults, violationsByNode, violatedEditions };
 }
 
 
@@ -339,16 +364,20 @@ async function validate(aboxTtl) {
 async function buildOne(rel) {
   const aboxTtl = readTtl(rel);
   const abox = parseToStore(aboxTtl);
-  const { conforms, allResults, violationsByNode, violatedEditions } = await validate(aboxTtl);
+  const { allResults, violationsByNode, violatedEditions } = await validate(aboxTtl);
 
   const nodes = new Map();
   const ensure = (iri) => {
     if (!nodes.has(iri)) {
       nodes.set(iri, {
         id: iri, curie: curie(iri), label: null,
-        types: [], designView: null, literals: {}, violations: [],
+        // types are curies for display; typeIris keeps the full IRIs because the
+        // subclass closure has to be walked in the same terms the data graph
+        // uses. Shortening first and matching on strings is what let a node
+        // SHACL had rejected report "nothing looked at it".
+        types: [], typeIris: [], designView: null, literals: {}, violations: [],
         checked: false, compliance: 'unchecked', complianceWhy: null,
-        shape: 'sphere',
+        ghosted: false, shape: 'sphere',
       });
     }
     return nodes.get(iri);
@@ -358,6 +387,7 @@ async function buildOne(rel) {
     if (q.subject.termType !== 'NamedNode') continue;
     const n = ensure(q.subject.value);
     n.types.push(curie(q.object.value));
+    n.typeIris.push(q.object.value);
     const v = viewOf.get(q.object.value);
     if (v && !n.designView) n.designView = v;
   }
@@ -447,9 +477,46 @@ async function buildOne(rel) {
   // Note a node may declare dhc:governedBy and still be 'unchecked': the norm
   // claims jurisdiction, our C-Box has no rule. ex:board-resi9 is exactly that,
   // and the transparency is the C-Box coverage gap made visible.
+  // sh:targetClass selects by SUBCLASS CLOSURE, and it resolves that closure
+  // against the DATA graph — which here is tboxTtl + aboxTtl, nothing else.
+  // Matching a node's asserted rdf:type against sh:targetClass by string
+  // equality therefore answers a different question than the validator did.
+  //
+  // dhc:RCBO ⊑ dhc:RCD, so nfc15100:RCDSensitivityShape *does* select an RCBO —
+  // but its type curie is 'dhc:RCBO' and the shape's target is 'dhc:RCD', so a
+  // string match says "no shape targets this class" about a node SHACL just
+  // rejected. The skill actively recommends RCBO ("satisfies all three for
+  // free"), so this is a live trap, not a hypothetical.
+  //
+  // Deliberately NOT the `hierarchy` store used for the equipment closure: that
+  // one includes Brick+extensions.ttl, which the validator never sees. Using it
+  // here would claim SHACL selects Brick subtypes of brick:Battery. It does not
+  // — Brick's hierarchy is not in the data graph.
+  const dataGraph = parseToStore(tboxTtl + '\n' + aboxTtl);
+  const superOf = new Map();
+  const closure = (t) => {
+    if (superOf.has(t)) return superOf.get(t);
+    const seen = new Set([t]);
+    for (const queue = [t]; queue.length; ) {
+      for (const q of dataGraph.match(namedNode(queue.pop()), namedNode(`${RDFS}subClassOf`), null)) {
+        if (!seen.has(q.object.value)) { seen.add(q.object.value); queue.push(q.object.value); }
+      }
+    }
+    const curies = new Set([...seen].map(curie));
+    superOf.set(t, curies);
+    return curies;
+  };
+  // Every class this node answers to, asserted or inherited.
+  const selectableAs = (n) => {
+    const all = new Set();
+    for (const t of n.typeIris) for (const c of closure(t)) all.add(c);
+    return all;
+  };
+
   const RANK = { ok: 0, gap: 1, danger: 2 };
   for (const n of nodes.values()) {
-    n.checked = n.types.some((t) => targetClasses.has(t));
+    const kinds = selectableAs(n);
+    n.checked = [...kinds].some((t) => targetClasses.has(t));
     n.shape = n.types.some((t) => equipmentCuries.has(t)) ? 'box' : 'sphere';
 
     // Which norms are in play? TWO sources, and they answer different questions:
@@ -462,18 +529,39 @@ async function buildOne(rel) {
     //               ex:gtl declares both NF C 14-100 and NF C 15-100; only the
     //               latter has a shape for a technical space.
     const targeting = [...implementedByNorm.entries()]
-      .filter(([, rs]) => rs.some((r) => n.types.some((t) => r.targets.has(t))))
+      .filter(([, rs]) => rs.some((r) => [...kinds].some((t) => r.targets.has(t))))
       .map(([norm]) => norm);
     const declared = [...abox.match(namedNode(n.id), namedNode(`${DHC}governedBy`), null)].map((q) => q.object.value);
     const norms = [...new Set([...targeting, ...declared])];
 
     const bad = violatedEditions.get(n.id) ?? new Set();
+
+    // THE FLOOR, and it is unconditional. If a shape rejected this node, it is
+    // 'danger' — full stop, before any reasoning about which norm or edition
+    // applies. The previous state machine had exactly this as its first branch;
+    // dropping it meant a rejected node whose class matching failed for ANY
+    // reason fell through to 'unchecked' and rendered near-transparent,
+    // captioned "nothing looked at it", while n.violations held the rejection.
+    // Reasoning is allowed to be wrong. It is not allowed to overrule a fact.
+    if (n.violations.length && !norms.length) {
+      n.compliance = 'danger';
+      n.ghosted = false;
+      n.complianceWhy = `rejected by ${n.violations.map((v) => `${v.edition} ${v.shape ?? v.path ?? ''}`.trim()).join(', ')} — though no edition appears to target ${n.types.join(', ')}, which means this tool's class matching disagrees with the validator's. The rejection is the fact; trust it.`;
+      continue;
+    }
+
     const per = [];
     for (const norm of norms) {
       // Only the editions that actually target this node's class. An edition
       // that widens coverage (2024 brings storage into scope) must not make a
       // battery look "grandfathered" under a 2015 that never saw it.
-      const rs = (implementedByNorm.get(norm) ?? []).filter((r) => n.types.some((t) => r.targets.has(t)));
+      //
+      // `kinds`, not `n.types` — the subclass closure again. Matching asserted
+      // types here while discovering the norm via the closure is exactly the
+      // half-fix the RCBO probe caught: the norm was found, this filter came
+      // back empty, and a REJECTED node reported "the norm claims jurisdiction
+      // and we hold no rule".
+      const rs = (implementedByNorm.get(norm) ?? []).filter((r) => [...kinds].some((t) => r.targets.has(t)));
       const latest = latestEdition.get(norm);
       if (!rs.length) {
         // Claimed but unruled. No verdict — and definitely not a pass.
@@ -522,10 +610,37 @@ async function buildOne(rel) {
     n.complianceWhy = per.map((p) => `${curie(p.norm)}: ${p.why}`).join('; ');
   }
 
+  // ── the safety net ────────────────────────────────────────────────────────
+  // A violation must never coexist with 'ok' or 'unchecked'. This CANNOT be an
+  // unconditional violations→danger floor — ex:circuit-ev carries a violation
+  // (under 2024) and is 'gap' by design; that is the whole grandfathering
+  // mechanism. But if the reasoning above lands on ok/unchecked while SHACL
+  // rejected the node, the reasoning is wrong somewhere — most likely the class
+  // matching disagreeing with the validator's focus-node selection, which is
+  // precisely how a rejected RCBO once rendered near-transparent, captioned
+  // "nothing looked at it". Reasoning may be wrong; it may not overrule a fact.
+  for (const n of nodes.values()) {
+    if (n.violations.length && (n.compliance === 'ok' || n.compliance === 'unchecked')) {
+      const concluded = n.compliance;
+      n.compliance = 'danger';
+      n.ghosted = false;
+      n.complianceWhy = `rejected by ${n.violations.map((v) => `${v.edition} ${v.shape ?? v.path ?? ''}`.trim()).join(', ')} — yet this tool's own reasoning concluded "${concluded}", so its class matching disagrees with the validator's. The rejection is the fact; trust it.`;
+    }
+  }
+
   const nodeList = [...nodes.values()].map((n) => ({ ...n, label: n.label || n.curie }));
   const tally = { ok: 0, gap: 0, danger: 0, unchecked: 0 };
   for (const n of nodeList) tally[n.compliance]++;
   tally.ghosted = nodeList.filter((n) => n.ghosted).length;
+
+  // conforms = NO NODE IS 'danger'. Not SHACL's per-run boolean OR-ed together,
+  // which was wrong twice over: it could never be falsified by NF C 14-100 (its
+  // edition in force has no shapes, so no 14-100 run is ever "latest" and a
+  // failing meter left conforms:true), and it WAS falsified by the deliberately
+  // grandfathered EV circuit, welding it to false and killing the "if this file
+  // ever conforms, the chain is broken" tripwire. An alarm that cannot stop
+  // ringing is not an alarm.
+  const conforms = tally.danger === 0;
   const edgeTally = {};
   for (const l of links) edgeTally[l.kind] = (edgeTally[l.kind] ?? 0) + 1;
   // Per-edition violation counts. The old single "violations: N" contract is
@@ -597,7 +712,7 @@ for (const rel of allAbox) {
   // edition in force; violations under a superseded edition are the
   // grandfathering signal, not non-compliance, and printing one number for both
   // is how the two get confused.
-  console.log(`    conforms ${report.conforms}  (against the edition in force)`);
+  console.log(`    conforms ${report.conforms}  (= no node is danger; grandfathered nodes do not count against it)`);
   for (const e of report.editions) {
     const rs = report.results.filter((r) => r.edition === e.edition);
     console.log(`      ${e.edition}${e.isLatest ? ' (in force)' : ' (superseded)'}: ${rs.length} violation(s)`);

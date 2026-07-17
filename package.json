@@ -6,7 +6,7 @@
   "description": "DigitalHome.Cloud Core — schema-only T-Box + per-norm C-Box SHACL profiles (DH-SPEC-200). Also hosts the platform's AWS Amplify Gen 2 backend (amplify/) — moved here so there is exactly one amplify/ level per repo.",
   "license": "Apache-2.0",
   "scripts": {
-    "test": "vitest run",
+    "test": "npm run build:abox && vitest run",
     "test:watch": "vitest",
     "amplify:sandbox": "ampx sandbox",
     "amplify:sandbox:delete": "ampx sandbox delete",

@@ -158,21 +158,41 @@ describe('the reference A-Box exercises every compliance state', () => {
   // wrong datatype does not throw. It just quietly produces a model where
   // everything is green, which looks like success.
   //
-  // Checked against the built graph rather than re-deriving it, so this tests
-  // what the viewer actually shows.
+  // It reads the BUILT graph, so it tests what the viewer actually shows.
+  //
+  // That artifact is gitignored and `npm test` does not build it. This block
+  // therefore used to be written with `it.runIf(built)` — which meant that on a
+  // fresh clone, in CI, or for anyone who had not happened to run
+  // `npm run build:abox` first, the three tests guarding the whole mechanism
+  // SKIPPED and vitest reported green.
+  //
+  // The guards against vacuous success were themselves vacuous. Fail loudly
+  // instead: a skipped test and a passing test look identical in a summary line.
   const graphPath = 'js-tools/data/electrical-installation-house.graph.json';
-  const built = fs.existsSync(path.join(repoRoot, graphPath))
-    ? JSON.parse(fs.readFileSync(path.join(repoRoot, graphPath), 'utf8'))
-    : null;
+  const full = path.join(repoRoot, graphPath);
+  const built = fs.existsSync(full) ? JSON.parse(fs.readFileSync(full, 'utf8')) : null;
 
-  it.runIf(built)('demonstrates ok AND gap AND danger', () => {
+  it('the built graph exists — run `npm run build:abox` first', () => {
+    expect(built, `${graphPath} is missing. It is gitignored and npm test does not build it, so these assertions cannot run. Run: npm run build:abox`).toBeTruthy();
+  });
+
+  it('the built graph is current — it was generated from the A-Box as it stands', () => {
+    // A stale artifact is worse than a missing one: it asserts against what a
+    // PREVIOUS version of the state machine produced, so the tests pass while
+    // describing code that no longer exists.
+    const src = fs.statSync(path.join(repoRoot, 'schema/abox/electrical-installation-house.ttl')).mtimeMs;
+    const gen = fs.statSync(full).mtimeMs;
+    expect(gen, 'the A-Box is newer than the built graph — rebuild before trusting these').toBeGreaterThan(src);
+  });
+
+  it('demonstrates ok AND gap AND danger', () => {
     const t = built.tally;
     expect(t.ok, 'nothing passes the edition in force').toBeGreaterThan(0);
     expect(t.gap, 'nothing is grandfathered — the state this whole mechanism exists for is unexercised').toBeGreaterThan(0);
     expect(t.danger, 'nothing fails — the deliberate defect stopped being reported').toBeGreaterThan(0);
   });
 
-  it.runIf(built)('ex:circuit-ev is the grandfathering case: passes 2015, fails 2024', () => {
+  it('ex:circuit-ev is the grandfathering case: passes 2015, fails 2024', () => {
     // The single most important node in the model. 10 mm² satisfies :2015 and
     // fails :2024. If this ever goes green, the 2024 delta is a no-op.
     const n = built.nodes.find((x) => x.curie === 'ex:circuit-ev');
@@ -180,7 +200,7 @@ describe('the reference A-Box exercises every compliance state', () => {
     expect(n.compliance, `ex:circuit-ev should be grandfathered, got "${n?.compliance}" — the 2024 delta is not firing`).toBe('gap');
   });
 
-  it.runIf(built)('ex:circuit-ev-legacy still fails the OLDEST edition', () => {
+  it('ex:circuit-ev-legacy still fails the OLDEST edition', () => {
     // The deliberate defect. It must fail 2015, not merely 2024 — failing only
     // the current edition would make it grandfathered, i.e. lawful, which is
     // the opposite of what the file exists to demonstrate.

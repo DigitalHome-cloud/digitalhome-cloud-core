@@ -116,12 +116,30 @@ ex:delivery a dhc:EnergyDelivery ;                # IS-A s223:Equipment
     s223:hasConnectionPoint ex:delivery-out ;
     brick:feeds             ex:meter .
 
-ex:delivery-out a s223:OutletConnectionPoint ;
+# Bidirectional, all the way from the grid to the Deye's grid port. The house
+# exports: ex:deye-grid is a BidirectionalConnectionPoint, and power leaving it
+# has to physically traverse the AGCP, the Linky and the service cable to reach
+# the network. A Linky meters import AND export — that is what makes the export
+# tariff billable. Modelling these as inlet/outlet-only said energy flows both
+# ways at the inverter and one way at the meter, which is not a thing that can
+# happen.
+#
+# brick:feeds stays one-directional (delivery → meter → agcp → inverter) and
+# that is correct: it is the coarse "upstream of" relation, it is
+# owl:AsymmetricProperty, and import is the dominant direction. The reverse path
+# lives in the connection points, which is exactly the division of labour 223P
+# is for.
+#
+# ⚠ dhc:EnergyDelivery's T-Box comment still says "one s223:OutletConnectionPoint
+# (downstream to main breaker)" — written before export existed here. It cannot
+# express feed-in, and dhc:contractedPowerKVA has no export counterpart. Parked
+# in doc/parking-lot.md; nothing validates it either way.
+ex:delivery-out a s223:BidirectionalConnectionPoint ;
     s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
     s223:connectsThrough ex:wire-service-L .
 
 ex:wire-service-L a dhc:WiringSegment ;
-    rdfs:label "Service cable — Enedis → Linky (L)" ;
+    rdfs:label "Service cable — Enedis ↔ Linky (L)" ;
     s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
     dhc:crossSection "16.0"^^xsd:decimal .
 
@@ -129,12 +147,21 @@ ex:meter a dhc:EnergyMeter ;
     rdfs:label "Linky billing meter" ;
     dhc:governedBy dhc:Norm_NFC14100 ;
     rec:locatedIn  ex:gtl ;
-    s223:hasConnectionPoint ex:meter-in ;
+    s223:hasConnectionPoint ex:meter-in, ex:meter-out ;
     brick:feeds    ex:agcp .
 
-ex:meter-in a s223:InletConnectionPoint ;
+ex:meter-in a s223:BidirectionalConnectionPoint ;
     s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
     s223:connectsThrough ex:wire-service-L .
+
+ex:meter-out a s223:BidirectionalConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-meter-agcp-L .
+
+ex:wire-meter-agcp-L a dhc:WiringSegment ;
+    rdfs:label "Linky ↔ AGCP (L)" ;
+    s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
+    dhc:crossSection "16.0"^^xsd:decimal .
 
 # The AGCP is the origin of the private installation. Downstream of it every
 # generator flow — grid, PV, battery — converges on the Deye, which arbitrates
@@ -145,15 +172,19 @@ ex:agcp a dhc:EmergencyDisconnect ;
     dhc:governedBy   dhc:Norm_NFC14100 ;
     dhc:ratedCurrent "63"^^xsd:decimal ;
     rec:locatedIn    ex:gtl ;
-    s223:hasConnectionPoint ex:agcp-out ;
+    s223:hasConnectionPoint ex:agcp-in, ex:agcp-out ;
     brick:feeds      ex:inverter .
 
-ex:agcp-out a s223:OutletConnectionPoint ;
+ex:agcp-in a s223:BidirectionalConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-meter-agcp-L .
+
+ex:agcp-out a s223:BidirectionalConnectionPoint ;
     s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
     s223:connectsThrough ex:wire-agcp-deye-L .
 
 ex:wire-agcp-deye-L a dhc:WiringSegment ;
-    rdfs:label "AGCP → Deye grid port (L)" ;
+    rdfs:label "AGCP ↔ Deye grid port (L)" ;
     s223:hasMedium   s223:AC-230VLN-1Ph-50Hz ;
     dhc:crossSection "16.0"^^xsd:decimal .
 
@@ -493,9 +524,23 @@ ex:brk-lgt-lr-out a s223:OutletConnectionPoint ;
     s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
     s223:connectsThrough ex:wire-lgt-lr-L .
 
+# dhc:BusBar ⊑ s223:Junction — "joins two or more s223:Connection instances".
+# It could not do that job without connection points: the conductor chain used
+# to arrive at the board on ex:wire-deye-board-L and simply stop, because
+# nothing joined that cable to ex:busbar-feed-L. brick:isPartOf said the busbar
+# was IN the board, which is a structural fact and not a path for current.
 ex:busbar a dhc:BusBar ;
     rdfs:label "Board busbar" ;
-    brick:isPartOf ex:board-resi9 .
+    brick:isPartOf ex:board-resi9 ;
+    s223:hasConnectionPoint ex:busbar-in, ex:busbar-out .
+
+ex:busbar-in a s223:InletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:wire-deye-board-L .
+
+ex:busbar-out a s223:OutletConnectionPoint ;
+    s223:hasMedium       s223:AC-230VLN-1Ph-50Hz ;
+    s223:connectsThrough ex:busbar-feed-L .
 
 ex:busbar-feed-L a dhc:WiringSegment ;
     rdfs:label "Busbar → MCB (L)" ;

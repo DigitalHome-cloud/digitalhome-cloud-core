@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readTtl, parseToStore, namedNode } from '../_helpers/loadGraph.js';
+import { readTtl, parseToStore, validateAgainst, namedNode } from '../_helpers/loadGraph.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -108,6 +108,37 @@ describe('T-Box — every dhc:shapesFile resolves to a real file', () => {
   });
 });
 
+// ── The subclass-closure bug class ────────────────────────────────────────
+//
+// sh:targetClass selects by SUBCLASS CLOSURE, resolved against the DATA graph.
+// Any code that answers "did a shape look at this node?" by comparing rdf:type
+// to sh:targetClass as strings is answering a different question — and it fails
+// in the worst direction, reporting "nothing checked it" about a node SHACL just
+// rejected. build-abox.mjs shipped exactly that: the node rendered
+// near-transparent while its violation sat unread in the same object.
+//
+// dhc:RCBO ⊑ dhc:RCD is the live case, because the skill recommends RCBOs.
+
+describe('C-Box — sh:targetClass selects subclasses of its target', () => {
+  const shapesTtl = readTtl(`${CBOX_DIR}/nfc15100-2015.shapes.ttl`);
+  const tboxTtl = readTtl('schema/tbox/dhc-core.ttl');
+
+  it('dhc:RCBO is really a subclass of dhc:RCD — the premise', () => {
+    // If this stops being true the test below passes for the wrong reason.
+    const RDFS = 'http://www.w3.org/2000/01/rdf-schema#';
+    const hit = [...tbox.match(namedNode(`${DHC}RCBO`), namedNode(`${RDFS}subClassOf`), namedNode(`${DHC}RCD`))];
+    expect(hit.length, 'dhc:RCBO no longer inherits from dhc:RCD').toBe(1);
+  });
+
+  it('an over-sensitive RCBO is rejected by the shape targeting dhc:RCD', async () => {
+    const data = readTtl('tests/fixtures/invalid-fr-rcbo-oversensitive.ttl');
+    const { conforms, results } = await validateAgainst(shapesTtl, tboxTtl + '\n' + data);
+    expect(conforms, 'RCDSensitivityShape does not reach dhc:RCBO — the inheritance the skill promises is not real').toBe(false);
+    // Plain sh:property shape → blank-node sourceShape but a real sh:path.
+    expect(results.some(r => r.path === `${DHC}sensitivityMA`)).toBe(true);
+  });
+});
+
 // ── The unclaimed-shapes bug class ────────────────────────────────────────
 //
 // build-abox.mjs drives validation from dhc:shapesFile, not from the directory
@@ -157,19 +188,35 @@ describe('C-Box — every shapes file is claimed by exactly one edition', () => 
 // something else.
 
 describe('C-Box — a delta never reuses a base shape IRI', () => {
-  const shapeIrisIn = (file) => {
+  const targetsIn = (file) => {
     const s = parseToStore(readTtl(`${CBOX_DIR}/${file}`));
     return new Set([...s.match(null, namedNode(`${SHACL}targetClass`), null)].map(q => q.subject.value));
   };
+  // EVERY subject the delta mentions, not just the ones carrying sh:targetClass.
+  // Collecting only targetClass-bearing subjects misses the form that actually
+  // does the damage:
+  //
+  //   nfc15100:IRVE32AMonoShape sh:property [ sh:path dhc:crossSection ;
+  //                                           sh:minInclusive 16.0 ] .
+  //
+  // No targetClass, so the old check never saw it — while RDF merges it onto the
+  // base shape and "does it pass 2015?" stops being answerable. The test existed
+  // to prevent exactly that and would have passed it.
+  const subjectsIn = (file) => {
+    const s = parseToStore(readTtl(`${CBOX_DIR}/${file}`));
+    return new Set([...s.match(null, null, null)]
+      .filter(q => q.subject.termType === 'NamedNode')
+      .map(q => q.subject.value));
+  };
 
-  it('nfc15100-2024 introduces only new shape IRIs', () => {
-    const base = shapeIrisIn('nfc15100-2015.shapes.ttl');
-    const overlap = [...shapeIrisIn('nfc15100-2024.shapes.ttl')].filter(i => base.has(i));
-    expect(overlap, 'a delta shape sharing the base IRI merges the two editions into one').toEqual([]);
+  it('nfc15100-2024 says nothing about any base shape IRI', () => {
+    const base = targetsIn('nfc15100-2015.shapes.ttl');
+    const overlap = [...subjectsIn('nfc15100-2024.shapes.ttl')].filter(i => base.has(i));
+    expect(overlap, 'a delta stanza on a base shape IRI merges the two editions into one, and the comparison silently answers a different question').toEqual([]);
   });
 
   it('and it is not vacuous — the delta actually carries shapes', () => {
     // Guards the guard: an empty delta file passes the test above trivially.
-    expect(shapeIrisIn('nfc15100-2024.shapes.ttl').size).toBeGreaterThan(0);
+    expect(targetsIn('nfc15100-2024.shapes.ttl').size).toBeGreaterThan(0);
   });
 });
