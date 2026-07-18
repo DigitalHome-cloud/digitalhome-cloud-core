@@ -111,6 +111,14 @@
     <label>colour
       <select id="colour-mode"></select>
     </label>
+    <label>group
+      <select id="group-select" title="Draw translucent hulls around zones / circuits / assemblies; click a group in the legend to collapse it">
+        <option value="none">none</option>
+        <option value="zone">zone</option>
+        <option value="circuit">circuit</option>
+        <option value="composition">composition</option>
+      </select>
+    </label>
     <button id="norms" title="Choose which norms/editions to analyse against" style="display:none">Norms…</button>
     <button id="symbols" title="Toggle 3-D primitives ↔ flat symbols">symbols: 3-D</button>
     <button id="fit">Fit</button>
@@ -341,6 +349,7 @@
         obj = new THREE.Mesh(g, mat);
       }
       if (n.violations?.length) obj.scale.setScalar(1.55);
+      if (n.isSuper) obj.scale.multiplyScalar(1.9);   // a collapsed group reads bigger
       return obj;
     };
 
@@ -425,13 +434,154 @@
 
     const visible = (n) => !hidden.has(keyOf(n));
 
-    function applyFilter() {
-      const nodes = graph.nodes.filter(visible);
+    // ── Groups ────────────────────────────────────────────────────────────
+    // Membership comes from the edges. Each definition maps a predicate to the
+    // (container, member) pair — direction matters, so a `locatedIn` and an
+    // `isLocationOf` both point the same way. A group is a container plus every
+    // node it contains; groups of one are dropped (nothing to draw or collapse).
+    let groupBy = ['zone', 'circuit', 'composition'].includes(params.get('group')) ? params.get('group') : 'none';
+    let groups = new Map();        // container id → { container, members:Set, tint }
+    let collapsed = new Set();     // container ids currently collapsed to a super-node
+    let hullMeshes = new Map();    // container id → translucent hull Mesh in the scene
+    const GROUP_TINTS = ['#38bdf8', '#a78bfa', '#f472b6', '#34d399', '#fbbf24', '#fb7185', '#60a5fa', '#c084fc'];
+    const idOf = (x) => x?.id ?? x;
+    const GROUP_DEFS = {
+      zone: {
+        'rec:locatedIn':    (l) => [idOf(l.target), idOf(l.source)],
+        'brick:hasLocation':(l) => [idOf(l.target), idOf(l.source)],
+        'rec:isLocationOf': (l) => [idOf(l.source), idOf(l.target)],
+      },
+      circuit: {
+        's223:hasMember':   (l) => [idOf(l.source), idOf(l.target)],
+      },
+      composition: {
+        'brick:hasPart':    (l) => [idOf(l.source), idOf(l.target)],
+        's223:contains':    (l) => [idOf(l.source), idOf(l.target)],
+        'rec:includes':     (l) => [idOf(l.source), idOf(l.target)],
+        'rec:hasPart':      (l) => [idOf(l.source), idOf(l.target)],
+        'brick:isPartOf':   (l) => [idOf(l.target), idOf(l.source)],
+      },
+    };
+
+    function computeGroups() {
+      groups = new Map();
+      if (groupBy === 'none' || !graph) return;
+      const def = GROUP_DEFS[groupBy];
+      for (const l of graph.links) {
+        const dir = def[l.property];
+        if (!dir) continue;
+        const [container, member] = dir(l);
+        if (!container || !member || container === member) continue;
+        let grp = groups.get(container);
+        if (!grp) { grp = { container, members: new Set([container]) }; groups.set(container, grp); }
+        grp.members.add(member);
+      }
+      let i = 0;
+      for (const [cid, grp] of [...groups]) {
+        if (grp.members.size < 2) { groups.delete(cid); continue; }
+        grp.tint = GROUP_TINTS[i++ % GROUP_TINTS.length];
+      }
+    }
+
+    const nodeById = (id) => graph.nodes.find((n) => n.id === id);
+
+    // A collapsed group becomes one node. Its edition arrays are the UNION of its
+    // members' — so the group is 'ok' only if every member is, and worst-wins
+    // falls out of the same recompute() the individual nodes use.
+    function makeSuper(cid, grp) {
+      const c = nodeById(cid) ?? { curie: cid, label: cid, types: [], typeIris: [], designView: 'shared' };
+      const members = [...grp.members].map(nodeById).filter(Boolean);
+      const targeted = new Set(), violated = new Set();
+      let anyGhost = false;
+      for (const m of members) {
+        (m.targetedEditions ?? []).forEach((e) => targeted.add(e));
+        (m.violatedEditions ?? []).forEach((e) => violated.add(e));
+        anyGhost = anyGhost || !!m.ghosted;
+      }
+      return {
+        id: 'grp:' + cid, curie: c.curie, label: `${c.label} +${grp.members.size - 1}`,
+        types: c.types, typeIris: c.typeIris, designView: c.designView,
+        literals: [], violations: [], glyph: 'panel', shape: 'box',
+        isSuper: true, memberCount: grp.members.size, compliance: 'unchecked',
+        ghosted: anyGhost, targetedEditions: [...targeted], violatedEditions: [...violated],
+      };
+    }
+
+    // The graph actually fed to the renderer: visibility filter + hidden edge
+    // kinds + collapse of any collapsed groups (members folded into a super-node,
+    // internal links dropped, external links re-pointed and de-duplicated).
+    function displayGraph() {
+      const active = new Set([...collapsed].filter((c) => groups.has(c)));
+      const toSuper = new Map();
+      const superNodes = [];
+      for (const cid of active) {
+        const grp = groups.get(cid);
+        for (const m of grp.members) toSuper.set(m, 'grp:' + cid);
+        superNodes.push(makeSuper(cid, grp));
+      }
+      const baseNodes = graph.nodes.filter((n) => visible(n) && !toSuper.has(n.id));
+      const nodes = [...baseNodes, ...superNodes];
       const ids = new Set(nodes.map((n) => n.id));
-      const links = graph.links.filter((l) =>
-        !hiddenKinds.has(l.kind) && ids.has(l.source.id ?? l.source) && ids.has(l.target.id ?? l.target));
+      const seen = new Set();
+      const links = [];
+      for (const l of graph.links) {
+        if (hiddenKinds.has(l.kind)) continue;
+        const s = toSuper.get(idOf(l.source)) ?? idOf(l.source);
+        const t = toSuper.get(idOf(l.target)) ?? idOf(l.target);
+        if (s === t || !ids.has(s) || !ids.has(t)) continue;
+        const key = `${s}|${t}|${l.property}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        links.push({ ...l, source: s, target: t });
+      }
+      return { nodes, links };
+    }
+
+    function applyFilter() {
+      const { nodes, links } = displayGraph();
       Graph.graphData({ nodes: nodes.map((n) => ({ ...n })), links: links.map((l) => ({ ...l })) });
       log(`filter → ${nodes.length}/${graph.nodes.length} nodes, ${links.length}/${graph.links.length} links`);
+      rebuildHulls();
+    }
+
+    // A hull per NON-collapsed group: a translucent sphere the renderer never
+    // raycasts (so it can't steal a node click), repositioned every engine tick
+    // from the live member coordinates. Collapsed groups have no hull — they are
+    // a node instead.
+    function rebuildHulls() {
+      if (!Graph?.scene) return;
+      for (const m of hullMeshes.values()) Graph.scene().remove(m);
+      hullMeshes.clear();
+      if (groupBy === 'none') return;
+      const geom = new THREE.SphereGeometry(1, 12, 8);
+      for (const [cid, grp] of groups) {
+        if (collapsed.has(cid)) continue;
+        const mat = new THREE.MeshBasicMaterial({
+          color: grp.tint, transparent: true, opacity: 0.1, depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.raycast = () => {};
+        Graph.scene().add(mesh);
+        hullMeshes.set(cid, mesh);
+      }
+      positionHulls();
+    }
+
+    function positionHulls() {
+      if (!hullMeshes.size) return;
+      const pos = new Map((Graph.graphData().nodes).map((n) => [n.id, n]));
+      for (const [cid, mesh] of hullMeshes) {
+        const pts = [...groups.get(cid).members].map((id) => pos.get(id)).filter((n) => n && Number.isFinite(n.x));
+        if (pts.length < 2) { mesh.visible = false; continue; }
+        mesh.visible = true;
+        let cx = 0, cy = 0, cz = 0;
+        for (const p of pts) { cx += p.x; cy += p.y; cz += p.z; }
+        cx /= pts.length; cy /= pts.length; cz /= pts.length;
+        let r = 0;
+        for (const p of pts) r = Math.max(r, Math.hypot(p.x - cx, p.y - cy, p.z - cz));
+        mesh.position.set(cx, cy, cz);
+        mesh.scale.setScalar(r + 6);   // pad past the outermost member
+      }
     }
 
     function renderLegend() {
@@ -466,9 +616,27 @@
           <span class="edge" style="border-top:${Math.max(1, Math.round(EDGE_STYLE[k].width * 1.6))}px ${k === 'spatial' ? 'dashed' : 'solid'} ${EDGE_STYLE[k].colour}"></span>${k}<span class="n">${kinds[k]}</span>
         </div>`).join('');
 
+      // Groups section — one row per group; the row IS the collapse control
+      // (clicking a translucent hull in the scene would mean our own raycaster,
+      // and this is unambiguous). "off" styling marks a collapsed group.
+      let groupRows = '';
+      if (groupBy !== 'none') {
+        const rows = [...groups.values()].map((g) => {
+          const c = graph.nodes.find((n) => n.id === g.container);
+          const col = collapsed.has(g.container);
+          return `<div class="row grp-row ${col ? 'off' : ''}" data-grp="${esc(g.container)}"
+                       title="click to ${col ? 'expand' : 'collapse'} this ${groupBy}">
+            <span class="glyph" style="background:${g.tint}"></span>${esc(c?.label ?? g.container)}<span class="n">${g.members.size}</span>
+          </div>`;
+        }).join('');
+        groupRows = `<div class="grp">groups — ${groupBy}</div>`
+          + (rows || `<div class="hint">no ${groupBy} groups in this model</div>`);
+      }
+
       el.innerHTML = `<div class="grp">nodes — ${colourMode}</div>${nodeRows}`
                    + `<div class="grp">edges</div>${edgeRows}`
-                   + `<div class="hint">click any row to filter</div>`;
+                   + groupRows
+                   + `<div class="hint">click any row to filter${groupBy !== 'none' ? '; a group row collapses it' : ''}</div>`;
 
       el.querySelectorAll('.row[data-key]').forEach((r) => r.addEventListener('click', () => {
         const k = r.dataset.key;
@@ -478,6 +646,11 @@
       el.querySelectorAll('.row[data-kind]').forEach((r) => r.addEventListener('click', () => {
         const k = r.dataset.kind;
         hiddenKinds.has(k) ? hiddenKinds.delete(k) : hiddenKinds.add(k);
+        renderLegend(); applyFilter();
+      }));
+      el.querySelectorAll('.row[data-grp]').forEach((r) => r.addEventListener('click', () => {
+        const c = r.dataset.grp;
+        collapsed.has(c) ? collapsed.delete(c) : collapsed.add(c);
         renderLegend(); applyFilter();
       }));
     }
@@ -721,7 +894,9 @@
         setStatus(`${g.tally.danger} fail · ${gapCount} grandfathered`, 'warn');
       }
 
-      Graph.graphData({ nodes: g.nodes.map((n) => ({ ...n })), links: g.links.map((l) => ({ ...l })) });
+      collapsed = new Set();   // group membership is per-model
+      computeGroups();
+      applyFilter();           // group-aware: sets graphData + (re)builds hulls
       renderLegend();
       currentNode = null; inspect(null);   // modelling → vocab catalog; designing → prompt
       let fitted = false;
@@ -756,7 +931,8 @@
           .linkDirectionalParticles((l) => styleOf(l).particles)
           .linkDirectionalParticleSpeed((l) => (l.kind === 'flow' ? 0.006 : 0.003))
           .linkDirectionalParticleThreeObject(particleObject)
-          .onNodeClick((n) => { currentNode = n; inspect(n); });
+          .onNodeClick((n) => { currentNode = n; inspect(n); })
+          .onEngineTick(positionHulls);   // group hulls follow the live layout
 
         // Source picker — every A-Box in schema/abox/ is prebuilt, so switching
         // is a fetch, not a revalidation. Our own models sit at the top; the
@@ -774,6 +950,7 @@
         sel.value = index.sources.some((s) => s.slug === wanted) ? wanted : index.first;
         syncModeUI();
         document.getElementById('symbols').textContent = `symbols: ${glyphMode === 'sprite' ? 'flat' : '3-D'}`;
+        document.getElementById('group-select').value = groupBy;
         sel.addEventListener('change', async (e) => {
           currentNode = null; inspect(null);
           await loadSource(e.target.value);
@@ -798,6 +975,15 @@
           log(`colour → ${colourMode}`);
         });
 
+        document.getElementById('group-select').addEventListener('change', (e) => {
+          groupBy = e.target.value;
+          collapsed = new Set();   // a fresh grouping starts fully expanded
+          computeGroups();
+          renderLegend();
+          applyFilter();           // rebuilds hulls; folds any collapsed groups
+          log(`group → ${groupBy}${groupBy === 'none' ? '' : ` · ${groups.size} group(s)`}`);
+        });
+
         document.getElementById('norms').addEventListener('click', openNorms);
         document.getElementById('modal-backdrop').addEventListener('click', closeNorms);
         document.getElementById('symbols').addEventListener('click', (e) => {
@@ -808,7 +994,8 @@
         });
         document.getElementById('fit').addEventListener('click', () => Graph.zoomToFit(600, 60));
         document.getElementById('reset-filter').addEventListener('click', () => {
-          hidden = new Set(); hiddenKinds = new Set(); renderLegend(); applyFilter();
+          hidden = new Set(); hiddenKinds = new Set(); collapsed = new Set();
+          renderLegend(); applyFilter();
         });
 
         await loadSource(sel.value);
