@@ -87,6 +87,7 @@
         <option value="ns">standard (rdf:type ns)</option>
       </select>
     </label>
+    <button id="symbols" title="Toggle 3-D primitives ↔ flat symbols">symbols: 3-D</button>
     <button id="fit">Fit</button>
     <button id="reset-filter" title="Show all">All</button>
     <span id="status" class="status">loading…</span>
@@ -172,6 +173,150 @@
     const particleObject = (l) =>
       l.kind === 'control' ? new THREE.Mesh(CTRL_GEOM, CTRL_MAT) : new THREE.Mesh(FLOW_GEOM, FLOW_MAT);
 
+    // ── glyph rendering ──────────────────────────────────────────────────────
+    // Per-class symbol shapes. n.glyph is computed in build-abox.mjs from the
+    // subclass hierarchy (bulb for a luminaire, a DIN module for a breaker, …).
+    // Two hard constraints shape this code:
+    //   1. Offline — every shape is a three primitive or a <canvas> drawing; no
+    //      SVG, GLTF or network. Only the ESM three (this import) exposes the
+    //      geometry constructors; the UMD bundle exports only ForceGraph3D.
+    //   2. Perf — the old nodeObject allocated a fresh geometry AND material per
+    //      node (soda_brick = 1695 of each). Here geometry is built ONCE per
+    //      glyph and shared; the per-node size bump is a mesh.scale, not a new
+    //      geometry; materials come from a ~20-entry cache keyed colour|opacity.
+    const R = 3.2;   // base radius; violation nodes scale up via mesh.scale
+    const box  = (x, y, z) => new THREE.BoxGeometry(x, y, z);
+    const cyl  = (rt, rb, h, s = 10) => new THREE.CylinderGeometry(rt, rb, h, s);
+    // One geometry (or a Group template for composites) per glyph, built lazily.
+    const GLYPH_GEOM = {
+      bulb:       () => new THREE.SphereGeometry(R * 0.95, 10, 8),
+      socket:     () => cyl(R, R, R * 0.4, 14),
+      breaker:    () => box(R * 0.7, R * 1.9, R * 0.7),
+      panel:      () => box(R * 2.2, R * 1.7, R * 0.6),
+      meter:      () => cyl(R * 0.85, R * 0.85, R * 1.1, 12),
+      inverter:   () => box(R * 1.4, R * 1.3, R * 0.8),
+      battery:    () => cyl(R * 0.7, R * 0.7, R * 1.7, 12),
+      pv:         () => box(R * 1.9, R * 0.22, R * 1.2),
+      charger:    () => cyl(R * 0.7, R * 0.9, R * 1.9, 6),
+      delivery:   () => new THREE.OctahedronGeometry(R * 1.15),   // "double cone" grid source
+      busbar:     () => box(R * 2.6, R * 0.4, R * 0.4),
+      circuit:    () => new THREE.TorusGeometry(R * 0.9, R * 0.34, 8, 16),
+      wire:       () => cyl(R * 0.22, R * 0.22, R * 2, 6),
+      port:       () => new THREE.TetrahedronGeometry(R * 0.95),
+      controller: () => new THREE.OctahedronGeometry(R * 0.95),
+      sensor:     () => new THREE.SphereGeometry(R * 0.6, 8, 6),
+      room:       () => box(R * 2, R * 0.3, R * 2),               // floor plate
+      appliance:  () => box(R * 1.3, R * 1.3, R * 1.3),
+      box:        () => box(R * 1.7, R * 1.7, R * 1.7),           // legacy equipment box
+      sphere:     () => new THREE.SphereGeometry(R, 12, 8),       // fallback
+      // Composite: a house = body + prism roof. Returns a Group TEMPLATE whose
+      // children's materials are replaced on clone.
+      building: () => {
+        const g = new THREE.Group();
+        const body = new THREE.Mesh(box(R * 1.6, R * 1.1, R * 1.6), null);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(R * 1.25, R * 0.9, 4), null);
+        roof.position.y = R * 1.0; roof.rotation.y = Math.PI / 4;
+        g.add(body, roof); g.userData.template = true;
+        return g;
+      },
+    };
+    const glyphCache = new Map();
+    const geomFor = (glyph) => {
+      if (!glyphCache.has(glyph)) glyphCache.set(glyph, (GLYPH_GEOM[glyph] ?? GLYPH_GEOM.sphere)());
+      return glyphCache.get(glyph);
+    };
+
+    // Material cache — ~20 combinations at most. bulb is emissive so it reads as
+    // a light source; that variant is keyed separately.
+    const matCache = new Map();
+    const material = (hex, opacity, emissive) => {
+      const key = `${hex}|${opacity}|${emissive ? 1 : 0}`;
+      if (!matCache.has(key)) {
+        matCache.set(key, new THREE.MeshLambertMaterial({
+          color: hex, transparent: true, opacity,
+          ...(emissive ? { emissive: hex, emissiveIntensity: 0.6 } : {}),
+        }));
+      }
+      return matCache.get(key);
+    };
+
+    // Flat-symbol mode: each glyph drawn once on a <canvas> in white (so it can
+    // be tinted per node via SpriteMaterial.color), cached as a CanvasTexture.
+    const symbolTexCache = new Map();
+    const drawSymbol = (glyph) => {
+      const c = document.createElement('canvas'); c.width = c.height = 64;
+      const x = c.getContext('2d');
+      x.strokeStyle = x.fillStyle = '#fff'; x.lineWidth = 4; x.lineCap = 'round';
+      const C = 32, r = 20;
+      const circle = (rr = r) => { x.beginPath(); x.arc(C, C, rr, 0, 7); x.stroke(); };
+      const rect = (w, h) => x.strokeRect(C - w / 2, C - h / 2, w, h);
+      const line = (x1, y1, x2, y2) => { x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y2); x.stroke(); };
+      switch (glyph) {
+        case 'bulb': circle(); line(20, 20, 44, 44); line(44, 20, 20, 44); break;      // ⊗ lamp (IEC)
+        case 'socket': circle(); x.beginPath(); x.arc(24, 32, 3, 0, 7); x.arc(40, 32, 3, 0, 7); x.fill(); break;
+        case 'breaker': rect(20, 40); line(22, 42, 42, 22); break;                     // switch in a module
+        case 'panel': rect(44, 34); line(C, 15, C, 49); break;
+        case 'meter': circle(); line(C, C, 46, 20); break;                             // dial + needle
+        case 'inverter': rect(40, 40); line(14, 46, 30, 22); line(34, 42, 50, 18); break; // ~/=
+        case 'battery': line(20, 22, 20, 42); line(28, 16, 28, 48); line(38, 22, 38, 42); line(46, 16, 46, 48); break;
+        case 'pv': rect(44, 30); line(24, 17, 24, 47); line(40, 17, 40, 47); break;    // panel grid
+        case 'charger': rect(24, 40); line(40, 24, 48, 24); line(40, 32, 50, 32); break;
+        case 'delivery': line(C, 10, C, 34); line(20, 22, C, 34); line(44, 22, C, 34); circle(8); break;
+        case 'busbar': line(10, C, 54, C); line(20, 24, 20, 40); line(44, 24, 44, 40); break;
+        case 'circuit': circle(18); break;
+        case 'wire': line(12, 44, 52, 20); break;
+        case 'port': x.beginPath(); x.moveTo(C, 14); x.lineTo(48, 46); x.lineTo(16, 46); x.closePath(); x.stroke(); break;
+        case 'controller': x.beginPath(); x.moveTo(C, 12); x.lineTo(52, 32); x.lineTo(C, 52); x.lineTo(12, 32); x.closePath(); x.stroke(); break;
+        case 'sensor': circle(10); break;
+        case 'building': line(14, 50, 14, 30); line(50, 50, 50, 30); line(14, 30, C, 14); line(50, 30, C, 14); line(14, 50, 50, 50); break;
+        case 'room': rect(40, 40); break;
+        default: circle(14);
+      }
+      return new THREE.CanvasTexture(c);
+    };
+    const symbolTex = (glyph) => {
+      if (!symbolTexCache.has(glyph)) symbolTexCache.set(glyph, drawSymbol(glyph));
+      return symbolTexCache.get(glyph);
+    };
+    const spriteMatCache = new Map();
+    const spriteMaterial = (glyph, hex, opacity) => {
+      const key = `${glyph}|${hex}|${opacity}`;
+      if (!spriteMatCache.has(key)) {
+        spriteMatCache.set(key, new THREE.SpriteMaterial({
+          map: symbolTex(glyph), color: hex, transparent: true, opacity, depthWrite: false,
+        }));
+      }
+      return spriteMatCache.get(key);
+    };
+
+    // 'solid' (3-D primitives) | 'sprite' (flat symbols). ?symbols=flat is linkable.
+    let glyphMode = ['flat', 'sprite'].includes(new URLSearchParams(location.search).get('symbols')) ? 'sprite' : 'solid';
+
+    // The node's own object. Shares geometry + material; the per-node size bump
+    // for a violation is a mesh scale, never a new geometry.
+    const nodeObject = (n) => {
+      const ghost = colourMode === 'compliance' && n.ghosted;
+      const opacity = ghost ? (n.compliance === 'unchecked' ? 0.1 : 0.35) : 0.95;
+      const colour = nodeColour(n);
+      const glyph = n.glyph ?? (n.shape === 'box' ? 'appliance' : 'sphere');
+      let obj;
+      if (glyphMode === 'sprite') {
+        obj = new THREE.Sprite(spriteMaterial(glyph, colour, opacity));
+        obj.scale.setScalar(n.violations?.length ? 12 : 9);
+        return obj;
+      }
+      const g = geomFor(glyph);
+      const mat = material(colour, opacity, glyph === 'bulb');
+      if (g.userData?.template) {                 // composite Group (building)
+        obj = g.clone();
+        obj.traverse((o) => { if (o.isMesh) o.material = mat; });
+      } else {
+        obj = new THREE.Mesh(g, mat);
+      }
+      if (n.violations?.length) obj.scale.setScalar(1.55);
+      return obj;
+    };
+
     const logEl = document.getElementById('log');
     const statusEl = document.getElementById('status');
     const log = (msg, cls = 'info') => {
@@ -213,33 +358,6 @@
     };
 
     const visible = (n) => !hidden.has(keyOf(n));
-
-    // The node's own 3-D object, rather than the library's default sphere.
-    // Two things ride on this:
-    //   shape   — box for equipment, sphere otherwise. Read from the ontology
-    //             in build-abox.mjs (brick:Equipment ∪ s223:Equipment closure),
-    //             never hand-listed here.
-    //   opacity — the second compliance channel. A ghosted node is one we
-    //             cannot speak to the CURRENT edition about: either no shape
-    //             targets it at all, or the edition in force for its norm has
-    //             no shapes. It exists and is still there to click; a solid
-    //             colour would claim a verdict we do not have. Note this is
-    //             NOT the same as the colour: a node can be ghosted AND green
-    //             (NF C 14-100 nodes pass the 2008 rules we hold, while 2021 is
-    //             in force and unimplemented) — "passes what we checked" and
-    //             "we checked the right thing" are separate facts.
-    const nodeObject = (n) => {
-      const r = n.violations?.length ? 5 : 3.2;
-      const ghost = colourMode === 'compliance' && n.ghosted;
-      const geom = n.shape === 'box'
-        ? new THREE.BoxGeometry(r * 1.7, r * 1.7, r * 1.7)
-        : new THREE.SphereGeometry(r, 12, 8);
-      return new THREE.Mesh(geom, new THREE.MeshLambertMaterial({
-        color: nodeColour(n),
-        transparent: true,
-        opacity: ghost ? (n.compliance === 'unchecked' ? 0.1 : 0.35) : 0.95,
-      }));
-    };
 
     function applyFilter() {
       const nodes = graph.nodes.filter(visible);
@@ -449,6 +567,7 @@
         const wanted = params.get('model');
         sel.value = index.sources.some((s) => s.slug === wanted) ? wanted : index.first;
         document.getElementById('colour-mode').value = colourMode;
+        document.getElementById('symbols').textContent = `symbols: ${glyphMode === 'sprite' ? 'flat' : '3-D'}`;
         sel.addEventListener('change', async (e) => {
           inspect(null);
           await loadSource(e.target.value);
@@ -462,6 +581,12 @@
           renderLegend();
           applyFilter();
           log(`colour → ${colourMode}`);
+        });
+        document.getElementById('symbols').addEventListener('click', (e) => {
+          glyphMode = glyphMode === 'solid' ? 'sprite' : 'solid';
+          e.target.textContent = `symbols: ${glyphMode === 'sprite' ? 'flat' : '3-D'}`;
+          applyFilter();   // re-sets graphData → rebuilds every node object
+          log(`symbols → ${glyphMode === 'sprite' ? 'flat billboarded' : '3-D primitives'}`);
         });
         document.getElementById('fit').addEventListener('click', () => Graph.zoomToFit(600, 60));
         document.getElementById('reset-filter').addEventListener('click', () => {
