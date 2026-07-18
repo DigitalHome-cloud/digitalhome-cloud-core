@@ -24,6 +24,8 @@
     #inspector .curie { font: 11px ui-monospace, Menlo, Consolas, monospace; color: #94a3b8; word-break: break-all; }
     #inspector .sect { margin-top: 12px; }
     #inspector .sect-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin-bottom: 4px; }
+    #inspector .panel-btn { font: 12px system-ui, sans-serif; background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-right: 6px; }
+    #inspector .panel-btn:hover { background: #334155; }
     #inspector table { width: 100%; border-collapse: collapse; }
     #inspector td { padding: 2px 0; vertical-align: top; font: 11px ui-monospace, Menlo, Consolas, monospace; }
     #inspector td.k { color: #94a3b8; padding-right: 8px; white-space: nowrap; }
@@ -120,6 +122,7 @@
       </select>
     </label>
     <button id="norms" title="Choose which norms/editions to analyse against" style="display:none">Norms…</button>
+    <button id="consumers" title="List the leaf loads by zone; pick one to trace its supply back to the grid">Consumers</button>
     <button id="symbols" title="Toggle 3-D primitives ↔ flat symbols">symbols: 3-D</button>
     <button id="fit">Fit</button>
     <button id="reset-filter" title="Show all">All</button>
@@ -443,6 +446,7 @@
     let groups = new Map();        // container id → { container, members:Set, tint }
     let collapsed = new Set();     // container ids currently collapsed to a super-node
     let hullMeshes = new Map();    // container id → translucent hull Mesh in the scene
+    let traceSet = null;           // when set, only these node ids show (upstream trace)
     const GROUP_TINTS = ['#38bdf8', '#a78bfa', '#f472b6', '#34d399', '#fbbf24', '#fb7185', '#60a5fa', '#c084fc'];
     const idOf = (x) => x?.id ?? x;
     const GROUP_DEFS = {
@@ -511,6 +515,14 @@
     // kinds + collapse of any collapsed groups (members folded into a super-node,
     // internal links dropped, external links re-pointed and de-duplicated).
     function displayGraph() {
+      // An active upstream trace overrides grouping: show only the traced chain.
+      if (traceSet) {
+        const nodes = graph.nodes.filter((n) => traceSet.has(n.id) && visible(n));
+        const ids = new Set(nodes.map((n) => n.id));
+        const links = graph.links.filter((l) =>
+          !hiddenKinds.has(l.kind) && ids.has(idOf(l.source)) && ids.has(idOf(l.target)));
+        return { nodes, links };
+      }
       const active = new Set([...collapsed].filter((c) => groups.has(c)));
       const toSuper = new Map();
       const superNodes = [];
@@ -552,7 +564,7 @@
       if (!Graph?.scene) return;
       for (const m of hullMeshes.values()) Graph.scene().remove(m);
       hullMeshes.clear();
-      if (groupBy === 'none') return;
+      if (groupBy === 'none' || traceSet) return;   // no hulls while tracing
       const geom = new THREE.SphereGeometry(1, 12, 8);
       for (const [cid, grp] of groups) {
         if (collapsed.has(cid)) continue;
@@ -716,8 +728,23 @@
             ${Object.entries(n.literals || {}).map(([k, v]) => propRow(k, v)).join('')}
           </table>
         </div>` : ''}
+        ${['electrical', 'automation'].includes(n.designView) && !n.isSuper ? `<div class="sect">
+          <button id="trace-btn" class="panel-btn">Trace supply upstream ↑</button>
+          ${traceSet ? '<button id="trace-clear" class="panel-btn">Clear trace</button>' : ''}
+        </div>` : ''}
         ${mode === 'modelling' ? `<div class="sect"><div class="sect-h">rendered as</div><div class="curie">glyph: ${esc(n.glyph ?? n.shape)}</div></div>` : ''}
       `;
+      const tb = document.getElementById('trace-btn');
+      if (tb) tb.addEventListener('click', () => startTrace(n.id));
+      const tc = document.getElementById('trace-clear');
+      if (tc) tc.addEventListener('click', clearTrace);
+    }
+
+    function clearTrace() {
+      traceSet = null;
+      applyFilter();
+      inspect(currentNode);
+      log('trace cleared — showing the full model');
     }
 
     // Modelling's vocabulary catalog — the classes / object props / data props
@@ -770,6 +797,86 @@
       }
       Graph.graphData({ nodes: nodes.map((n) => ({ ...n })), links: links.map((l) => ({ ...l })) });
       log(`isolate ${term} → ${nodes.length} node(s), ${links.length} link(s) — All resets`);
+    }
+
+    // ── Upstream trace ────────────────────────────────────────────────────
+    // A leaf load is a socket / lamp / charger / appliance — the glyph priority
+    // already resolves these precisely. A plain sink test (incoming flow, no
+    // outgoing) can't be used: s223:connectsThrough is a flow edge whose target
+    // is the conductor, so every wire would read as a sink.
+    const CONSUMER_GLYPHS = new Set(['socket', 'bulb', 'charger', 'appliance']);
+    const isConsumer = (n) => CONSUMER_GLYPHS.has(n.glyph);
+
+    // The zone (room / space) a node sits in, for grouping the consumer list.
+    const ZONE_EDGE = { 'brick:hasLocation': 't', 'rec:locatedIn': 't', 'rec:isLocationOf': 's' };
+    function zoneOf(id) {
+      for (const l of graph.links) {
+        const dir = ZONE_EDGE[l.property];
+        if (!dir) continue;
+        if (dir === 't' && idOf(l.source) === id) return idOf(l.target);
+        if (dir === 's' && idOf(l.target) === id) return idOf(l.source);
+      }
+      return null;
+    }
+
+    // Reverse-traverse the supply: from a consumer, follow flow (feeds/connects)
+    // and control edges BACKWARD to every source, then keep only the electrical /
+    // automation nodes (rooms and the building drop out). The chosen consumer is
+    // always kept. Demo: ex:socket-lr-1 → breaker → board → inverter → AGCP →
+    // meter → ex:delivery (+ the PV array and battery that also feed the inverter).
+    const UPSTREAM_PREDS = new Set(['brick:feeds', 's223:connectsThrough', 's223:connectsTo', 'brick:controls']);
+    function traceUpstream(startId) {
+      const rev = new Map();   // node → nodes immediately upstream of it
+      for (const l of graph.links) {
+        if (!UPSTREAM_PREDS.has(l.property)) continue;
+        const s = idOf(l.source), t = idOf(l.target);
+        (rev.get(t) ?? rev.set(t, []).get(t)).push(s);
+      }
+      const seen = new Set([startId]);
+      const q = [startId];
+      while (q.length) {
+        const c = q.shift();
+        for (const u of rev.get(c) ?? []) if (!seen.has(u)) { seen.add(u); q.push(u); }
+      }
+      const keep = new Set([...seen].filter((id) => {
+        const n = nodeById(id);
+        return n && ['electrical', 'automation'].includes(n.designView);
+      }));
+      keep.add(startId);
+      return keep;
+    }
+
+    function startTrace(nodeId) {
+      const n = nodeById(nodeId);
+      traceSet = traceUpstream(nodeId);
+      applyFilter();
+      currentNode = n; inspect(n);
+      log(`trace ↑ ${n?.curie ?? nodeId} → ${traceSet.size} node(s) on the supply path (electrical/automation only) — All resets`);
+      Graph.zoomToFit(600, 60);
+    }
+
+    // Consumers panel — leaf loads grouped by zone; pick one to trace its supply.
+    function renderConsumers() {
+      const el = document.getElementById('inspector');
+      if (!graph) { el.innerHTML = '<p class="empty">No model loaded.</p>'; return; }
+      const consumers = graph.nodes.filter(isConsumer);
+      const byZone = new Map();
+      for (const c of consumers) {
+        const z = zoneOf(c.id);
+        const label = z ? (nodeById(z)?.label ?? z) : '(no zone)';
+        (byZone.get(label) ?? byZone.set(label, []).get(label)).push(c);
+      }
+      const groupsHtml = [...byZone.entries()].sort().map(([zone, cs]) => `
+        <div class="cat-h">${esc(zone)} (${cs.length})</div>
+        ${cs.map((c) => `<div class="term" data-trace="${esc(c.id)}" title="trace this load's supply to the grid">
+          <span class="tc">${esc(c.label)}</span>
+          <span class="td">${esc(c.glyph ?? '')}${c.curie ? ' · ' + esc(c.curie) : ''}</span>
+        </div>`).join('')}`).join('');
+      el.innerHTML = `<h2>Consumers</h2>
+        <div class="curie">${consumers.length} leaf load(s) — click one to trace its supply upstream to the grid source</div>
+        ${groupsHtml || '<div class="empty">(no leaf loads found)</div>'}`;
+      el.querySelectorAll('.term[data-trace]').forEach((r) =>
+        r.addEventListener('click', () => startTrace(r.dataset.trace)));
     }
 
     let currentNode = null;   // for re-inspect after a norm-selection change
@@ -895,6 +1002,7 @@
       }
 
       collapsed = new Set();   // group membership is per-model
+      traceSet = null;         // a trace does not survive a model switch
       computeGroups();
       applyFilter();           // group-aware: sets graphData + (re)builds hulls
       renderLegend();
@@ -984,6 +1092,10 @@
           log(`group → ${groupBy}${groupBy === 'none' ? '' : ` · ${groups.size} group(s)`}`);
         });
 
+        document.getElementById('consumers').addEventListener('click', () => {
+          currentNode = null; renderConsumers();
+        });
+
         document.getElementById('norms').addEventListener('click', openNorms);
         document.getElementById('modal-backdrop').addEventListener('click', closeNorms);
         document.getElementById('symbols').addEventListener('click', (e) => {
@@ -994,13 +1106,21 @@
         });
         document.getElementById('fit').addEventListener('click', () => Graph.zoomToFit(600, 60));
         document.getElementById('reset-filter').addEventListener('click', () => {
-          hidden = new Set(); hiddenKinds = new Set(); collapsed = new Set();
+          hidden = new Set(); hiddenKinds = new Set(); collapsed = new Set(); traceSet = null;
           renderLegend(); applyFilter();
         });
 
         await loadSource(sel.value);
         log(`${index.sources.length} model(s) available — switch with the "model" picker`);
         log('click a legend colour to filter');
+
+        // ?trace=<curie|id-suffix> — a linkable, headless-testable upstream trace.
+        const wantTrace = params.get('trace');
+        if (wantTrace) {
+          const n = graph.nodes.find((x) => x.curie === wantTrace || x.id === wantTrace || x.id.endsWith('/' + wantTrace));
+          if (n) startTrace(n.id);
+          else log(`?trace=${wantTrace}: no matching node`, 'warn');
+        }
       } catch (e) {
         log(String(e), 'err');
         setStatus('error', 'error');
