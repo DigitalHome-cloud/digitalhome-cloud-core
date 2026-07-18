@@ -55,6 +55,28 @@
     #log .info { color: #94a3b8; }
     #log .ok   { color: #6ee7b7; }
     #log .warn { color: #fcd34d; }
+
+    /* Modelling: the vocabulary catalog + property descriptions in the inspector. */
+    #inspector .desc { color: #cbd5e1; margin: 2px 0 0; font-size: 11px; line-height: 1.5; }
+    #inspector .cat-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin: 12px 0 4px; }
+    #inspector .term { padding: 3px 4px; margin: 0 -4px; border-radius: 3px; cursor: pointer; }
+    #inspector .term:hover { background: #1e293b; }
+    #inspector .term .tc { font: 11px ui-monospace, Menlo, Consolas, monospace; color: #e2e8f0; }
+    #inspector .term .td { color: #94a3b8; font-size: 10px; display: block; }
+    #inspector .prop-desc { color: #64748b; font-size: 10px; display: block; }
+
+    /* Designing: the norms & good-practices modal. */
+    #modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.55); z-index: 20; display: none; }
+    #norms-modal { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 21; display: none;
+                   width: 460px; max-height: 70vh; overflow: auto; background: #0f172a; border: 1px solid #334155;
+                   border-radius: 8px; padding: 16px 18px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+    #norms-modal h2 { font-size: 14px; margin: 0 0 4px; }
+    #norms-modal p.sub { font-size: 11px; color: #94a3b8; margin: 0 0 12px; }
+    #norms-modal .norm-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin: 12px 0 4px; }
+    #norms-modal label.ed { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; cursor: pointer; }
+    #norms-modal label.ed .inforce { color: #6ee7b7; font-size: 10px; }
+    #norms-modal .actions { margin-top: 14px; display: flex; gap: 8px; justify-content: flex-end; }
+    #norms-modal .empty { color: #64748b; font-style: italic; font-size: 11px; }
   </style>
   <!-- 3d-force-graph 1.79.1 — vendored UMD, three.js inlined. No network at
        runtime, by design: the Blockly harnesses this is modelled on load their
@@ -80,13 +102,16 @@
     <label>model
       <select id="source-select"></select>
     </label>
-    <label>colour
-      <select id="colour-mode">
-        <option value="view">design view</option>
-        <option value="compliance">compliance</option>
-        <option value="ns">standard (rdf:type ns)</option>
+    <label>mode
+      <select id="mode-select">
+        <option value="modelling">modelling</option>
+        <option value="designing">designing</option>
       </select>
     </label>
+    <label>colour
+      <select id="colour-mode"></select>
+    </label>
+    <button id="norms" title="Choose which norms/editions to analyse against" style="display:none">Norms…</button>
     <button id="symbols" title="Toggle 3-D primitives ↔ flat symbols">symbols: 3-D</button>
     <button id="fit">Fit</button>
     <button id="reset-filter" title="Show all">All</button>
@@ -97,6 +122,8 @@
   <div id="legend"></div>
   <aside id="inspector"><p class="empty">Click a node to inspect it.</p></aside>
   <div id="log"></div>
+  <div id="modal-backdrop"></div>
+  <div id="norms-modal"></div>
 
   <script type="module">
     import * as THREE from './vendor/three.module.min.js';
@@ -295,8 +322,8 @@
     // The node's own object. Shares geometry + material; the per-node size bump
     // for a violation is a mesh scale, never a new geometry.
     const nodeObject = (n) => {
-      const ghost = colourMode === 'compliance' && n.ghosted;
-      const opacity = ghost ? (n.compliance === 'unchecked' ? 0.1 : 0.35) : 0.95;
+      const ghost = colourMode === 'compliance' && ghostedOf(n);
+      const opacity = ghost ? (complianceOf(n) === 'unchecked' ? 0.1 : 0.35) : 0.95;
       const colour = nodeColour(n);
       const glyph = n.glyph ?? (n.shape === 'box' ? 'appliance' : 'sphere');
       let obj;
@@ -337,23 +364,62 @@
     // ?colour=compliance&model=<slug> — so a particular view is linkable, and
     // so an automated check can open the mode it wants to assert on.
     const params = new URLSearchParams(location.search);
-    let graph = null, report = null, Graph = null;
-    let colourMode = ['view', 'compliance', 'ns'].includes(params.get('colour')) ? params.get('colour') : 'view';
+    let graph = null, report = null, vocab = null, Graph = null;
+    // Two audiences, two modes. MODELLING is for reading the model — classes,
+    // properties, descriptions, the vocabulary — and never shows compliance.
+    // DESIGNING is for analysing against a chosen set of norm editions; that is
+    // the ONLY place non-compliance appears. Colour options differ per mode.
+    let mode = params.get('mode') === 'designing' ? 'designing' : 'modelling';
+    const COLOUR_OPTS = {
+      modelling: [['view', 'design view'], ['ns', 'standard (rdf:type ns)']],
+      designing: [['compliance', 'compliance'], ['view', 'design view']],
+    };
+    const paramColour = params.get('colour');
+    let colourMode = COLOUR_OPTS[mode].some(([v]) => v === paramColour) ? paramColour : COLOUR_OPTS[mode][0][0];
     let hidden = new Set();        // node legend buckets toggled off
     let hiddenKinds = new Set();   // edge kinds toggled off
+
+    // Editions the Designing picker analyses against. Defaults to all editions
+    // that have shapes; a subset recomputes each node's displayed compliance.
+    let selectedEditions = new Set();
+    let editionOrder = [];          // oldest→newest, from report.editions (runs order)
+    let inForceByNorm = new Map();  // norm curie → its edition-in-force curie
+
+    // Displayed compliance. In modelling it is never shown. In designing with the
+    // full edition set it reproduces the build's verdict exactly; with a subset it
+    // is recomputed CLIENT-SIDE for display only — the built verdict is never
+    // rewritten. Same logic as build-abox.mjs: fails the oldest selected edition
+    // that targets it ⇒ danger; passes that, fails the newest ⇒ gap (grandfathered
+    // against the chosen norms); none selected target it ⇒ unchecked.
+    const recompute = (n) => {
+      const targeted = (n.targetedEditions ?? []).filter((e) => selectedEditions.has(e));
+      if (!targeted.length) return { compliance: 'unchecked', ghosted: true };
+      targeted.sort((a, b) => editionOrder.indexOf(a) - editionOrder.indexOf(b));
+      const viol = new Set(n.violatedEditions ?? []);
+      const oldest = targeted[0], newest = targeted[targeted.length - 1];
+      const compliance = viol.has(oldest) ? 'danger' : viol.has(newest) ? 'gap' : 'ok';
+      // On the full set, carry the build's ghosting (it encodes "in-force edition
+      // has no shapes", which the node arrays can't see). On a subset, only the
+      // unchecked case ghosts.
+      const ghosted = selectedEditions.size === editionOrder.length ? !!n.ghosted : false;
+      return { compliance, ghosted };
+    };
+    const complianceOf = (n) => (mode === 'designing' ? recompute(n).compliance : n.compliance);
+    const ghostedOf    = (n) => (mode === 'designing' ? recompute(n).ghosted    : n.ghosted);
 
     // Which legend bucket a node falls in, for the active colour mode.
     const keyOf = (n) =>
       colourMode === 'ns'           ? ((n.types[0] ?? '').split(':')[0] || 'other')
-      : colourMode === 'compliance' ? n.compliance
+      : colourMode === 'compliance' ? complianceOf(n)
       : (n.designView ?? 'shared');
 
-    const paletteFor = (mode) =>
-      mode === 'ns' ? NS_COLOURS : mode === 'compliance' ? COMPLIANCE_COLOURS : { ...VIEW_COLOURS, shared: SHARED };
+    const paletteFor = (m) =>
+      m === 'ns' ? NS_COLOURS : m === 'compliance' ? COMPLIANCE_COLOURS : { ...VIEW_COLOURS, shared: SHARED };
 
     const nodeColour = (n) => {
-      // In compliance mode the violation IS the signal, so don't override it.
-      if (colourMode !== 'compliance' && n.violations?.length) return VIOLATION;
+      // Violations are a compliance signal — they only tint a node in DESIGNING's
+      // compliance colouring, never in modelling (where compliance is suppressed).
+      if (mode === 'designing' && colourMode !== 'compliance' && n.violations?.length) return VIOLATION;
       return paletteFor(colourMode)[keyOf(n)] ?? SHARED;
     };
 
@@ -380,7 +446,7 @@
       const shapeOf = (k) => graph.nodes.filter((n) => keyOf(n) === k)
         .filter((n) => n.shape === 'box').length * 2 >= counts[k] ? 'box' : 'sphere';
 
-      const ghostCount = graph.nodes.filter((n) => n.ghosted).length;
+      const ghostCount = graph.nodes.filter((n) => ghostedOf(n)).length;
       const nodeRows = Object.entries(pal).filter(([k]) => present.has(k)).map(([k, c]) => `
         <div class="row ${hidden.has(k) ? 'off' : ''}" data-key="${k}" title="${esc(COMPLIANCE_HELP[k] ?? 'click to show/hide')}">
           <span class="glyph ${shapeOf(k) === 'sphere' ? 'sphere' : ''} ${colourMode === 'compliance' && k === 'unchecked' ? 'hollow' : ''}"
@@ -416,46 +482,175 @@
       }));
     }
 
+    // Vocabulary lookup — {label, comment, kind, designView} per curie, from
+    // data/vocab.json (built from dhc-core + the annotation overlay).
+    const vterm = (curie) => vocab?.get(curie) ?? null;
+    const descOf = (curie) => vterm(curie)?.comment ?? '';
+    const labelOf = (curie) => vterm(curie)?.label ?? '';
+
     function inspect(n) {
       const el = document.getElementById('inspector');
-      if (!n) { el.innerHTML = '<p class="empty">Click a node to inspect it.</p>'; return; }
-      const lits = Object.entries(n.literals || {});
-      el.innerHTML = `
-        <h2><span class="dot" style="background:${nodeColour(n)}"></span>${esc(n.label)}</h2>
-        <div class="curie">${esc(n.curie)}</div>
+      if (!n) { renderCatalog(); return; }
+
+      // Predicates this node uses: data properties (literal keys) + object
+      // properties (its outgoing links). Shown with their vocabulary description.
+      const litProps = Object.keys(n.literals || {});
+      const objProps = [...new Set(graph.links
+        .filter((l) => (l.source.id ?? l.source) === n.id)
+        .map((l) => l.property))];
+      const propRow = (p, val) => `
+        <tr><td class="k">${esc(p)}</td><td class="v">${esc(val)}
+          ${labelOf(p) ? `<span class="prop-desc">${esc(labelOf(p))}${descOf(p) ? ' — ' + esc(descOf(p)) : ''}</span>` : ''}
+        </td></tr>`;
+
+      const compliance = mode === 'designing' ? `
+        <div class="sect">
+          <div class="sect-h">compliance${selectedEditions.size !== editionOrder.length ? ' (selected norms)' : ''}</div>
+          <div class="curie">
+            <span class="glyph" style="background:${COMPLIANCE_COLOURS[complianceOf(n)]}"></span>${esc(complianceOf(n))}
+            — ${esc(COMPLIANCE_HELP[complianceOf(n)])}
+          </div>
+          ${selectedEditions.size === editionOrder.length && n.complianceWhy ? `<div class="curie" style="margin-top:4px;color:#cbd5e1">${esc(n.complianceWhy)}</div>` : ''}
+          ${ghostedOf(n) && complianceOf(n) !== 'unchecked' ? `<div class="curie" style="margin-top:4px;color:#94a3b8">ghosted — ${esc(GHOST_HELP)}</div>` : ''}
+        </div>
         ${n.violations?.length ? `<div class="sect">
           <div class="sect-h">C-Box violations — by edition</div>
           ${n.violations.map((v) => `<div class="viol">
             <div class="shape">${esc(v.edition ?? v.profile)} · ${esc(v.shape || v.path || '(unnamed shape)')}</div>
             ${v.message ? `<div>${esc(v.message)}</div>` : ''}
           </div>`).join('')}
-        </div>` : ''}
+        </div>` : ''}` : '';
+
+      el.innerHTML = `
+        <h2><span class="dot" style="background:${nodeColour(n)}"></span>${esc(n.label)}</h2>
+        <div class="curie">${esc(n.curie)}</div>
         <div class="sect">
-          <div class="sect-h">rdf:type</div>
-          <table>${n.types.map((t) => `<tr><td class="v">${esc(t)}</td></tr>`).join('')}</table>
+          <div class="sect-h">class${n.types.length > 1 ? 'es' : ''}</div>
+          ${n.types.map((t) => `<div class="term" style="cursor:default">
+            <span class="tc">${esc(t)}</span>
+            ${descOf(t) ? `<p class="desc">${esc(descOf(t))}</p>` : (labelOf(t) ? `<span class="td">${esc(labelOf(t))}</span>` : '')}
+          </div>`).join('')}
         </div>
         <div class="sect">
           <div class="sect-h">design view</div>
           <div class="curie">${esc(n.designView ?? '(none — shared)')}</div>
         </div>
-        <div class="sect">
-          <div class="sect-h">compliance</div>
-          <div class="curie">
-            <span class="glyph ${n.shape === 'box' ? '' : 'sphere'}" style="background:${COMPLIANCE_COLOURS[n.compliance]}"></span>${esc(n.compliance)}
-            — ${esc(COMPLIANCE_HELP[n.compliance])}
-          </div>
-          ${n.complianceWhy ? `<div class="curie" style="margin-top:4px;color:#cbd5e1">${esc(n.complianceWhy)}</div>` : ''}
-          ${n.ghosted && n.compliance !== 'unchecked' ? `<div class="curie" style="margin-top:4px;color:#94a3b8">ghosted — ${esc(GHOST_HELP)}</div>` : ''}
-        </div>
-        <div class="sect">
-          <div class="sect-h">rendered as</div>
-          <div class="curie">${n.shape === 'box' ? 'box — equipment (⊑ brick:Equipment / s223:Equipment)' : 'sphere — not equipment'}</div>
-        </div>
-        ${lits.length ? `<div class="sect">
+        ${compliance}
+        ${(litProps.length || objProps.length) ? `<div class="sect">
           <div class="sect-h">properties</div>
-          <table>${lits.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}</table>
+          <table>
+            ${objProps.map((p) => propRow(p, '→ ' + graph.links.filter((l) => (l.source.id ?? l.source) === n.id && l.property === p).map((l) => (typeof l.target === 'object' ? l.target.curie ?? l.target.id : l.target)).join(', '))).join('')}
+            ${Object.entries(n.literals || {}).map(([k, v]) => propRow(k, v)).join('')}
+          </table>
         </div>` : ''}
+        ${mode === 'modelling' ? `<div class="sect"><div class="sect-h">rendered as</div><div class="curie">glyph: ${esc(n.glyph ?? n.shape)}</div></div>` : ''}
       `;
+    }
+
+    // Modelling's vocabulary catalog — the classes / object props / data props
+    // ACTUALLY USED by the loaded model, each with its description. Click a term
+    // to filter the graph to what it touches. Shown in the inspector when no node
+    // is selected (and only in modelling mode).
+    function renderCatalog() {
+      const el = document.getElementById('inspector');
+      if (mode !== 'modelling' || !graph) {
+        el.innerHTML = '<p class="empty">Click a node to inspect it.</p>'; return;
+      }
+      const usedClasses = new Set(graph.nodes.flatMap((n) => n.types));
+      const usedObjProps = new Set(graph.links.map((l) => l.property));
+      const usedDataProps = new Set(graph.nodes.flatMap((n) => Object.keys(n.literals || {})));
+      const section = (title, curies, act) => {
+        const rows = [...curies].sort().map((c) => `
+          <div class="term" data-term="${esc(c)}" data-act="${act}">
+            <span class="tc">${esc(c)}</span>
+            ${labelOf(c) ? `<span class="td">${esc(labelOf(c))}${descOf(c) ? ' — ' + esc(descOf(c)) : ''}</span>` : ''}
+          </div>`).join('');
+        return `<div class="cat-h">${title} (${curies.size})</div>${rows || '<div class="empty">(none)</div>'}`;
+      };
+      el.innerHTML = `<h2>Vocabulary</h2>
+        <div class="curie">terms used in this model — click to isolate</div>
+        ${section('classes', usedClasses, 'class')}
+        ${section('object properties', usedObjProps, 'objprop')}
+        ${section('data properties', usedDataProps, 'dataprop')}`;
+      el.querySelectorAll('.term[data-term]').forEach((r) => r.addEventListener('click', () => {
+        isolateTerm(r.dataset.term, r.dataset.act);
+      }));
+    }
+
+    // Filter the graph to what a vocabulary term touches: a class → its nodes and
+    // their links; an object property → its edges and endpoints; a data property
+    // → the nodes carrying it. `All` resets.
+    function isolateTerm(term, act) {
+      let nodes, links;
+      if (act === 'objprop') {
+        links = graph.links.filter((l) => l.property === term);
+        const ids = new Set(links.flatMap((l) => [l.source.id ?? l.source, l.target.id ?? l.target]));
+        nodes = graph.nodes.filter((n) => ids.has(n.id));
+      } else if (act === 'dataprop') {
+        nodes = graph.nodes.filter((n) => term in (n.literals || {}));
+        const ids = new Set(nodes.map((n) => n.id));
+        links = graph.links.filter((l) => ids.has(l.source.id ?? l.source) && ids.has(l.target.id ?? l.target));
+      } else {
+        nodes = graph.nodes.filter((n) => n.types.includes(term));
+        const ids = new Set(nodes.map((n) => n.id));
+        links = graph.links.filter((l) => ids.has(l.source.id ?? l.source) && ids.has(l.target.id ?? l.target));
+      }
+      Graph.graphData({ nodes: nodes.map((n) => ({ ...n })), links: links.map((l) => ({ ...l })) });
+      log(`isolate ${term} → ${nodes.length} node(s), ${links.length} link(s) — All resets`);
+    }
+
+    let currentNode = null;   // for re-inspect after a norm-selection change
+
+    // Populate the colour dropdown for the active mode, show/hide the Norms
+    // button, and keep colourMode valid (modelling never offers compliance).
+    function syncModeUI() {
+      const cm = document.getElementById('colour-mode');
+      cm.innerHTML = COLOUR_OPTS[mode].map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+      if (!COLOUR_OPTS[mode].some(([v]) => v === colourMode)) colourMode = COLOUR_OPTS[mode][0][0];
+      cm.value = colourMode;
+      document.getElementById('norms').style.display = mode === 'designing' ? '' : 'none';
+      document.getElementById('mode-select').value = mode;
+    }
+
+    const closeNorms = () => {
+      document.getElementById('norms-modal').style.display = 'none';
+      document.getElementById('modal-backdrop').style.display = 'none';
+    };
+    // The Designing picker: choose which norm editions the analysis runs against.
+    // Non-compliance is only ever shown here (designing mode).
+    function openNorms() {
+      if (!report) return;
+      const byNorm = {};
+      for (const e of report.editions ?? []) (byNorm[e.norm] ??= []).push(e);
+      const m = document.getElementById('norms-modal');
+      m.innerHTML = `<h2>Norms &amp; good practices</h2>
+        <p class="sub">Analyse the model against the selected editions. Deselecting a norm/edition
+        drops it from the verdict — a node checked only by an excluded edition becomes unchecked,
+        and a failure only under an excluded edition disappears.</p>
+        ${Object.entries(byNorm).map(([norm, eds]) => `
+          <div class="norm-h">${esc(norm)}</div>
+          ${eds.map((e) => `<label class="ed">
+            <input type="checkbox" data-ed="${esc(e.edition)}" ${selectedEditions.has(e.edition) ? 'checked' : ''}>
+            ${esc(e.edition)} ${e.isLatest ? '<span class="inforce">(in force)</span>' : '<span class="td">(superseded)</span>'}
+          </label>`).join('')}`).join('')}
+        <div class="norm-h">good practices</div>
+        <div class="empty">(none published yet — no norm carries dhc:normCategory "BestPractice")</div>
+        <div class="actions">
+          <button id="norms-all">Select all</button>
+          <button id="norms-apply">Apply</button>
+        </div>`;
+      document.getElementById('modal-backdrop').style.display = 'block';
+      m.style.display = 'block';
+      m.querySelector('#norms-all').onclick = () => m.querySelectorAll('input[data-ed]').forEach((c) => { c.checked = true; });
+      m.querySelector('#norms-apply').onclick = () => {
+        selectedEditions = new Set([...m.querySelectorAll('input[data-ed]:checked')].map((c) => c.dataset.ed));
+        closeNorms();
+        hidden = new Set();
+        renderLegend(); applyFilter();
+        if (currentNode) inspect(currentNode);
+        const full = selectedEditions.size === editionOrder.length;
+        log(`analysing against ${full ? 'all editions' : [...selectedEditions].join(', ') || '(none — nothing checked)'}`);
+      };
     }
 
     async function loadSource(slug) {
@@ -467,6 +662,13 @@
       ]);
       graph = g; report = r;
       logEl.innerHTML = '';
+
+      // Edition state for the Designing picker. editionOrder is oldest→newest
+      // (report.editions is built in the runs order, which is depth-sorted).
+      editionOrder = (r.editions ?? []).map((e) => e.edition);
+      selectedEditions = new Set(editionOrder);          // default: analyse against all
+      inForceByNorm = new Map();
+      for (const e of r.editions ?? []) if (e.isLatest) inForceByNorm.set(e.norm, e.edition);
 
       log(`✓ ${g.source}`, 'ok');
       log(`✓ ${g.nodes.length} nodes, ${g.links.length} links (built ${g.generatedAt})`, 'ok');
@@ -521,6 +723,7 @@
 
       Graph.graphData({ nodes: g.nodes.map((n) => ({ ...n })), links: g.links.map((l) => ({ ...l })) });
       renderLegend();
+      currentNode = null; inspect(null);   // modelling → vocab catalog; designing → prompt
       let fitted = false;
       const fit = () => { if (!fitted) { fitted = true; Graph.zoomToFit(600, 60); } };
       Graph.onEngineStop(fit);
@@ -531,6 +734,9 @@
       try {
         log('Fetching generated artifacts…');
         const index = await fetchJson('./data/index.json');
+        // vocab.json is one global file (dhc-core + overlay). Best-effort: the
+        // catalog/descriptions degrade gracefully if it is absent.
+        vocab = new Map((await fetchJson('./data/vocab.json').catch(() => ({ terms: [] }))).terms.map((t) => [t.curie, t]));
 
         // The graph instance is created once; switching source only swaps data.
         Graph = ForceGraph3D()(document.getElementById('graph-host'))
@@ -550,7 +756,7 @@
           .linkDirectionalParticles((l) => styleOf(l).particles)
           .linkDirectionalParticleSpeed((l) => (l.kind === 'flow' ? 0.006 : 0.003))
           .linkDirectionalParticleThreeObject(particleObject)
-          .onNodeClick((n) => inspect(n));
+          .onNodeClick((n) => { currentNode = n; inspect(n); });
 
         // Source picker — every A-Box in schema/abox/ is prebuilt, so switching
         // is a fetch, not a revalidation. Our own models sit at the top; the
@@ -566,11 +772,20 @@
               `<optgroup label="${g} — reference, not validated">${ss.map(opt).join('')}</optgroup>`).join('');
         const wanted = params.get('model');
         sel.value = index.sources.some((s) => s.slug === wanted) ? wanted : index.first;
-        document.getElementById('colour-mode').value = colourMode;
+        syncModeUI();
         document.getElementById('symbols').textContent = `symbols: ${glyphMode === 'sprite' ? 'flat' : '3-D'}`;
         sel.addEventListener('change', async (e) => {
-          inspect(null);
+          currentNode = null; inspect(null);
           await loadSource(e.target.value);
+        });
+
+        document.getElementById('mode-select').addEventListener('change', (e) => {
+          mode = e.target.value;
+          hidden = new Set();
+          syncModeUI();
+          renderLegend(); applyFilter();
+          inspect(currentNode);   // catalog when nothing selected, node otherwise
+          log(`mode → ${mode}${mode === 'modelling' ? ' (compliance hidden)' : ''}`);
         });
 
         document.getElementById('colour-mode').addEventListener('change', (e) => {
@@ -582,6 +797,9 @@
           applyFilter();
           log(`colour → ${colourMode}`);
         });
+
+        document.getElementById('norms').addEventListener('click', openNorms);
+        document.getElementById('modal-backdrop').addEventListener('click', closeNorms);
         document.getElementById('symbols').addEventListener('click', (e) => {
           glyphMode = glyphMode === 'solid' ? 'sprite' : 'solid';
           e.target.textContent = `symbols: ${glyphMode === 'sprite' ? 'flat' : '3-D'}`;
