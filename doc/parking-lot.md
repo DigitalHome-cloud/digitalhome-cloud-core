@@ -75,8 +75,9 @@ rated 32 A conforms today. Same for `dhc:crossSection` on the circuit vs on the
 ### Shapes worth authoring
 
 Each needs a **valid *and* invalid fixture** — a shape without a failing fixture
-is unproven, which is exactly how three shapes stayed dead
-(`doc/prototyping-poc.md`).
+is unproven, which is exactly how three shapes stayed dead (`IRVE32AMonoShape`,
+`IRVE32ATriShape`, the BS 7671 ring-final shape; see the electrical-installation
+skill § the mandatory negative fixture).
 
 - `ProtectionDeviceShape` — declares `dhc:ratedCurrent`; standard rating
   (6/10/16/20/25/32/40/63 A).

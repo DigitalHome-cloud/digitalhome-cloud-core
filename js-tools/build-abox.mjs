@@ -532,7 +532,7 @@ async function buildOne(rel, reference = false) {
   //   unchecked : no shape in ANY edition targets its class. NOT a pass —
   //               SHACL reports only failures, so silence here is
   //               indistinguishable from conformance. Colouring it green would
-  //               be the vacuous-green mistake in doc/prototyping-poc.md.
+  //               be the vacuous-green mistake: passing only for lack of a rule.
   //
   // ghosted    : orthogonal to all four. Either nothing checked it, or the
   //              edition in force for its norm has no shapes at all, so no

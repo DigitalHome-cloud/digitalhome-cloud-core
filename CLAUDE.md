@@ -391,8 +391,7 @@ with `brick_tq_shacl`, not a test-time engine swap. Rationale:
 
 - [`doc/adr-0001-ontology-tooling.md`](doc/adr-0001-ontology-tooling.md) — one
   writer, JS validator, no Brick Python, and where the C-Box sits in the pipeline.
-- [`doc/prototyping-poc.md`](doc/prototyping-poc.md) — the v1.0 prototyping brief.
-- [`doc/modeling.md`](doc/modeling.md) — REC spatial modelling concepts.
+- [`doc/parking-lot.md`](doc/parking-lot.md) — known, unscheduled core work.
 - `SPEC-V3-Redesign.md` — the REC → Brick → 223P → `dhc:` layering.
 - `../../docs/specs/DH-SPEC-200-ontology-v2-multibox-architecture.md` — Multi-Box
   architecture, the design driver for v2.0.0.

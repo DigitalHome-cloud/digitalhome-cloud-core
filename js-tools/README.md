@@ -154,13 +154,14 @@ reverse-engineered one and accept the honest ghosted yellow.
 **Transparent (unchecked) is the C-Box's problem, not the building's.** No shape
 targets those classes, so nothing checked them. SHACL reports only failures, so
 an unchecked node is silent for the same reason a *conforming* one is. Colouring
-it green would be the vacuous-green mistake in `doc/prototyping-poc.md`.
+it green would be the vacuous-green mistake — a graph that "passes" only because
+nothing was checked.
 
 **Transparent is the C-Box's problem, not the building's.** No shape targets
 those classes, so nothing checked them. SHACL reports only failures, which makes
 an unchecked node silent for exactly the same reason a *conforming* one is.
-Colouring it green would be the vacuous-green mistake in `doc/prototyping-poc.md`.
-Note `ex:board-resi9` is ghosted *while declaring* `dhc:governedBy` — the norm
+Colouring it green would be the vacuous-green mistake — passing only for lack of
+a rule. Note `ex:board-resi9` is ghosted *while declaring* `dhc:governedBy` — the norm
 claims jurisdiction and our C-Box has no rule, which the inspector says in as
 many words. That is the coverage gap (`doc/parking-lot.md` § 1) made visible.
 
@@ -302,9 +303,9 @@ the two look like relatives, as they should.
 
 A graph with no nodes or no links renders as a clean, plausible, empty canvas —
 and the viewer says `conforms: true` because SHACL selected nothing. That is the
-silent-green failure this repo has produced repeatedly (see
-`doc/prototyping-poc.md`). `build-abox.mjs` exits non-zero instead, and the page
-says so in red rather than looking fine. Same for a `dhc:shapesFile` naming a
+silent-green failure this repo has produced repeatedly. `build-abox.mjs` exits
+non-zero instead, and the page says so in red rather than looking fine. Same for
+a `dhc:shapesFile` naming a
 file that does not exist, a shapes file no edition claims, and a T-Box with no
 `dhc:latestEdition`.
 

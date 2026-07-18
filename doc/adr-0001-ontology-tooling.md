@@ -180,7 +180,6 @@ them is wrong.
 
 ## Related
 
-- `doc/prototyping-poc.md` — the v1.0 prototyping brief this answers
 - `CLAUDE.md` § SHACL activation pattern — the P3 `sh:or` guard and the
   reporting rules that follow from it
 - `.claude/skills/dhc-ontology-explorer/SKILL.md` (in **this** repo — the
