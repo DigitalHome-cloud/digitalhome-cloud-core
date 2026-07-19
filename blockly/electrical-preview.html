@@ -358,6 +358,20 @@
       statTop.textContent    = workspace.getTopBlocks(false).length;
     }
 
+    // Custom flyout for the "Circuit lines" toolbox category. The built-in
+    // VARIABLE flyout only lists UNTYPED variables (getVariablesOfType("")),
+    // so our Circuit-typed tokens never appear there. This lists them and adds
+    // a button to create a new one, typed "Circuit".
+    function circuitLinesFlyout(ws) {
+      const items = [{ kind: 'button', text: '＋ New circuit line', callbackKey: 'CREATE_CIRCUIT_VAR' }];
+      // Reuse Blockly's own getter-block builder (version-correct field shape).
+      // All our variables are type "Circuit", so this is the circuit-line list.
+      let blocks = [];
+      try { blocks = Blockly.VariablesDynamic.flyoutCategoryBlocks(ws) || []; } catch (e) { log('flyout: ' + e.message, 'err'); }
+      if (!blocks.length) items.push({ kind: 'label', text: 'No circuit lines yet — drop a Circuit block' });
+      return items.concat(blocks);
+    }
+
     function injectWorkspace(renderer, restoreState) {
       if (workspace) {
         if (!restoreState) restoreState = Blockly.serialization.workspaces.save(workspace);
@@ -373,6 +387,12 @@
         trashcan: true,
         move: { scrollbars: true, drag: true, wheel: false },
       });
+
+      // The "Circuit lines" category is populated by circuitLinesFlyout; the
+      // button creates a Circuit-typed variable a load can then reference.
+      workspace.registerToolboxCategoryCallback('CIRCUIT_LINES', circuitLinesFlyout);
+      workspace.registerButtonCallback('CREATE_CIRCUIT_VAR', (b) =>
+        Blockly.Variables.createVariableButtonHandler(b.getTargetWorkspace(), null, 'Circuit'));
 
       if (restoreState) {
         try { Blockly.serialization.workspaces.load(restoreState, workspace); }
@@ -497,6 +517,9 @@
         setStatus('ready', 'ok');
         const root = workspaceState?.blocks?.blocks?.[0]?.fields?.name;
         if (root) document.getElementById('install-name').textContent = root;
+
+        const lines = workspace.getVariablesOfType('Circuit').map((v) => v.name);
+        log(`circuit lines (${lines.length}): ${lines.join(', ') || '—'}`, 'ok');
 
       } catch (e) {
         log(String(e), 'err');

@@ -65,7 +65,7 @@
       "kind": "category",
       "name": "Circuit lines",
       "colour": "#5b6b8c",
-      "custom": "VARIABLE"
+      "custom": "CIRCUIT_LINES"
     }
   ]
 }
