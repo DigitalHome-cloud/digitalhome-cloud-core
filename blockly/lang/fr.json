@@ -1,0 +1,74 @@
+{
+  "_note": "French (Français) locale overrides for the electrical harness. English (electrical-blocks.json) is the base; this file overrides messageN / tooltip / (where translatable) argsN per block type. Dropdown stored values stay coded — only human labels are translated.",
+  "ui": {
+    "brand.title": "Concepteur d'installation électrique",
+    "brand.sub": "Système de distribution électrique",
+    "tab.All": "Tout",
+    "tab.Sources": "Sources",
+    "tab.Routing": "Distribution",
+    "tab.Sinks": "Consommateurs",
+    "btn.clear": "Effacer",
+    "btn.json": "Voir JSON",
+    "btn.save": "Enregistrer",
+    "lbl.renderer": "Rendu",
+    "lbl.lang": "Langue"
+  },
+  "blocks": {
+    "dhc:PowerDistributionSystem": {
+      "message0": "⚡ Système de distribution électrique %1",
+      "message1": "régime de neutre %1",
+      "message2": "médium (système électrique) %1",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "hasMedium",
+          "options": [
+            ["230 V · monophasé · 50 Hz", "s223:AC-230VLN-1Ph-50Hz"],
+            ["400/230 V · triphasé · 50 Hz", "s223:AC-400VLL-230VLN-3Ph-50Hz"]
+          ]
+        }
+      ],
+      "message3": "① sous-système sources — générateurs %1",
+      "message4": "② sous-système distribution — onduleur & tableaux %1",
+      "message5": "③ sous-système consommateurs %1",
+      "tooltip": "Racine d'une installation électrique (dhc:PowerDistributionSystem ⊑ brick:System). Regroupe trois sous-systèmes — sources, distribution, consommateurs — dont les membres deviennent brick:hasPart lors de blockly→abox. neutralSystem est le régime de neutre ; hasMedium (s223:hasMedium) nomme le système électrique."
+    },
+    "dhc:EnergyDelivery": {
+      "message0": "🔌 Raccordement réseau %1",
+      "message1": "fournisseur %1 · souscrit %2 kVA",
+      "tooltip": "Le point de livraison depuis le réseau de distribution (dhc:EnergyDelivery). Porte le fournisseur et la puissance souscrite en kVA (dhc:contractedPowerKVA). Un membre source."
+    },
+    "brick:PV_Generation_System": {
+      "message0": "☀ Système PV %1",
+      "tooltip": "Un système de génération photovoltaïque (brick:PV_Generation_System). Un membre source."
+    },
+    "brick:Battery": {
+      "message0": "🔋 Batterie %1",
+      "tooltip": "Une batterie de stockage électrique (brick:Battery). Un membre source."
+    },
+    "brick:Inverter": {
+      "message0": "⇄ Onduleur %1",
+      "tooltip": "Convertit et achemine l'énergie entre les sources et le tableau (brick:Inverter). Un membre distribution."
+    },
+    "dhc:DistributionBoard": {
+      "message0": "▦ Tableau principal %1",
+      "tooltip": "Le tableau principal (dhc:DistributionBoard). Un membre distribution. Utilisez l'engrenage ⚙ pour ajouter/retirer des rangées (rails DIN)."
+    },
+    "dhc:SubDistributionBoard": {
+      "message0": "▥ Tableau divisionnaire %1",
+      "tooltip": "Un tableau divisionnaire alimenté en aval (dhc:SubDistributionBoard — raccordé comme consommateur). Utilisez l'engrenage ⚙ pour gérer les rangées (rails DIN)."
+    },
+    "dhc:Socket": {
+      "message0": "◵ Prise %1",
+      "tooltip": "Une prise de courant (dhc:Socket). Un membre consommateur."
+    },
+    "brick:Luminaire": {
+      "message0": "💡 Luminaire %1",
+      "tooltip": "Un luminaire (brick:Luminaire). Un membre consommateur."
+    },
+    "brick:Electric_Vehicle_Charging_Station": {
+      "message0": "🚗 Borne de recharge VE %1",
+      "tooltip": "Une borne de recharge pour véhicule électrique / wallbox (brick:Electric_Vehicle_Charging_Station). Un membre consommateur."
+    }
+  }
+}

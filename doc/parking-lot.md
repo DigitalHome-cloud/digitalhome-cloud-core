@@ -225,6 +225,17 @@ than promoted now.
   that *references* the board, or a container that *holds* the electrical spine?
   Resolve before the translator, not before the harness.
 
+- **`dhc:SubDistributionBoard` does not exist.** The harness has two board
+  blocks — a main board (`dhc:DistributionBoard`, exists) placed in the routing
+  sub-system, and a secondary board placed as a downstream sink. The secondary
+  block's type/template is `dhc:SubDistributionBoard`, intended
+  `rdfs:subClassOf dhc:DistributionBoard`. Promote it with the same electrical
+  overlay, or (simpler) drop the block and express "secondary" with a role field
+  on `dhc:DistributionBoard` — decide alongside the PDS relationship above. The
+  board blocks' **rows = DIN rails** are a UI grouping with no ontology term yet;
+  on translation a rail is most naturally a `brick:hasPart` bag of the modules it
+  carries, not a class of its own.
+
 - **`dhc:neutralSystem` is domained to `dhc:EnergyDelivery`** (`dhc-core.ttl`).
   The root block puts the *régime de neutre* dropdown on the PDS. Asserting
   `dhc:neutralSystem` on a `dhc:PowerDistributionSystem` would, under RDFS, infer

@@ -152,8 +152,8 @@
 
   <!-- Blockly v11 — CDN (this harness is NOT offline; see blockly/README.md) -->
   <script src="https://unpkg.com/blockly@11.2.2/blockly.min.js"></script>
-  <!-- DHC mutators — must load AFTER Blockly, BEFORE block defs -->
-  <script src="./registerPlugins.js"></script>
+  <!-- DHC electrical mutators — must load AFTER Blockly, BEFORE block defs -->
+  <script src="./registerPlugins-electrical.js"></script>
 </head>
 <body>
 
@@ -161,11 +161,19 @@
   <header id="header">
     <div class="logo">⚡</div>
     <div class="brand">
-      <div class="brand-title">Electrical Installation Designer</div>
+      <div class="brand-title" id="brand-title">Electrical Installation Designer</div>
       <div class="brand-sub" id="install-name">Power Distribution System</div>
     </div>
     <div class="divider"></div>
-    <label>
+    <label id="lbl-lang">
+      Language
+      <select id="lang-select">
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
+      </select>
+    </label>
+    <label id="lbl-renderer">
       Renderer
       <select id="renderer-select">
         <option value="thrasos">thrasos</option>
@@ -185,10 +193,10 @@
 
   <!-- ── View tabs ─────────────────────────────────────────────────────── -->
   <div id="tabs">
-    <button class="tab active" data-view="All">All</button>
-    <button class="tab" data-view="Sources"><span class="dot" style="background: var(--col-source)"></span>Sources</button>
-    <button class="tab" data-view="Routing"><span class="dot" style="background: var(--col-route)"></span>Routing</button>
-    <button class="tab" data-view="Sinks"><span class="dot" style="background: var(--col-sink)"></span>Sinks</button>
+    <button class="tab active" data-view="All"><span class="tab-label">All</span></button>
+    <button class="tab" data-view="Sources"><span class="dot" style="background: var(--col-source)"></span><span class="tab-label">Sources</span></button>
+    <button class="tab" data-view="Routing"><span class="dot" style="background: var(--col-route)"></span><span class="tab-label">Routing</span></button>
+    <button class="tab" data-view="Sinks"><span class="dot" style="background: var(--col-sink)"></span><span class="tab-label">Sinks</span></button>
   </div>
 
   <!-- ── Main layout ──────────────────────────────────────────────────── -->
@@ -282,10 +290,57 @@
     const VIEW_KEY = 'dhc.blockly.electrical.view';
     let activeView = localStorage.getItem(VIEW_KEY) || 'All';
 
+    /* ── Localization ───────────────────────────────────────────────────
+     * English (electrical-blocks.json) is the base. Each non-English locale is
+     * a ./lang/<lang>.json file that OVERRIDES messageN / tooltip / (where a
+     * label is translatable) argsN per block type, plus a `ui` map for the
+     * chrome. Switching locale re-defines the blocks from the base merged with
+     * the overrides and re-injects the workspace, preserving its state. This is
+     * additive — no double-maintenance: the locale files carry only deltas. */
+    const LANG_KEY   = 'dhc.blockly.electrical.lang';
+    const VALID_LANGS = ['en', 'de', 'fr'];
+    // ?lang=de|fr is linkable; otherwise the persisted choice, else English.
+    const _langParam = new URLSearchParams(location.search).get('lang');
+    let activeLang = VALID_LANGS.includes(_langParam) ? _langParam
+      : (VALID_LANGS.includes(localStorage.getItem(LANG_KEY)) ? localStorage.getItem(LANG_KEY) : 'en');
+    const localeCache = {};   // lang → {ui, blocks} | null
+
+    async function getLocale(lang) {
+      if (lang === 'en') return null;
+      if (lang in localeCache) return localeCache[lang];
+      try { localeCache[lang] = await fetchJson('./lang/' + lang + '.json'); }
+      catch (e) { log('⚠ locale ' + lang + ': ' + e.message, 'err'); localeCache[lang] = null; }
+      return localeCache[lang];
+    }
+
+    // A fresh clone of the base block defs with a locale's per-type overrides
+    // shallow-merged in (messageN/argsN/tooltip replace the base's).
+    function defsFor(locale) {
+      const defs = JSON.parse(JSON.stringify(baseDefs));
+      if (locale && locale.blocks) for (const d of defs) if (locale.blocks[d.type]) Object.assign(d, locale.blocks[d.type]);
+      return defs;
+    }
+
+    function applyUi(locale) {
+      const ui = (locale && locale.ui) || {};
+      // brand + buttons + label chrome
+      document.getElementById('brand-title').textContent = ui['brand.title'] ?? 'Electrical Installation Designer';
+      document.getElementById('btn-clear').textContent = ui['btn.clear'] ?? 'Clear';
+      document.getElementById('btn-json').textContent  = ui['btn.json']  ?? 'View JSON';
+      document.getElementById('btn-save').textContent  = ui['btn.save']  ?? 'Save';
+      document.querySelector('#lbl-lang').childNodes[0].nodeValue = (ui['lbl.lang'] ?? 'Language') + ' ';
+      document.querySelector('#lbl-renderer').childNodes[0].nodeValue = (ui['lbl.renderer'] ?? 'Renderer') + ' ';
+      // tabs (label spans keep the coloured dot intact)
+      document.querySelectorAll('.tab').forEach((t) => {
+        const lab = t.querySelector('.tab-label');
+        if (lab) lab.textContent = ui['tab.' + t.dataset.view] ?? t.dataset.view;
+      });
+    }
+
     /* ── State ──────────────────────────────────────────────────────── */
     let workspace   = null;
     let fullToolbox = null;
-    let blockDefs   = null;
+    let baseDefs    = null;   // English base defs from electrical-blocks.json
 
     function buildToolboxForView(view) {
       const cats = VIEW_CATS[view] || VIEW_CATS['All'];
@@ -392,6 +447,25 @@
       injectWorkspace(r);
     });
 
+    /* ── Language switch — re-defines blocks in the chosen locale and
+     * re-injects, preserving the current workspace state. */
+    async function setLang(lang) {
+      if (!VALID_LANGS.includes(lang)) return;
+      activeLang = lang;
+      localStorage.setItem(LANG_KEY, lang);
+      const locale = await getLocale(lang);
+      const state = workspace ? Blockly.serialization.workspaces.save(workspace) : null;
+      Blockly.defineBlocksWithJsonArray(defsFor(locale));
+      injectWorkspace(getRenderer(), state);
+      applyUi(locale);
+      const rootName = state?.blocks?.blocks?.[0]?.fields?.name;
+      if (rootName) document.getElementById('install-name').textContent = rootName;
+      log('language → ' + lang, 'ok');
+    }
+    const langSelect = document.getElementById('lang-select');
+    langSelect.value = activeLang;
+    langSelect.addEventListener('change', (e) => setLang(e.target.value));
+
     async function load() {
       try {
         log('loading artifacts…');
@@ -401,19 +475,22 @@
           fetchJson('./electrical-workspace.json'),
         ]);
 
-        blockDefs   = blocksDoc.blocks || [];
+        baseDefs    = blocksDoc.blocks || [];
         fullToolbox = toolbox;
 
-        log('blocks.json  → ' + blockDefs.length + ' defs', 'ok');
+        log('blocks.json  → ' + baseDefs.length + ' defs', 'ok');
         log('toolbox.json → ' + (toolbox.contents || []).length + ' categories', 'ok');
 
-        Blockly.defineBlocksWithJsonArray(blockDefs);
-        log('registered: ' + blockDefs.map(b => b.type).join(', '), 'ok');
+        const locale = await getLocale(activeLang);
+        Blockly.defineBlocksWithJsonArray(defsFor(locale));
+        log('registered: ' + baseDefs.map(b => b.type).join(', '), 'ok');
+        if (activeLang !== 'en') log('locale: ' + activeLang, 'ok');
 
         const renderer = getRenderer();
         rendSelect.value = renderer;
         injectWorkspace(renderer, workspaceState);
         setActiveView(activeView);
+        applyUi(locale);
 
         setStatus('ready', 'ok');
         const root = workspaceState?.blocks?.blocks?.[0]?.fields?.name;

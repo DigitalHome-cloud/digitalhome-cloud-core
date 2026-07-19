@@ -19,21 +19,32 @@
           ]
         }
       ],
-      "message2": "sources — energy generators %1",
+      "message2": "medium (electrical system) %1",
       "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "hasMedium",
+          "options": [
+            ["230 V · 1-phase · 50 Hz", "s223:AC-230VLN-1Ph-50Hz"],
+            ["400/230 V · 3-phase · 50 Hz", "s223:AC-400VLL-230VLN-3Ph-50Hz"]
+          ]
+        }
+      ],
+      "message3": "① source sub-system — energy generators %1",
+      "args3": [
         { "type": "input_statement", "name": "sources", "check": "source" }
       ],
-      "message3": "control & routing — inverter, distribution board %1",
-      "args3": [
+      "message4": "② routing sub-system — inverter & distribution boards %1",
+      "args4": [
         { "type": "input_statement", "name": "routes", "check": "route" }
       ],
-      "message4": "sinks — consumers %1",
-      "args4": [
+      "message5": "③ load sub-system — consumers %1",
+      "args5": [
         { "type": "input_statement", "name": "sinks", "check": "sink" }
       ],
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "Root of an electrical installation (dhc:PowerDistributionSystem ⊑ brick:System). Sources, routing and sinks become brick:hasPart members on blockly→abox translation. neutralSystem is the earthing arrangement (régime de neutre).",
+      "tooltip": "Root of an electrical installation (dhc:PowerDistributionSystem ⊑ brick:System). It groups three functional sub-systems — sources, routing, sinks — whose members become brick:hasPart on blockly→abox. neutralSystem is the earthing arrangement (régime de neutre); hasMedium (s223:hasMedium) names the electrical system, e.g. s223:AC-230VLN-1Ph-50Hz.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:PowerDistributionSystem"
     },
@@ -44,11 +55,30 @@
       "args0": [
         { "type": "field_input", "name": "name", "text": "Grid" }
       ],
+      "message1": "provider %1 · subscribed %2 kVA",
+      "args1": [
+        { "type": "field_input", "name": "energyProviderName", "text": "Enedis" },
+        {
+          "type": "field_dropdown",
+          "name": "contractedPowerKVA",
+          "options": [
+            ["3", "3"],
+            ["6", "6"],
+            ["9", "9"],
+            ["12", "12"],
+            ["15", "15"],
+            ["18", "18"],
+            ["24", "24"],
+            ["30", "30"],
+            ["36", "36"]
+          ]
+        }
+      ],
       "previousStatement": "source",
       "nextStatement": "source",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "The point of supply from the distribution network (dhc:EnergyDelivery). A source member of the power distribution system.",
+      "tooltip": "The point of supply from the distribution network (dhc:EnergyDelivery). Carries the energy provider and the subscribed / contracted power in kVA (dhc:contractedPowerKVA). A source member.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:EnergyDelivery"
     },
@@ -97,17 +127,33 @@
     },
     {
       "type": "dhc:DistributionBoard",
-      "message0": "▦ Distribution Board %1",
+      "message0": "▦ Main Distribution Board %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Resi9 Board" }
+        { "type": "field_input", "name": "name", "text": "Main Board" }
       ],
+      "mutator": "dhc_board_mutator",
       "previousStatement": "route",
       "nextStatement": "route",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "The consumer unit housing the protection devices (dhc:DistributionBoard). A control & routing member.",
+      "tooltip": "The main consumer unit (dhc:DistributionBoard). A control & routing member — placed in the routing sub-system. Use the ⚙ gear to add/remove rows (DIN rails); each rail holds protection modules (circuits/breakers, in the follow-up toolbox).",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:DistributionBoard"
+    },
+    {
+      "type": "dhc:SubDistributionBoard",
+      "message0": "▥ Sub-Distribution Board %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Sub Board" }
+      ],
+      "mutator": "dhc_board_mutator",
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A secondary / divisional board fed from downstream (dhc:SubDistributionBoard — a sink-connected board, e.g. fed by a circuit). Use the ⚙ gear to add/remove rows (DIN rails).",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:SubDistributionBoard"
     },
 
     {

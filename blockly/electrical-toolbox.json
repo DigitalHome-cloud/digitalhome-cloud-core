@@ -39,7 +39,10 @@
         { "kind": "label", "text": "— Consumers —" },
         { "kind": "block", "type": "dhc:Socket" },
         { "kind": "block", "type": "brick:Luminaire" },
-        { "kind": "block", "type": "brick:Electric_Vehicle_Charging_Station" }
+        { "kind": "block", "type": "brick:Electric_Vehicle_Charging_Station" },
+        { "kind": "sep", "gap": 12 },
+        { "kind": "label", "text": "— Sub-boards (fed downstream) —" },
+        { "kind": "block", "type": "dhc:SubDistributionBoard" }
       ]
     }
   ]

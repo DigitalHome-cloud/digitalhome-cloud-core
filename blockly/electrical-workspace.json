@@ -8,13 +8,14 @@
         "y": 40,
         "fields": {
           "name": "Villa — Main Installation",
-          "neutralSystem": "TT"
+          "neutralSystem": "TT",
+          "hasMedium": "s223:AC-230VLN-1Ph-50Hz"
         },
         "inputs": {
           "sources": {
             "block": {
               "type": "dhc:EnergyDelivery",
-              "fields": { "name": "AGCP 63 A" },
+              "fields": { "name": "Enedis Supply", "energyProviderName": "Enedis", "contractedPowerKVA": "9" },
               "next": {
                 "block": {
                   "type": "brick:PV_Generation_System",
@@ -36,7 +37,8 @@
               "next": {
                 "block": {
                   "type": "dhc:DistributionBoard",
-                  "fields": { "name": "Resi9 Board" }
+                  "fields": { "name": "Resi9 Board" },
+                  "extraState": { "itemCount": 3 }
                 }
               }
             }
