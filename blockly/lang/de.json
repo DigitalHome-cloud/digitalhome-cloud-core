@@ -1,12 +1,14 @@
 {
-  "_note": "German (Deutsch) locale overrides for the electrical harness. English (electrical-blocks.json) is the base; this file overrides messageN / tooltip / (where labels are translatable) argsN per block type. Values in dropdowns stay English/coded — only the human labels are translated.",
+  "_note": "German (Deutsch) locale overrides for the electrical harness. English (electrical-blocks.json) is the base; this file overrides messageN / tooltip / (where labels are translatable) argsN per block type. A messageN override MUST keep the same %N placeholder count as the base. Dropdown option labels stay English/coded — only human message text and the root's medium labels are translated.",
   "ui": {
     "brand.title": "Elektroinstallations-Designer",
     "brand.sub": "Energieverteilungssystem",
     "tab.All": "Alle",
     "tab.Sources": "Quellen",
     "tab.Routing": "Verteilung",
+    "tab.Circuits": "Stromkreise",
     "tab.Sinks": "Lasten",
+    "tab.Circuit lines": "Leitungen",
     "btn.clear": "Leeren",
     "btn.json": "JSON anzeigen",
     "btn.save": "Speichern",
@@ -35,40 +37,79 @@
     },
     "dhc:EnergyDelivery": {
       "message0": "🔌 Netzanschluss %1",
-      "message1": "Anbieter %1 · abonniert %2 kVA",
-      "tooltip": "Der Übergabepunkt aus dem Verteilnetz (dhc:EnergyDelivery). Trägt Anbieter und abonnierte Leistung in kVA (dhc:contractedPowerKVA). Ein Quellen-Mitglied."
+      "message1": "Anbieter %1 · abonniert %2 kVA · %3",
+      "tooltip": "Der Übergabepunkt aus dem Verteilnetz (dhc:EnergyDelivery). Trägt Anbieter, abonnierte Leistung in kVA (dhc:contractedPowerKVA) und Stromart (dhc:currentType). Ein Quellen-Mitglied."
     },
     "brick:PV_Generation_System": {
       "message0": "☀ PV-Anlage %1",
-      "tooltip": "Eine Photovoltaik-Anlage (brick:PV_Generation_System). Ein Quellen-Mitglied."
+      "message1": "Leistung %1 kWp",
+      "tooltip": "Eine Photovoltaik-Anlage (brick:PV_Generation_System), powerRating in kWp. Ein Quellen-Mitglied."
     },
     "brick:Battery": {
       "message0": "🔋 Batterie %1",
-      "tooltip": "Ein elektrischer Speicher (brick:Battery). Ein Quellen-Mitglied."
+      "message1": "Leistung %1 kW",
+      "tooltip": "Ein elektrischer Speicher (brick:Battery), powerRating in kW. Ein Quellen-Mitglied."
+    },
+    "dhc:EnergyMeter": {
+      "message0": "▭ Zähler %1",
+      "tooltip": "Der Verrechnungszähler am Übergabepunkt, z. B. Linky (dhc:EnergyMeter). Ein Verteilungs-Mitglied."
+    },
+    "dhc:EmergencyDisconnect": {
+      "message0": "⛔ Hauptschalter / AGCP %1",
+      "message1": "Bemessung %1 A",
+      "tooltip": "Der Hauptschalter am Ursprung der Installation — AGCP / disjoncteur d'abonné (dhc:EmergencyDisconnect), ratedCurrent in A. Ein Verteilungs-Mitglied."
+    },
+    "dhc:SurgeProtector": {
+      "message0": "↯ Überspannungsschutz / SPD %1",
+      "tooltip": "Ein Überspannungsschutzgerät / parafoudre (dhc:SurgeProtector), nach NF C 15-100 §443 vorgeschrieben. Ein Verteilungs-Mitglied."
     },
     "brick:Inverter": {
       "message0": "⇄ Wechselrichter %1",
-      "tooltip": "Wandelt und verteilt Energie zwischen Quellen und Verteiler (brick:Inverter). Ein Verteilungs-Mitglied."
+      "message1": "Leistung %1 kW",
+      "tooltip": "Wandelt und verteilt Energie zwischen Quellen und Verteiler (brick:Inverter), powerRating in kW. Ein Verteilungs-Mitglied."
     },
     "dhc:DistributionBoard": {
       "message0": "▦ Hauptverteiler %1",
-      "tooltip": "Der Hauptverteiler (dhc:DistributionBoard). Ein Verteilungs-Mitglied. Mit dem ⚙ Zahnrad Reihen (DIN-Schienen) hinzufügen/entfernen."
+      "tooltip": "Der Hauptverteiler (dhc:DistributionBoard). Ein Verteilungs-Mitglied. Mit dem ⚙ Zahnrad Reihen (DIN-Schienen) verwalten; jede Schiene trägt Stromkreis-Definitionen und Schutzmodule."
     },
-    "dhc:SubDistributionBoard": {
-      "message0": "▥ Unterverteiler %1",
-      "tooltip": "Ein Unterverteiler, nachgelagert gespeist (dhc:SubDistributionBoard — als Last angeschlossen). Mit dem ⚙ Zahnrad Reihen (DIN-Schienen) verwalten."
+    "dhc:Circuit": {
+      "message0": "● Stromkreis %1",
+      "message1": "Leitung %1",
+      "message2": "Typ %1 · %2 A · %3 mm²",
+      "message3": "%1-phasig · Schutz %2 · FI %3 · %4 mA",
+      "message4": "max. Punkte %1 · dediziert %2",
+      "tooltip": "Eine geschützte Leitung (dhc:Circuit) — die Einheit, die die C-Box prüft. Sitzt auf einer Verteilerschiene. Ihre Variable `Leitung` ist das Token, das Lasten über „geschützt durch“ referenzieren. Trägt die Kreis-Auslegung und den Schutz (LS/FI-LS + FI-Typ/-Empfindlichkeit). Wird bei blockly→abox zu dhc:Circuit + dhc:hasProtection + dhc:hasWiring."
+    },
+    "dhc:RCD": {
+      "message0": "⧉ FI-Schutzschalter %1",
+      "message1": "Typ %1 · %2 mA",
+      "tooltip": "Ein FI-Vorschalter (dhc:RCD), der die Kreise seiner Schiene gruppiert. rcdType (AC/A/B/F) und sensitivityMA. Ein DIN-Schienen-Modul."
     },
     "dhc:Socket": {
       "message0": "◵ Steckdose %1",
-      "tooltip": "Eine Steckdose (dhc:Socket). Ein Lasten-Mitglied."
+      "message1": "geschützt durch %1",
+      "tooltip": "Eine Steckdose (dhc:Socket). „geschützt durch“ referenziert die speisende Leitung (→ dhc:feedsEquipment). Ein Lasten-Mitglied."
     },
     "brick:Luminaire": {
       "message0": "💡 Leuchte %1",
-      "tooltip": "Eine Leuchte (brick:Luminaire). Ein Lasten-Mitglied."
+      "message1": "geschützt durch %1",
+      "tooltip": "Eine Leuchte (brick:Luminaire). „geschützt durch“ referenziert ihre Leitung. Ein Lasten-Mitglied."
     },
     "brick:Electric_Vehicle_Charging_Station": {
       "message0": "🚗 Ladestation %1",
-      "tooltip": "Eine E-Fahrzeug-Ladestation / Wallbox (brick:Electric_Vehicle_Charging_Station). Ein Lasten-Mitglied."
+      "message1": "geschützt durch %1",
+      "tooltip": "Eine E-Fahrzeug-Ladestation / Wallbox (brick:Electric_Vehicle_Charging_Station), eine IRVE-Last. „geschützt durch“ referenziert ihre Leitung. Ein Lasten-Mitglied."
+    },
+    "dhc:Appliance": {
+      "message0": "⊡ Gerät %1",
+      "message1": "Typ %1",
+      "message2": "geschützt durch %1",
+      "tooltip": "Ein generischer Verbraucher (dhc:Appliance — geparkt; entspricht brick:Equipment, applianceType nennt die konkrete Brick/223P-Klasse). „geschützt durch“ referenziert seine Leitung. Ein Lasten-Mitglied."
+    },
+    "dhc:SubDistributionBoard": {
+      "message0": "▥ Unterverteiler %1",
+      "message1": "geschützt durch %1",
+      "tooltip": "Ein Unterverteiler, nachgelagert von einer Leitung gespeist (dhc:SubDistributionBoard). „geschützt durch“ referenziert die speisende Leitung. Mit dem ⚙ Zahnrad Reihen (DIN-Schienen) verwalten."
     }
   }
 }

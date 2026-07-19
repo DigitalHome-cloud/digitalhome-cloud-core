@@ -1,4 +1,9 @@
 {
+  "variables": [
+    { "name": "CB_Sockets_LR", "id": "cbSockLR", "type": "Circuit" },
+    { "name": "CB_Lighting_LR", "id": "cbLightLR", "type": "Circuit" },
+    { "name": "CB_Garage_Wallbox", "id": "cbEV", "type": "Circuit" }
+  ],
   "blocks": {
     "languageVersion": 0,
     "blocks": [
@@ -15,15 +20,15 @@
           "sources": {
             "block": {
               "type": "dhc:EnergyDelivery",
-              "fields": { "name": "Enedis Supply", "energyProviderName": "Enedis", "contractedPowerKVA": "9" },
+              "fields": { "name": "Enedis Supply", "energyProviderName": "Enedis", "contractedPowerKVA": "9", "currentType": "SinglePhase" },
               "next": {
                 "block": {
                   "type": "brick:PV_Generation_System",
-                  "fields": { "name": "6 kW Rooftop PV" },
+                  "fields": { "name": "6 kW Rooftop PV", "powerRating": 6 },
                   "next": {
                     "block": {
                       "type": "brick:Battery",
-                      "fields": { "name": "Home Battery" }
+                      "fields": { "name": "Home Battery", "powerRating": 5 }
                     }
                   }
                 }
@@ -32,13 +37,66 @@
           },
           "routes": {
             "block": {
-              "type": "brick:Inverter",
-              "fields": { "name": "Deye Hybrid Inverter" },
+              "type": "dhc:EnergyMeter",
+              "fields": { "name": "Linky" },
               "next": {
                 "block": {
-                  "type": "dhc:DistributionBoard",
-                  "fields": { "name": "Resi9 Board" },
-                  "extraState": { "itemCount": 3 }
+                  "type": "dhc:EmergencyDisconnect",
+                  "fields": { "name": "AGCP", "ratedCurrent": "60" },
+                  "next": {
+                    "block": {
+                      "type": "brick:Inverter",
+                      "fields": { "name": "Deye Hybrid Inverter", "powerRating": 6 },
+                      "next": {
+                        "block": {
+                          "type": "dhc:DistributionBoard",
+                          "fields": { "name": "Resi9 Board" },
+                          "extraState": { "itemCount": 2 },
+                          "inputs": {
+                            "row_0": {
+                              "block": {
+                                "type": "dhc:Circuit",
+                                "fields": {
+                                  "name": "Living-room sockets",
+                                  "CIRCUIT_VAR": { "id": "cbSockLR" },
+                                  "hasCircuitType": "dhc:CircuitType_Socket",
+                                  "ratedCurrent": "16", "crossSection": "2.5",
+                                  "phase": "1", "protection": "MCB", "rcdType": "A", "sensitivityMA": "30",
+                                  "maxPoints": 8, "dedicated": "FALSE"
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "dhc:Circuit",
+                                    "fields": {
+                                      "name": "Living-room lighting",
+                                      "CIRCUIT_VAR": { "id": "cbLightLR" },
+                                      "hasCircuitType": "dhc:CircuitType_Lighting",
+                                      "ratedCurrent": "10", "crossSection": "1.5",
+                                      "phase": "1", "protection": "MCB", "rcdType": "A", "sensitivityMA": "30",
+                                      "maxPoints": 6, "dedicated": "FALSE"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "row_1": {
+                              "block": {
+                                "type": "dhc:Circuit",
+                                "fields": {
+                                  "name": "Garage wallbox (IRVE)",
+                                  "CIRCUIT_VAR": { "id": "cbEV" },
+                                  "hasCircuitType": "dhc:CircuitType_IRVE",
+                                  "ratedCurrent": "32", "crossSection": "6",
+                                  "phase": "1", "protection": "RCBO", "rcdType": "A", "sensitivityMA": "30",
+                                  "maxPoints": 1, "dedicated": "TRUE"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -46,15 +104,15 @@
           "sinks": {
             "block": {
               "type": "dhc:Socket",
-              "fields": { "name": "Living-room Sockets" },
+              "fields": { "name": "Living-room Sockets", "FED_BY": { "id": "cbSockLR" } },
               "next": {
                 "block": {
                   "type": "brick:Luminaire",
-                  "fields": { "name": "Living-room Light" },
+                  "fields": { "name": "Living-room Light", "FED_BY": { "id": "cbLightLR" } },
                   "next": {
                     "block": {
                       "type": "brick:Electric_Vehicle_Charging_Station",
-                      "fields": { "name": "Garage Wallbox" }
+                      "fields": { "name": "Garage Wallbox", "FED_BY": { "id": "cbEV" } }
                     }
                   }
                 }

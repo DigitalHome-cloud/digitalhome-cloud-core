@@ -221,11 +221,13 @@
      * "Start" (the root block) is always shown so the installation root is
      * reachable from every tab. */
     const TAB_COLORS = { Sources: '#22c55e', Routing: '#f59e0b', Sinks: '#a855f7' };
+    // "Circuit lines" is the native VARIABLE flyout; "Circuits" holds the rail
+    // modules (circuit definitions). Both belong with routing.
     const VIEW_CATS = {
-      All:     ['Start', 'Sources', 'Routing', 'Sinks'],
+      All:     ['Start', 'Sources', 'Routing', 'Circuits', 'Sinks', 'Circuit lines'],
       Sources: ['Start', 'Sources'],
-      Routing: ['Start', 'Routing'],
-      Sinks:   ['Start', 'Sinks'],
+      Routing: ['Start', 'Routing', 'Circuits', 'Circuit lines'],
+      Sinks:   ['Start', 'Sinks', 'Circuit lines'],
     };
 
     /* ── DHC electrical theme ───────────────────────────────────────────

@@ -26,9 +26,24 @@
       "name": "Routing",
       "colour": "#3b82f6",
       "contents": [
-        { "kind": "label", "text": "— Control & Routing —" },
+        { "kind": "label", "text": "— Metering & Protection —" },
+        { "kind": "block", "type": "dhc:EnergyMeter" },
+        { "kind": "block", "type": "dhc:EmergencyDisconnect" },
+        { "kind": "block", "type": "dhc:SurgeProtector" },
+        { "kind": "sep", "gap": 12 },
+        { "kind": "label", "text": "— Conversion & Boards —" },
         { "kind": "block", "type": "brick:Inverter" },
         { "kind": "block", "type": "dhc:DistributionBoard" }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Circuits",
+      "colour": "#3b82f6",
+      "contents": [
+        { "kind": "label", "text": "— Rail modules (on a board rail) —" },
+        { "kind": "block", "type": "dhc:Circuit" },
+        { "kind": "block", "type": "dhc:RCD" }
       ]
     },
     {
@@ -40,10 +55,17 @@
         { "kind": "block", "type": "dhc:Socket" },
         { "kind": "block", "type": "brick:Luminaire" },
         { "kind": "block", "type": "brick:Electric_Vehicle_Charging_Station" },
+        { "kind": "block", "type": "dhc:Appliance" },
         { "kind": "sep", "gap": 12 },
         { "kind": "label", "text": "— Sub-boards (fed downstream) —" },
         { "kind": "block", "type": "dhc:SubDistributionBoard" }
       ]
+    },
+    {
+      "kind": "category",
+      "name": "Circuit lines",
+      "colour": "#5b6b8c",
+      "custom": "VARIABLE"
     }
   ]
 }

@@ -55,22 +55,23 @@
       "args0": [
         { "type": "field_input", "name": "name", "text": "Grid" }
       ],
-      "message1": "provider %1 · subscribed %2 kVA",
+      "message1": "provider %1 · subscribed %2 kVA · %3",
       "args1": [
         { "type": "field_input", "name": "energyProviderName", "text": "Enedis" },
         {
           "type": "field_dropdown",
           "name": "contractedPowerKVA",
           "options": [
-            ["3", "3"],
-            ["6", "6"],
-            ["9", "9"],
-            ["12", "12"],
-            ["15", "15"],
-            ["18", "18"],
-            ["24", "24"],
-            ["30", "30"],
-            ["36", "36"]
+            ["3", "3"], ["6", "6"], ["9", "9"], ["12", "12"], ["15", "15"],
+            ["18", "18"], ["24", "24"], ["30", "30"], ["36", "36"]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "currentType",
+          "options": [
+            ["single-phase", "SinglePhase"],
+            ["three-phase", "ThreePhase"]
           ]
         }
       ],
@@ -78,7 +79,7 @@
       "nextStatement": "source",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "The point of supply from the distribution network (dhc:EnergyDelivery). Carries the energy provider and the subscribed / contracted power in kVA (dhc:contractedPowerKVA). A source member.",
+      "tooltip": "The point of supply from the distribution network (dhc:EnergyDelivery). Carries the energy provider, the subscribed / contracted power in kVA (dhc:contractedPowerKVA), and the current type (dhc:currentType). A source member.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:EnergyDelivery"
     },
@@ -88,11 +89,15 @@
       "args0": [
         { "type": "field_input", "name": "name", "text": "Rooftop PV" }
       ],
+      "message1": "power %1 kWp",
+      "args1": [
+        { "type": "field_number", "name": "powerRating", "value": 6, "min": 0, "precision": 0.1 }
+      ],
       "previousStatement": "source",
       "nextStatement": "source",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "A photovoltaic generation system (brick:PV_Generation_System). A source member.",
+      "tooltip": "A photovoltaic generation system (brick:PV_Generation_System). powerRating in kWp (dhc:powerRating). A source member.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=brick:PV_Generation_System"
     },
@@ -102,26 +107,84 @@
       "args0": [
         { "type": "field_input", "name": "name", "text": "Home Battery" }
       ],
+      "message1": "power %1 kW",
+      "args1": [
+        { "type": "field_number", "name": "powerRating", "value": 5, "min": 0, "precision": 0.1 }
+      ],
       "previousStatement": "source",
       "nextStatement": "source",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "An electrical storage battery (brick:Battery). A source member.",
+      "tooltip": "An electrical storage battery (brick:Battery). powerRating in kW (dhc:powerRating). A source member.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=brick:Battery"
     },
 
+    {
+      "type": "dhc:EnergyMeter",
+      "message0": "▭ Energy Meter %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Linky" }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "The billing meter at the delivery point, e.g. Linky (dhc:EnergyMeter). A control & routing member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:EnergyMeter"
+    },
+    {
+      "type": "dhc:EmergencyDisconnect",
+      "message0": "⛔ Main Disconnect / AGCP %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "AGCP" }
+      ],
+      "message1": "rated %1 A",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "ratedCurrent",
+          "options": [["15", "15"], ["30", "30"], ["45", "45"], ["60", "60"], ["63", "63"]]
+        }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "The main disconnect at the origin of the installation — the AGCP / disjoncteur d'abonné (dhc:EmergencyDisconnect). ratedCurrent in A (dhc:ratedCurrent). A control & routing member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:EmergencyDisconnect"
+    },
+    {
+      "type": "dhc:SurgeProtector",
+      "message0": "↯ Surge Protector / SPD %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Parafoudre" }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A Surge Protective Device / parafoudre (dhc:SurgeProtector), mandatory per NF C 15-100 §443. A control & routing member; typically at the main board.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:SurgeProtector"
+    },
     {
       "type": "brick:Inverter",
       "message0": "⇄ Inverter %1",
       "args0": [
         { "type": "field_input", "name": "name", "text": "Hybrid Inverter" }
       ],
+      "message1": "power %1 kW",
+      "args1": [
+        { "type": "field_number", "name": "powerRating", "value": 6, "min": 0, "precision": 0.1 }
+      ],
       "previousStatement": "route",
       "nextStatement": "route",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "Converts and routes energy between sources and the board (brick:Inverter). A control & routing member.",
+      "tooltip": "Converts and routes energy between sources and the board (brick:Inverter). powerRating in kW (dhc:powerRating). A control & routing member.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=brick:Inverter"
     },
@@ -136,24 +199,86 @@
       "nextStatement": "route",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "The main consumer unit (dhc:DistributionBoard). A control & routing member — placed in the routing sub-system. Use the ⚙ gear to add/remove rows (DIN rails); each rail holds protection modules (circuits/breakers, in the follow-up toolbox).",
+      "tooltip": "The main consumer unit (dhc:DistributionBoard). A control & routing member. Use the ⚙ gear to add/remove rows (DIN rails); each rail holds circuit definitions and protection modules.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:DistributionBoard"
     },
+
     {
-      "type": "dhc:SubDistributionBoard",
-      "message0": "▥ Sub-Distribution Board %1",
+      "type": "dhc:Circuit",
+      "message0": "● Circuit %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Sub Board" }
+        { "type": "field_input", "name": "name", "text": "Circuit" }
       ],
-      "mutator": "dhc_board_mutator",
-      "previousStatement": "sink",
-      "nextStatement": "sink",
+      "message1": "line %1",
+      "args1": [
+        { "type": "field_variable", "name": "CIRCUIT_VAR", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+      ],
+      "message2": "type %1 · %2 A · %3 mm²",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "hasCircuitType",
+          "options": [
+            ["Lighting", "dhc:CircuitType_Lighting"],
+            ["Socket", "dhc:CircuitType_Socket"],
+            ["Cooking", "dhc:CircuitType_Cooking"],
+            ["Dedicated appliance", "dhc:CircuitType_DedicatedAppliance"],
+            ["Water heater", "dhc:CircuitType_WaterHeater"],
+            ["Heating", "dhc:CircuitType_Heating"],
+            ["Floor heating", "dhc:CircuitType_FloorHeating"],
+            ["IRVE (EV)", "dhc:CircuitType_IRVE"]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "ratedCurrent",
+          "options": [["6", "6"], ["10", "10"], ["16", "16"], ["20", "20"], ["25", "25"], ["32", "32"], ["40", "40"], ["63", "63"]]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "crossSection",
+          "options": [["1.5", "1.5"], ["2.5", "2.5"], ["4", "4"], ["6", "6"], ["10", "10"], ["16", "16"]]
+        }
+      ],
+      "message3": "%1-phase · protection %2 · RCD %3 · %4 mA",
+      "args3": [
+        { "type": "field_dropdown", "name": "phase", "options": [["1", "1"], ["3", "3"]] },
+        { "type": "field_dropdown", "name": "protection", "options": [["MCB", "MCB"], ["RCBO", "RCBO"]] },
+        { "type": "field_dropdown", "name": "rcdType", "options": [["—", "none"], ["AC", "AC"], ["A", "A"], ["B", "B"], ["F", "F"]] },
+        { "type": "field_dropdown", "name": "sensitivityMA", "options": [["—", "none"], ["30", "30"], ["300", "300"]] }
+      ],
+      "message4": "max points %1 · dedicated %2",
+      "args4": [
+        { "type": "field_number", "name": "maxPoints", "value": 8, "min": 0, "precision": 1 },
+        { "type": "field_checkbox", "name": "dedicated", "checked": false }
+      ],
+      "previousStatement": "module",
+      "nextStatement": "module",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "A secondary / divisional board fed from downstream (dhc:SubDistributionBoard — a sink-connected board, e.g. fed by a circuit). Use the ⚙ gear to add/remove rows (DIN rails).",
+      "tooltip": "A protected line (dhc:Circuit) — the unit the C-Box validates. Sits on a board rail. Its `line` variable is the token loads reference via 'protected by'. Carries the circuit design (type, ratedCurrent, crossSection, phase, maxPoints, dedicated) and its protection (MCB/RCBO + RCD type/sensitivity). On blockly→abox it becomes dhc:Circuit + dhc:hasProtection + dhc:hasWiring.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:SubDistributionBoard"
+      "data": "dhc:blocklyBlockTemplate=dhc:Circuit"
+    },
+    {
+      "type": "dhc:RCD",
+      "message0": "⧉ RCD incomer %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "RCD" }
+      ],
+      "message1": "type %1 · %2 mA",
+      "args1": [
+        { "type": "field_dropdown", "name": "rcdType", "options": [["AC", "AC"], ["A", "A"], ["B", "B"], ["F", "F"]] },
+        { "type": "field_dropdown", "name": "sensitivityMA", "options": [["30", "30"], ["300", "300"]] }
+      ],
+      "previousStatement": "module",
+      "nextStatement": "module",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A differential incomer (dhc:RCD) grouping the circuits on its rail. rcdType (AC/A/B/F) and sensitivityMA (dhc:rcdType, dhc:sensitivityMA). A DIN-rail module.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:RCD"
     },
 
     {
@@ -162,11 +287,15 @@
       "args0": [
         { "type": "field_input", "name": "name", "text": "Socket" }
       ],
+      "message1": "protected by %1",
+      "args1": [
+        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+      ],
       "previousStatement": "sink",
       "nextStatement": "sink",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "An electrical socket outlet (dhc:Socket). A sink member.",
+      "tooltip": "An electrical socket outlet (dhc:Socket). 'protected by' references the circuit line that feeds it (→ dhc:feedsEquipment). A sink member.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:Socket"
     },
@@ -176,11 +305,15 @@
       "args0": [
         { "type": "field_input", "name": "name", "text": "Light" }
       ],
+      "message1": "protected by %1",
+      "args1": [
+        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+      ],
       "previousStatement": "sink",
       "nextStatement": "sink",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "A lighting fixture (brick:Luminaire). A sink member.",
+      "tooltip": "A lighting fixture (brick:Luminaire). 'protected by' references its circuit line. A sink member.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=brick:Luminaire"
     },
@@ -190,13 +323,69 @@
       "args0": [
         { "type": "field_input", "name": "name", "text": "Wallbox" }
       ],
+      "message1": "protected by %1",
+      "args1": [
+        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+      ],
       "previousStatement": "sink",
       "nextStatement": "sink",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "An EV charging station / wallbox (brick:Electric_Vehicle_Charging_Station). A sink member.",
+      "tooltip": "An EV charging station / wallbox (brick:Electric_Vehicle_Charging_Station), an IRVE circuit load. 'protected by' references its circuit line. A sink member.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=brick:Electric_Vehicle_Charging_Station"
+    },
+    {
+      "type": "dhc:Appliance",
+      "message0": "⊡ Appliance %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Appliance" }
+      ],
+      "message1": "type %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "applianceType",
+          "options": [
+            ["Washing machine", "WashingMachine"],
+            ["Dishwasher", "Dishwasher"],
+            ["Oven", "Oven"],
+            ["Water heater", "WaterHeater"],
+            ["Dryer", "Dryer"],
+            ["Other", "Other"]
+          ]
+        }
+      ],
+      "message2": "protected by %1",
+      "args2": [
+        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+      ],
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A generic consumer appliance (dhc:Appliance — parked; maps to brick:Equipment, with applianceType hinting the specific Brick/223P class). 'protected by' references its circuit line. A sink member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:Appliance"
+    },
+    {
+      "type": "dhc:SubDistributionBoard",
+      "message0": "▥ Sub-Distribution Board %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Sub Board" }
+      ],
+      "message1": "protected by %1",
+      "args1": [
+        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+      ],
+      "mutator": "dhc_board_mutator",
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A secondary / divisional board fed from a circuit downstream (dhc:SubDistributionBoard). 'protected by' references its feeding circuit line. Use the ⚙ gear to add/remove rows (DIN rails).",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:SubDistributionBoard"
     }
   ]
 }

@@ -246,6 +246,41 @@ than promoted now.
   `rdfs:comment` as a free `xsd:string`; formalizing it with `sh:in` would let the
   C-Box check it and keep the Blockly dropdown and the ontology in lockstep.
 
+- **`dhc:Appliance` does not exist.** The generic consumer block (washing
+  machine / dishwasher / oven / water heater / dryer via an `applianceType`
+  dropdown) uses type/template `dhc:Appliance`, intended `⊑ brick:Equipment`. Two
+  honest options: promote it, or drop it and map each `applianceType` value to its
+  specific Brick/223P class (`s223:ClothesWasher`, `s223:Dishwasher`, an oven
+  class, …) in the translator. Note `dhc:powerRating` has `rdfs:domain
+  brick:Equipment`, so whatever type is emitted must be a `brick:Equipment`.
+
+- **No breaker *curve* property (B/C/D).** The circuit block omits it because
+  `dhc-core` has none. If curve selectivity ever matters to a norm rule, add e.g.
+  `dhc:breakerCurve` (enum B/C/D) alongside `dhc:ratedCurrent`.
+
+- **The blockly→abox translator (the big parked item).** The complete toolbox
+  authors everything a residential A-Box needs, but nothing yet turns the
+  workspace JSON into TTL. The Designer's `src/blockly/aboxSerializer.js` already
+  maps the predicate vocabulary (`hasProtection`, `hasWiring`, `feedsEquipment`,
+  `hasCircuitType`, `hasPart`, `feeds`) and is the natural starting point. The
+  electrical harness adds a **variable-linking** contract the translator must
+  honour:
+  - Each `dhc:Circuit` block → a `dhc:Circuit` with `dhc:hasCircuitType` /
+    `ratedCurrent` / `crossSection` / `phase` / `maxPoints` / `dedicated`;
+    `dhc:hasProtection` → a `dhc:ProtectionDevice` (or `dhc:RCBO`) at the same
+    `dhc:ratedCurrent` (+ a `dhc:RCD` with `rcdType` / `sensitivityMA` when
+    differential); `dhc:hasWiring` → L/N/PE `dhc:WiringSegment`s at `crossSection`
+    (inferred — the harness deliberately does not draw individual conductors).
+  - Each load's **`FED_BY`** variable is paired with the matching circuit's
+    **`CIRCUIT_VAR`**; emit the load as that circuit's `dhc:feedsEquipment` /
+    `brick:feeds` target.
+  - **Referential-integrity validation**: every referenced circuit token has
+    **exactly one** defining `dhc:Circuit` block. Flag **dangling** references
+    (a load protected by an undefined line) and **duplicate** definitions (two
+    circuits binding one token). This check is the price of trading structural
+    nesting for reference tokens, and it is exactly the kind of pre-flight the
+    C-Box cannot do (it validates the emitted A-Box, not the Blockly graph).
+
 - **Offline vendoring is deferred.** The harness loads Blockly from
   `unpkg.com` (a deliberate, user-approved shortcut), so it breaks the `js-tools`
   `grep -c https:// = 0` invariant and needs a network. Vendoring a local

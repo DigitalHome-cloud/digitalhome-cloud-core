@@ -61,11 +61,37 @@ tiers 3…36).
 - **`dhc:DistributionBoard`** — the main board, `route`-connected (in the routing
   sub-system).
 - **`dhc:SubDistributionBoard`** — a secondary / divisional board, `sink`-
-  connected (fed downstream, e.g. by a circuit).
+  connected (fed downstream by a circuit).
 
-This is the **root plus first blocks**, enough to prove the sub-system checks and
-the board mutator. The complete toolbox (protection devices, circuits, wiring,
-the DIN-rail modules the rows hold) is the follow-up.
+## Circuits and variable linking
+
+Rather than nest loads inside their circuit (cluttered), the toolbox links them
+by a **typed Blockly variable** — a flat, readable model.
+
+- **`dhc:Circuit`** is the *protected-line definition* — a `module` block that
+  sits on a board rail. It binds a **`Circuit`-typed variable** (`field_variable
+  CIRCUIT_VAR`, e.g. `CB_Sockets_LR`) and carries the fields the C-Box validates
+  (`hasCircuitType`, `ratedCurrent`, `crossSection`, `phase`, `maxPoints`,
+  `dedicated`) **plus** its protection (MCB/RCBO + `rcdType`/`sensitivityMA`).
+  `dhc:RCD` is an optional differential *incomer* module on the same rail.
+- **Loads** (`dhc:Socket`, `brick:Luminaire`, EV charger, `dhc:Appliance`,
+  `dhc:SubDistributionBoard`) each have a **"protected by"** `field_variable`
+  (`FED_BY`, `variableTypes: ["Circuit"]`) whose dropdown lists **only circuit
+  tokens** — so a load can only be fed by a defined circuit. The native
+  **Circuit lines** toolbox category is the variable flyout.
+
+The token represents a **`dhc:Circuit`** (the unit the C-Box targets — 24 shapes),
+not a bare breaker. On **blockly→abox** the translator pairs each load's `FED_BY`
+with the circuit's `CIRCUIT_VAR` and emits `dhc:Circuit` +`dhc:hasProtection`
++`dhc:hasWiring`, with the load as the circuit's `dhc:feedsEquipment` /
+`brick:feeds` target. It must also **validate referential integrity** — every
+referenced token has exactly one definition (no dangling, no duplicate). See
+`doc/parking-lot.md § 4`.
+
+This is the **core residential set**. The rarer classes (`dhc:Contactor`,
+`dhc:EquipotentialBonding`, `dhc:Distribution`/`BusBar`, PV panel/array sub-parts,
+explicit L/N/PE `dhc:WiringSegment` blocks) and the translator itself are the
+follow-up.
 
 ## Localization
 
@@ -97,9 +123,10 @@ plugin, not the block JSON, so they are not yet localized.)
 
 ## Ontology dependencies (parked)
 
-The block templates reference two classes that do not exist yet —
-`dhc:PowerDistributionSystem` and `dhc:SubDistributionBoard` — and put the
-`dhc:neutralSystem` dropdown on the root, though that property is currently
-domained to `dhc:EnergyDelivery`. The harness runs on static JSON without any of
-these changes; only the future blockly→abox translator needs them. All are
-recorded in `doc/parking-lot.md § 4`.
+The block templates reference classes that do not exist yet —
+`dhc:PowerDistributionSystem`, `dhc:SubDistributionBoard`, `dhc:Appliance` — and
+put the `dhc:neutralSystem` dropdown on the root, though that property is
+currently domained to `dhc:EnergyDelivery`. There is also no property for a
+breaker **curve** (B/C/D), so that field is omitted for now. The harness runs on
+static JSON without any of these changes; only the future blockly→abox translator
+needs them. All are recorded in `doc/parking-lot.md § 4`.
