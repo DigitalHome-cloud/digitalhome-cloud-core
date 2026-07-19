@@ -205,3 +205,39 @@ compared to fact": the numbers are all in the model and nothing relates them.
   different artifact and still missing.
 - **`schema/draft/` is untracked** — the remaining ~54 draft classes exist only
   on disk, with no git history. Losing that directory loses them.
+
+## 4. Electrical Blockly designer — the model changes it assumes
+
+The `blockly/` electrical harness (`blockly/electrical-*.json`) authors an
+installation structure whose root is `dhc:PowerDistributionSystem` with
+source / route / sink slots. Two T-Box changes are **assumed by the block
+templates but not yet made** — the harness runs on static JSON without them; only
+the future **blockly→abox translator** needs them, so they are parked here rather
+than promoted now.
+
+- **`dhc:PowerDistributionSystem` does not exist.** Intended
+  `rdfs:subClassOf brick:System`, so its source/route/sink members translate to
+  `brick:hasPart` / `brick:isPartOf` edges of the system. Promote via
+  `py-tools/ontology_explorer.py` with the `electrical` `dhc:designView` +
+  `@de`/`@fr` overlay (`tests/tbox/annotation-coverage.test.js` gates it). **Open
+  design question**: how it relates to the existing `dhc:DigitalHome → building →
+  dhc:Circuit` spine and to `dhc:DistributionBoard` — is the PDS a sibling system
+  that *references* the board, or a container that *holds* the electrical spine?
+  Resolve before the translator, not before the harness.
+
+- **`dhc:neutralSystem` is domained to `dhc:EnergyDelivery`** (`dhc-core.ttl`).
+  The root block puts the *régime de neutre* dropdown on the PDS. Asserting
+  `dhc:neutralSystem` on a `dhc:PowerDistributionSystem` would, under RDFS, infer
+  that the PDS is also an `EnergyDelivery` — wrong. Either **drop the
+  `rdfs:domain`** (as `dhc:ratedCurrent` and `dhc:crossSection` already do,
+  deliberately, for exactly this reason) or move it to the PDS. Separately, the
+  value set **TT / TN-S / TN-C / IT** currently lives only in the property's
+  `rdfs:comment` as a free `xsd:string`; formalizing it with `sh:in` would let the
+  C-Box check it and keep the Blockly dropdown and the ontology in lockstep.
+
+- **Offline vendoring is deferred.** The harness loads Blockly from
+  `unpkg.com` (a deliberate, user-approved shortcut), so it breaks the `js-tools`
+  `grep -c https:// = 0` invariant and needs a network. Vendoring a local
+  `blockly.min.js` (12.5.1 is already on disk in the Designer/Modeler
+  `node_modules`, but the harness targets the Blockly-11 API, so a compat pass is
+  part of the job) is the fix when the harness needs to run air-gapped.

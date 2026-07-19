@@ -1,0 +1,156 @@
+{
+  "blocks": [
+    {
+      "type": "dhc:PowerDistributionSystem",
+      "message0": "⚡ Power Distribution System %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Main Installation" }
+      ],
+      "message1": "neutral system (régime de neutre) %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "neutralSystem",
+          "options": [
+            ["TT", "TT"],
+            ["TN-S", "TN-S"],
+            ["TN-C", "TN-C"],
+            ["IT", "IT"]
+          ]
+        }
+      ],
+      "message2": "sources — energy generators %1",
+      "args2": [
+        { "type": "input_statement", "name": "sources", "check": "source" }
+      ],
+      "message3": "control & routing — inverter, distribution board %1",
+      "args3": [
+        { "type": "input_statement", "name": "routes", "check": "route" }
+      ],
+      "message4": "sinks — consumers %1",
+      "args4": [
+        { "type": "input_statement", "name": "sinks", "check": "sink" }
+      ],
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "Root of an electrical installation (dhc:PowerDistributionSystem ⊑ brick:System). Sources, routing and sinks become brick:hasPart members on blockly→abox translation. neutralSystem is the earthing arrangement (régime de neutre).",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:PowerDistributionSystem"
+    },
+
+    {
+      "type": "dhc:EnergyDelivery",
+      "message0": "🔌 Grid Delivery %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Grid" }
+      ],
+      "previousStatement": "source",
+      "nextStatement": "source",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "The point of supply from the distribution network (dhc:EnergyDelivery). A source member of the power distribution system.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:EnergyDelivery"
+    },
+    {
+      "type": "brick:PV_Generation_System",
+      "message0": "☀ PV System %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Rooftop PV" }
+      ],
+      "previousStatement": "source",
+      "nextStatement": "source",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A photovoltaic generation system (brick:PV_Generation_System). A source member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:PV_Generation_System"
+    },
+    {
+      "type": "brick:Battery",
+      "message0": "🔋 Battery %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Home Battery" }
+      ],
+      "previousStatement": "source",
+      "nextStatement": "source",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "An electrical storage battery (brick:Battery). A source member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Battery"
+    },
+
+    {
+      "type": "brick:Inverter",
+      "message0": "⇄ Inverter %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Hybrid Inverter" }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "Converts and routes energy between sources and the board (brick:Inverter). A control & routing member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Inverter"
+    },
+    {
+      "type": "dhc:DistributionBoard",
+      "message0": "▦ Distribution Board %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Resi9 Board" }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "The consumer unit housing the protection devices (dhc:DistributionBoard). A control & routing member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:DistributionBoard"
+    },
+
+    {
+      "type": "dhc:Socket",
+      "message0": "◵ Socket %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Socket" }
+      ],
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "An electrical socket outlet (dhc:Socket). A sink member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:Socket"
+    },
+    {
+      "type": "brick:Luminaire",
+      "message0": "💡 Luminaire %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Light" }
+      ],
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A lighting fixture (brick:Luminaire). A sink member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Luminaire"
+    },
+    {
+      "type": "brick:Electric_Vehicle_Charging_Station",
+      "message0": "🚗 EV Charger %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Wallbox" }
+      ],
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "An EV charging station / wallbox (brick:Electric_Vehicle_Charging_Station). A sink member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Electric_Vehicle_Charging_Station"
+    }
+  ]
+}

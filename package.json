@@ -13,7 +13,9 @@
     "amplify:generate": "ampx generate graphql-client-code",
     "amplify:pipeline-deploy": "ampx pipeline-deploy",
     "preview:abox": "bash scripts/preview-abox.sh",
-    "build:abox": "node js-tools/build-abox.mjs"
+    "build:abox": "node js-tools/build-abox.mjs",
+    "preview:blockly:spatial": "bash scripts/preview-blockly-spatial.sh",
+    "preview:blockly:electrical": "bash scripts/preview-blockly-electrical.sh"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.16.0",

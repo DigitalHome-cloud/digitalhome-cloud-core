@@ -1,0 +1,66 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "dhc:PowerDistributionSystem",
+        "x": 48,
+        "y": 40,
+        "fields": {
+          "name": "Villa — Main Installation",
+          "neutralSystem": "TT"
+        },
+        "inputs": {
+          "sources": {
+            "block": {
+              "type": "dhc:EnergyDelivery",
+              "fields": { "name": "AGCP 63 A" },
+              "next": {
+                "block": {
+                  "type": "brick:PV_Generation_System",
+                  "fields": { "name": "6 kW Rooftop PV" },
+                  "next": {
+                    "block": {
+                      "type": "brick:Battery",
+                      "fields": { "name": "Home Battery" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "routes": {
+            "block": {
+              "type": "brick:Inverter",
+              "fields": { "name": "Deye Hybrid Inverter" },
+              "next": {
+                "block": {
+                  "type": "dhc:DistributionBoard",
+                  "fields": { "name": "Resi9 Board" }
+                }
+              }
+            }
+          },
+          "sinks": {
+            "block": {
+              "type": "dhc:Socket",
+              "fields": { "name": "Living-room Sockets" },
+              "next": {
+                "block": {
+                  "type": "brick:Luminaire",
+                  "fields": { "name": "Living-room Light" },
+                  "next": {
+                    "block": {
+                      "type": "brick:Electric_Vehicle_Charging_Station",
+                      "fields": { "name": "Garage Wallbox" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

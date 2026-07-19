@@ -1,0 +1,46 @@
+{
+  "kind": "categoryToolbox",
+  "contents": [
+    {
+      "kind": "category",
+      "name": "Start",
+      "colour": "#3b82f6",
+      "contents": [
+        { "kind": "label", "text": "— Installation Root —" },
+        { "kind": "block", "type": "dhc:PowerDistributionSystem" }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Sources",
+      "colour": "#3b82f6",
+      "contents": [
+        { "kind": "label", "text": "— Energy Generators —" },
+        { "kind": "block", "type": "dhc:EnergyDelivery" },
+        { "kind": "block", "type": "brick:PV_Generation_System" },
+        { "kind": "block", "type": "brick:Battery" }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Routing",
+      "colour": "#3b82f6",
+      "contents": [
+        { "kind": "label", "text": "— Control & Routing —" },
+        { "kind": "block", "type": "brick:Inverter" },
+        { "kind": "block", "type": "dhc:DistributionBoard" }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Sinks",
+      "colour": "#3b82f6",
+      "contents": [
+        { "kind": "label", "text": "— Consumers —" },
+        { "kind": "block", "type": "dhc:Socket" },
+        { "kind": "block", "type": "brick:Luminaire" },
+        { "kind": "block", "type": "brick:Electric_Vehicle_Charging_Station" }
+      ]
+    }
+  ]
+}
