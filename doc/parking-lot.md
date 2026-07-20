@@ -342,6 +342,34 @@ than promoted now.
   Python id generators are already alphabet/size-identical so either stack mints
   matching ids.
 
+- **Persist the A-Box, regenerate the workspace — don't migrate Blockly JSON.**
+  A saved Blockly workspace is welded to the *UI* schema (block `type` strings,
+  field names, mutator `extraState` shapes), which churns fast — already broken
+  twice (the `dhc:`→`dhcb:` rename; the board `{itemCount}` ↔ `{rows, points}`
+  flip). Per-change migration scripts are O(N) breaking edits and don't scale.
+  The fix is to make the **A-Box (TTL) the durable save format** and the Blockly
+  workspace a **regenerated view**: **Save** forward-translates and persists the
+  TTL; **Load** backward-translates the TTL into *current-schema* blocks. A
+  toolbox change is then absorbed by the one backward translator (it always emits
+  current blocks), so old files "convert to the updated toolbox" for free —
+  migration lives in one place, not N scripts. Conditions:
+  - **Lossless round-trip.** `forward ∘ backward` must be identity up to layout.
+    The A-Box must capture **every** block field and structural position —
+    including UI-only / not-yet-parked fields (`dinSlots`, `cableLength`, breaker
+    curve) and the slot/order — via `dhc:hasBlocklyReference` (block type/id +
+    slot/order + optional x,y) or the field's own property. If a field has nowhere
+    to land it is silently dropped on save→load; **round-trip fixtures** guard it.
+    Cosmetic layout (positions, collapsed state, comments) is the soft part — stash
+    it in the reference or accept losing it.
+  - **The starter example follows the same rule.** Keep the canonical example as
+    an A-Box TTL (like `schema/abox/electrical-installation-house.ttl`) and
+    **regenerate** `blockly/electrical-workspace.json` from it, so it stops needing
+    hand-migration on every block change (what happens today, and the disease in
+    miniature).
+  - **Interim, until the translator exists.** Treat saved Blockly JSON as
+    version-fragile: version-stamp it and/or ship a one-shot migration. Known
+    breakages so far: the `dhcb` rename and the board `extraState` shape.
+
 - **T-Box annotation shift: retire block-generation, add `dhc:hasBlocklyReference`.**
   `dhc-app-metadata.ttl` carries five `blockly*` annotations built to **generate
   blocks from the T-Box** — `dhc:blocklyBlockTemplate` (24 uses),
