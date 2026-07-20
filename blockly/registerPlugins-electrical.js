@@ -142,5 +142,105 @@
     ['dhc_board_container', 'dhc_board_item']
   );
 
-  console.info('[dhc/registerPlugins-electrical] mutators registered: dhc_board_mutator (rows = DIN rails)');
+  /* ── Generic variable-arity VALUE mutator ─────────────────────────────────
+   * Slots use appendValueInput; children connect via an output plug. Used for
+   * brick:hasPoint — a smart device carries N automation points, each a
+   * dhcb:Point block declaring output "brick:Point".
+   */
+  function makeValueMutatorMixin(cfg) {
+    return {
+      itemCount_: cfg.defaultCount || 0,
+
+      saveExtraState() { return { itemCount: this.itemCount_ }; },
+      loadExtraState(state) { this.updateShape_(state.itemCount || cfg.defaultCount || 0); },
+
+      decompose(ws) {
+        const cb = ws.newBlock(cfg.containerType);
+        cb.initSvg();
+        let conn = cb.getInput('STACK').connection;
+        for (let i = 0; i < this.itemCount_; i++) {
+          const ib = ws.newBlock(cfg.itemType);
+          ib.initSvg();
+          conn.connect(ib.previousConnection);
+          conn = ib.nextConnection;
+        }
+        return cb;
+      },
+
+      compose(containerBlock) {
+        let ib = containerBlock.getInputTargetBlock('STACK');
+        const conns = [];
+        while (ib && !ib.isInsertionMarker()) {
+          conns.push(ib.valueConnection_);
+          ib = ib.getNextBlock();
+        }
+        for (let i = 0; i < this.itemCount_; i++) {
+          const inp = this.getInput(cfg.inputPrefix + i);
+          const tc = inp && inp.connection.targetConnection;
+          if (tc && !conns.includes(tc)) tc.disconnect();
+        }
+        this.itemCount_ = conns.length;
+        this.updateShape_(this.itemCount_);
+        for (let i = 0; i < this.itemCount_; i++) {
+          if (conns[i]) {
+            const inp = this.getInput(cfg.inputPrefix + i);
+            if (inp) inp.connection.connect(conns[i]);
+          }
+        }
+      },
+
+      saveConnections(containerBlock) {
+        let ib = containerBlock.getInputTargetBlock('STACK');
+        let i = 0;
+        while (ib) {
+          const inp = this.getInput(cfg.inputPrefix + i);
+          ib.valueConnection_ = inp ? inp.connection.targetConnection : null;
+          i++;
+          ib = ib.getNextBlock();
+        }
+      },
+
+      updateShape_(count) {
+        let i = 0;
+        while (this.getInput(cfg.inputPrefix + i)) {
+          this.removeInput(cfg.inputPrefix + i);
+          i++;
+        }
+        for (i = 0; i < count; i++) {
+          this.appendValueInput(cfg.inputPrefix + i).setCheck(cfg.inputCheck)
+            .appendField((cfg.perItemLabel || 'item') + ' ' + (i + 1));
+        }
+        this.itemCount_ = count;
+      },
+    };
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   *  dhc_points_mutator  (brick:hasPoint — N automation points on a device)
+   * ══════════════════════════════════════════════════════════════════════════ */
+  registerHelperBlocks(
+    'dhc_points_container', 'smart device',
+    'dhc_points_item',      'point',
+    '#a855f7'
+  );
+
+  const DHC_POINTS_MIXIN = makeValueMutatorMixin({
+    containerType: 'dhc_points_container',
+    itemType:      'dhc_points_item',
+    inputPrefix:   'point_',
+    inputCheck:    'brick:Point',
+    perItemLabel:  'point',
+    defaultCount:  0,
+  });
+
+  function DHC_POINTS_HELPER() { this.updateShape_(this.itemCount_); }
+
+  Blockly.Extensions.registerMutator(
+    'dhc_points_mutator',
+    DHC_POINTS_MIXIN,
+    DHC_POINTS_HELPER,
+    ['dhc_points_container', 'dhc_points_item']
+  );
+
+  console.info('[dhc/registerPlugins-electrical] mutators registered: dhc_board_mutator (rows = DIN rails), dhc_points_mutator (brick:hasPoint)');
 })();

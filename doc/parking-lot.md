@@ -258,6 +258,24 @@ than promoted now.
   `dhc-core` has none. If curve selectivity ever matters to a norm rule, add e.g.
   `dhc:breakerCurve` (enum B/C/D) alongside `dhc:ratedCurrent`.
 
+- **`dhc:WiringSegment` has no length / cable-type property.** The `dhcb:WiringSegment`
+  block carries `cableType` (U1000 R2V / H07V-U…) and `length` (m) as fields, but
+  `dhc-core` has only `dhc:crossSection` and `dhc:routedThrough` — the reference
+  A-Box smuggles the rest into `rdfs:label` (`"R2V 3G1.5 — line conductor"`). Add
+  `dhc:cableLength` (decimal, m) and `dhc:cableType` (enum, ideally `sh:in`) so the
+  translator can emit them structurally. The block references its circuit via the
+  `Circuit` token (`WIRING_OF`) → `dhc:hasWiring`, so the translator no longer has
+  to *infer* wiring when the designer draws it explicitly (it still infers L/N/PE
+  when they don't).
+
+- **Points ride on real Brick predicates — nothing parked.** `dhcb:Point` (a
+  `pointType` dropdown over `brick:Sensor`/`Setpoint`/`Command`/`Status`/`Alarm`/
+  `Parameter`) plugs into a smart device's `⚙` point slots and translates to
+  `brick:hasPoint` (device→point) / `brick:isPointOf` — both already defined
+  upstream. The device blocks carrying the `dhc_points_mutator` are Inverter,
+  Battery, EnergyMeter and the EV charger; extend the set (smart sockets/lights)
+  by adding the mutator, no ontology change needed.
+
 - **The `dhcb` ↔ A-Box translator (the big parked item), bidirectional.** The
   complete toolbox authors everything a residential A-Box needs, but nothing yet
   turns the workspace JSON into TTL or back. The Designer's

@@ -118,6 +118,17 @@
       "message0": "▥ Tableau divisionnaire %1",
       "message1": "protégé par %1",
       "tooltip": "Un tableau divisionnaire alimenté en aval par une ligne (dhc:SubDistributionBoard). « protégé par » référence la ligne d'alimentation. Utilisez l'engrenage ⚙ pour gérer les rangées (rails DIN)."
+    },
+    "dhcb:WiringSegment": {
+      "message0": "〰 Segment de câble %1",
+      "message1": "câblage de %1",
+      "message2": "câble %1 · %2 mm² · %3 m",
+      "tooltip": "Un segment de câble d’un circuit (dhc:WiringSegment ⊑ s223:Connection). Porte le type de câble, la section (dhc:crossSection) et la longueur. « câblage de » référence le circuit associé → dhc:hasWiring. Un module sur rail DIN. (longueur + type de câble sont des propriétés d’ontologie en attente.)"
+    },
+    "dhcb:Point": {
+      "message0": "◦ Point %1",
+      "message1": "type %1",
+      "tooltip": "Un point d’automatisation (une sous-classe de brick:Point selon le type : Sensor/Setpoint/Command/Status/Alarm/Parameter). Se branche dans les emplacements de points ⚙ d’un appareil intelligent → brick:hasPoint. Un point d’accroche pour l’automatisation."
     }
   }
 }

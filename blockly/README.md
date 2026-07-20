@@ -111,10 +111,24 @@ with the circuit's `CIRCUIT_VAR` and emits `dhc:Circuit` +`dhc:hasProtection`
 referenced token has exactly one definition (no dangling, no duplicate). See
 `doc/parking-lot.md § 4`.
 
+### Wiring segments and automation points
+
+- **`dhcb:WiringSegment`** — a rail module for a circuit's cable run, carrying
+  `cableType`, `crossSection` and `length`, and a `wiring of ▾` reference to its
+  `Circuit` token (→ `dhc:hasWiring`). Draw it to record cable lengths/types; skip
+  it and the translator infers L/N/PE conductors from the circuit's cross-section.
+- **`dhcb:Point`** — one automation-point block with a `pointType` dropdown over
+  the seven `brick:Point` roots (`Sensor`/`Setpoint`/`Command`/`Status`/`Alarm`/
+  `Parameter`/`Point`), drawn purple. It has an `output` of `brick:Point` and
+  **plugs into a smart device's `⚙` point slots** (the `dhc_points_mutator` — the
+  device→points value mutator, on Inverter / Battery / EnergyMeter / EV charger).
+  Points are *hooks for automation*; they translate to `brick:hasPoint`. Nesting
+  (not variable-linking) is used here because a point belongs to exactly one
+  device — Brick's `hasPoint` containment.
+
 This is the **core residential set**. The rarer classes (`dhc:Contactor`,
-`dhc:EquipotentialBonding`, `dhc:Distribution`/`BusBar`, PV panel/array sub-parts,
-explicit L/N/PE `dhc:WiringSegment` blocks) and the translator itself are the
-follow-up.
+`dhc:EquipotentialBonding`, `dhc:Distribution`/`BusBar`, PV panel/array sub-parts)
+and the translator itself are the follow-up.
 
 ## Localization
 

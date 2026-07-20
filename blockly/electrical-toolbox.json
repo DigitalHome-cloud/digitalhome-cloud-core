@@ -94,6 +94,10 @@
         {
           "kind": "block",
           "type": "dhcb:RCD"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:WiringSegment"
         }
       ]
     },
@@ -133,6 +137,21 @@
         {
           "kind": "block",
           "type": "dhcb:SubDistributionBoard"
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Points",
+      "colour": "#a855f7",
+      "contents": [
+        {
+          "kind": "label",
+          "text": "— Automation hooks (⚙ on a smart device) —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Point"
         }
       ]
     },

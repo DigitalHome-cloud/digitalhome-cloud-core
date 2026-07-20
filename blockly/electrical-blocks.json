@@ -218,7 +218,8 @@
       "colour": "#3b82f6",
       "tooltip": "An electrical storage battery (brick:Battery). powerRating in kW (dhc:powerRating). A source member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=brick:Battery"
+      "data": "dhc:blocklyBlockTemplate=brick:Battery",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:EnergyMeter",
@@ -236,7 +237,8 @@
       "colour": "#3b82f6",
       "tooltip": "The billing meter at the delivery point, e.g. Linky (dhc:EnergyMeter). A control & routing member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:EnergyMeter"
+      "data": "dhc:blocklyBlockTemplate=dhc:EnergyMeter",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:EmergencyDisconnect",
@@ -329,7 +331,8 @@
       "colour": "#3b82f6",
       "tooltip": "Converts and routes energy between sources and the board (brick:Inverter). powerRating in kW (dhc:powerRating). A control & routing member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=brick:Inverter"
+      "data": "dhc:blocklyBlockTemplate=brick:Inverter",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:DistributionBoard",
@@ -639,6 +642,98 @@
       "data": "dhc:blocklyBlockTemplate=dhc:RCD"
     },
     {
+      "type": "dhcb:WiringSegment",
+      "message0": "〰 Wiring Segment %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Cable run"
+        }
+      ],
+      "message1": "wiring of %1",
+      "args1": [
+        {
+          "type": "field_variable",
+          "name": "WIRING_OF",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
+      ],
+      "message2": "cable %1 · %2 mm² · %3 m",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "cableType",
+          "options": [
+            [
+              "U1000 R2V",
+              "U1000R2V"
+            ],
+            [
+              "H07V-U (rigid)",
+              "H07V-U"
+            ],
+            [
+              "H07V-R (flexible)",
+              "H07V-R"
+            ],
+            [
+              "H07V-K",
+              "H07V-K"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "crossSection",
+          "options": [
+            [
+              "1.5",
+              "1.5"
+            ],
+            [
+              "2.5",
+              "2.5"
+            ],
+            [
+              "4",
+              "4"
+            ],
+            [
+              "6",
+              "6"
+            ],
+            [
+              "10",
+              "10"
+            ],
+            [
+              "16",
+              "16"
+            ]
+          ]
+        },
+        {
+          "type": "field_number",
+          "name": "length",
+          "value": 10,
+          "min": 0,
+          "precision": 0.1
+        }
+      ],
+      "previousStatement": "module",
+      "nextStatement": "module",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A run of cable for a circuit (dhc:WiringSegment ⊑ s223:Connection). Carries cable type, cross-section (dhc:crossSection) and length. `wiring of` references the circuit it belongs to → dhc:hasWiring. A rail module. (length + cableType are parked ontology properties.)",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:WiringSegment"
+    },
+    {
       "type": "dhcb:Socket",
       "message0": "◵ Socket %1",
       "args0": [
@@ -726,7 +821,8 @@
       "colour": "#3b82f6",
       "tooltip": "An EV charging station / wallbox (brick:Electric_Vehicle_Charging_Station), an IRVE circuit load. 'protected by' references its circuit line. A sink member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=brick:Electric_Vehicle_Charging_Station"
+      "data": "dhc:blocklyBlockTemplate=brick:Electric_Vehicle_Charging_Station",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:Appliance",
@@ -821,6 +917,60 @@
       "tooltip": "A secondary / divisional board fed from a circuit downstream (dhc:SubDistributionBoard). 'protected by' references its feeding circuit line. Use the ⚙ gear to add/remove rows (DIN rails).",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:SubDistributionBoard"
+    },
+    {
+      "type": "dhcb:Point",
+      "message0": "◦ Point %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Point"
+        }
+      ],
+      "message1": "kind %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "pointType",
+          "options": [
+            [
+              "Sensor",
+              "brick:Sensor"
+            ],
+            [
+              "Setpoint",
+              "brick:Setpoint"
+            ],
+            [
+              "Command",
+              "brick:Command"
+            ],
+            [
+              "Status",
+              "brick:Status"
+            ],
+            [
+              "Alarm",
+              "brick:Alarm"
+            ],
+            [
+              "Parameter",
+              "brick:Parameter"
+            ],
+            [
+              "Point (generic)",
+              "brick:Point"
+            ]
+          ]
+        }
+      ],
+      "output": "brick:Point",
+      "inputsInline": false,
+      "colour": "#a855f7",
+      "tooltip": "An automation point (a brick:Point subclass chosen by kind: Sensor/Setpoint/Command/Status/Alarm/Parameter). Plugs into a smart device's ⚙ point slots → brick:hasPoint. A hook for automation.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Point"
     }
   ]
 }

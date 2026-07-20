@@ -118,6 +118,17 @@
       "message0": "▥ Unterverteiler %1",
       "message1": "geschützt durch %1",
       "tooltip": "Ein Unterverteiler, nachgelagert von einer Leitung gespeist (dhc:SubDistributionBoard). „geschützt durch“ referenziert die speisende Leitung. Mit dem ⚙ Zahnrad Reihen (DIN-Schienen) verwalten."
+    },
+    "dhcb:WiringSegment": {
+      "message0": "〰 Leitungsstück %1",
+      "message1": "Leitung von %1",
+      "message2": "Kabel %1 · %2 mm² · %3 m",
+      "tooltip": "Ein Kabelabschnitt eines Stromkreises (dhc:WiringSegment ⊑ s223:Connection). Trägt Kabeltyp, Querschnitt (dhc:crossSection) und Länge. „Leitung von“ referenziert den zugehörigen Stromkreis → dhc:hasWiring. Ein DIN-Schienen-Modul. (Länge + Kabeltyp sind geparkte Ontologie-Eigenschaften.)"
+    },
+    "dhcb:Point": {
+      "message0": "◦ Punkt %1",
+      "message1": "Art %1",
+      "tooltip": "Ein Automationspunkt (eine brick:Point-Unterklasse je nach Art: Sensor/Setpoint/Command/Status/Alarm/Parameter). Steckt in die ⚙ Punkt-Steckplätze eines smarten Geräts → brick:hasPoint. Ein Haken für die Automation."
     }
   }
 }

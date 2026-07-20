@@ -147,6 +147,20 @@
                                           },
                                           "maxPoints": 6,
                                           "dedicated": "FALSE"
+                                        },
+                                        "next": {
+                                          "block": {
+                                            "type": "dhcb:WiringSegment",
+                                            "fields": {
+                                              "name": "Sockets cable",
+                                              "WIRING_OF": {
+                                                "id": "cbSockLR"
+                                              },
+                                              "cableType": "U1000R2V",
+                                              "crossSection": "2.5",
+                                              "length": 14
+                                            }
+                                          }
                                         }
                                       }
                                     }
@@ -174,6 +188,29 @@
                                   "dedicated": "TRUE"
                                 }
                               }
+                            }
+                          }
+                        }
+                      },
+                      "extraState": {
+                        "itemCount": 2
+                      },
+                      "inputs": {
+                        "point_0": {
+                          "block": {
+                            "type": "dhcb:Point",
+                            "fields": {
+                              "name": "PV Power",
+                              "pointType": "brick:Sensor"
+                            }
+                          }
+                        },
+                        "point_1": {
+                          "block": {
+                            "type": "dhcb:Point",
+                            "fields": {
+                              "name": "Export limit",
+                              "pointType": "brick:Setpoint"
                             }
                           }
                         }
