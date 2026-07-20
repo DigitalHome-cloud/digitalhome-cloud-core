@@ -98,6 +98,10 @@
         {
           "kind": "block",
           "type": "dhcb:WiringSegment"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:IoTDevice"
         }
       ]
     },

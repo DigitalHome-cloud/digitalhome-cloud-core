@@ -273,11 +273,19 @@ than promoted now.
   `Parameter`) plugs into a device's `⚙` point slots and translates to
   `brick:hasPoint` (device→point) / `brick:isPointOf` — both already defined
   upstream. The `dhc_points_mutator` is on nearly every device (all sources/sinks,
-  meter, AGCP, SPD, RCD, circuit/breaker); **distribution boards** carry a
-  *combined* `dhc_board_mutator` (rails **and** points) because Blockly allows one
-  mutator per block. On translation each `dhcb:Point` node also wants its
+  meter, AGCP, SPD, RCD, circuit/breaker). A **distribution board is rows-only**;
+  board automation is a **`dhcb:IoTDevice`** DIN module dropped on a rail that
+  carries its own points. On translation each `dhcb:Point` node also wants its
   `dhc:hasBlocklyReference` (the parked overlay property above) so the automation
   hook is traceable back to its block.
+
+- **`dhc:IoTDevice` does not exist.** The DIN IoT-module block uses
+  type/template `dhc:IoTDevice`, intended `⊑ brick:Equipment` (or map its
+  `deviceType` — gateway / energy-monitor / smart-relay / controller — to a
+  specific Brick class such as `brick:Gateway`/`brick:Controller`). Its `dinSlots`
+  field (how many DIN modules it occupies) also has no ontology property yet — add
+  `dhc:dinModules` (integer) if DIN-rail capacity ever needs checking. Nothing
+  blocks the harness; only the translator needs these.
 
 - **The `dhcb` ↔ A-Box translator (the big parked item), bidirectional.** The
   complete toolbox authors everything a residential A-Box needs, but nothing yet

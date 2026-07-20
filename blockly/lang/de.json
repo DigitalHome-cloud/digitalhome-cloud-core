@@ -129,6 +129,11 @@
       "message0": "◦ Punkt %1",
       "message1": "Art %1",
       "tooltip": "Ein Automationspunkt (eine brick:Point-Unterklasse je nach Art: Sensor/Setpoint/Command/Status/Alarm/Parameter). Steckt in die ⚙ Punkt-Steckplätze eines smarten Geräts → brick:hasPoint. Ein Haken für die Automation."
+    },
+    "dhcb:IoTDevice": {
+      "message0": "📟 IoT-Gerät %1",
+      "message1": "%1 · %2 TE (DIN)",
+      "tooltip": "Ein DIN-Schienen-IoT-Modul (Gateway, Energiemonitor, Smart-Relais, Controller). Belegt `TE` Teilungseinheiten auf der Schiene und trägt Automationspunkte über sein ⚙. Auf eine Board-Schiene setzen, um einem reinen Reihen-Board Automations-Haken zu geben. brick:Equipment bei der Übersetzung."
     }
   }
 }

@@ -129,6 +129,11 @@
       "message0": "◦ Point %1",
       "message1": "type %1",
       "tooltip": "Un point d’automatisation (une sous-classe de brick:Point selon le type : Sensor/Setpoint/Command/Status/Alarm/Parameter). Se branche dans les emplacements de points ⚙ d’un appareil intelligent → brick:hasPoint. Un point d’accroche pour l’automatisation."
+    },
+    "dhcb:IoTDevice": {
+      "message0": "📟 Appareil IoT %1",
+      "message1": "%1 · %2 modules DIN",
+      "tooltip": "Un module IoT sur rail DIN (passerelle, moniteur d’énergie, relais intelligent, contrôleur). Occupe `modules DIN` sur le rail et porte des points d’automatisation via son ⚙. À poser sur un rail du tableau pour donner des points d’accroche à un tableau à rangées seules. brick:Equipment lors de la traduction."
     }
   }
 }

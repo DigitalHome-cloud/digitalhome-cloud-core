@@ -95,8 +95,7 @@
                             "name": "Resi9 Board"
                           },
                           "extraState": {
-                            "rows": 2,
-                            "points": 1
+                            "itemCount": 2
                           },
                           "inputs": {
                             "row_0": {
@@ -160,6 +159,30 @@
                                               "cableType": "U1000R2V",
                                               "crossSection": "2.5",
                                               "length": 14
+                                            },
+                                            "next": {
+                                              "block": {
+                                                "type": "dhcb:IoTDevice",
+                                                "fields": {
+                                                  "name": "Board gateway",
+                                                  "deviceType": "EnergyMonitor",
+                                                  "dinSlots": 2
+                                                },
+                                                "extraState": {
+                                                  "itemCount": 1
+                                                },
+                                                "inputs": {
+                                                  "point_0": {
+                                                    "block": {
+                                                      "type": "dhcb:Point",
+                                                      "fields": {
+                                                        "name": "Board temperature",
+                                                        "pointType": "brick:Sensor"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
                                             }
                                           }
                                         }
@@ -187,15 +210,6 @@
                                   },
                                   "maxPoints": 1,
                                   "dedicated": "TRUE"
-                                }
-                              }
-                            },
-                            "point_0": {
-                              "block": {
-                                "type": "dhcb:Point",
-                                "fields": {
-                                  "name": "Board temperature",
-                                  "pointType": "brick:Sensor"
                                 }
                               }
                             }

@@ -740,6 +740,61 @@
       "data": "dhc:blocklyBlockTemplate=dhc:WiringSegment"
     },
     {
+      "type": "dhcb:IoTDevice",
+      "message0": "📟 IoT Device %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "IoT Module"
+        }
+      ],
+      "message1": "%1 · %2 DIN slots",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "deviceType",
+          "options": [
+            [
+              "Gateway",
+              "Gateway"
+            ],
+            [
+              "Energy monitor",
+              "EnergyMonitor"
+            ],
+            [
+              "Smart relay",
+              "SmartRelay"
+            ],
+            [
+              "Controller",
+              "Controller"
+            ],
+            [
+              "Other",
+              "Other"
+            ]
+          ]
+        },
+        {
+          "type": "field_number",
+          "name": "dinSlots",
+          "value": 1,
+          "min": 1,
+          "precision": 1
+        }
+      ],
+      "mutator": "dhc_points_mutator",
+      "previousStatement": "module",
+      "nextStatement": "module",
+      "inputsInline": false,
+      "colour": "#a855f7",
+      "tooltip": "A DIN-rail-mounted IoT / smart module (gateway, energy monitor, smart relay, controller). Consumes `DIN slots` modules on the rail and carries automation points via its ⚙. Drop it on a board rail to give a rows-only board automation hooks. brick:Equipment on translation.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:IoTDevice"
+    },
+    {
       "type": "dhcb:Socket",
       "message0": "◵ Socket %1",
       "args0": [

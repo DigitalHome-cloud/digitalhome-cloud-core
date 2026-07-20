@@ -127,11 +127,13 @@ referenced token has exactly one definition (no dangling, no duplicate). See
   device→points *value* mutator) is on all sources and sinks, the meter, AGCP,
   surge protector, the **RCD** and the **circuit/breaker** (remote-controllable
   protection). Only the root, the wiring segment, and the point itself can't.
-  **Distribution boards** use a *combined* `dhc_board_mutator` — one mutator
-  managing both a **rails** stack (statement, DIN rails) **and** a **points**
-  stack (value, e.g. a board temperature `Sensor`) — because a block may carry
-  only one mutator yet a board needs both. Its `extraState` is `{ rows, points }`
-  (the legacy `{ itemCount }` still loads).
+- **Boards stay rows-only.** A distribution board is not itself a point host —
+  its `dhc_board_mutator` manages only DIN rails. To give a board automation,
+  drop a **`dhcb:IoTDevice`** onto a rail: a DIN-mounted IoT/smart module
+  (gateway / energy monitor / smart relay / controller, purple) that consumes a
+  `dinSlots` count of rail modules and carries its own points via the
+  `dhc_points_mutator`. This keeps one mutator per block and models reality — the
+  board is dumb copper; the smart bit is a module you add.
 
 This is the **core residential set**. The rarer classes (`dhc:Contactor`,
 `dhc:EquipotentialBonding`, `dhc:Distribution`/`BusBar`, PV panel/array sub-parts)
