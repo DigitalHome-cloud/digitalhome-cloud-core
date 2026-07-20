@@ -119,12 +119,19 @@ referenced token has exactly one definition (no dangling, no duplicate). See
   it and the translator infers L/N/PE conductors from the circuit's cross-section.
 - **`dhcb:Point`** — one automation-point block with a `pointType` dropdown over
   the seven `brick:Point` roots (`Sensor`/`Setpoint`/`Command`/`Status`/`Alarm`/
-  `Parameter`/`Point`), drawn purple. It has an `output` of `brick:Point` and
-  **plugs into a smart device's `⚙` point slots** (the `dhc_points_mutator` — the
-  device→points value mutator, on Inverter / Battery / EnergyMeter / EV charger).
-  Points are *hooks for automation*; they translate to `brick:hasPoint`. Nesting
-  (not variable-linking) is used here because a point belongs to exactly one
-  device — Brick's `hasPoint` containment.
+  `Parameter`/`Point`), drawn purple, `output: brick:Point`. It **plugs into a
+  device's `⚙` point slots** and translates to `brick:hasPoint`. Nesting (not
+  variable-linking) is used because a point belongs to exactly one device —
+  Brick's `hasPoint` containment.
+- **Nearly every device can host points.** The `dhc_points_mutator` (a
+  device→points *value* mutator) is on all sources and sinks, the meter, AGCP,
+  surge protector, the **RCD** and the **circuit/breaker** (remote-controllable
+  protection). Only the root, the wiring segment, and the point itself can't.
+  **Distribution boards** use a *combined* `dhc_board_mutator` — one mutator
+  managing both a **rails** stack (statement, DIN rails) **and** a **points**
+  stack (value, e.g. a board temperature `Sensor`) — because a block may carry
+  only one mutator yet a board needs both. Its `extraState` is `{ rows, points }`
+  (the legacy `{ itemCount }` still loads).
 
 This is the **core residential set**. The rarer classes (`dhc:Contactor`,
 `dhc:EquipotentialBonding`, `dhc:Distribution`/`BusBar`, PV panel/array sub-parts)

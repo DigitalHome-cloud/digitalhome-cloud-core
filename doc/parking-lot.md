@@ -270,11 +270,14 @@ than promoted now.
 
 - **Points ride on real Brick predicates — nothing parked.** `dhcb:Point` (a
   `pointType` dropdown over `brick:Sensor`/`Setpoint`/`Command`/`Status`/`Alarm`/
-  `Parameter`) plugs into a smart device's `⚙` point slots and translates to
+  `Parameter`) plugs into a device's `⚙` point slots and translates to
   `brick:hasPoint` (device→point) / `brick:isPointOf` — both already defined
-  upstream. The device blocks carrying the `dhc_points_mutator` are Inverter,
-  Battery, EnergyMeter and the EV charger; extend the set (smart sockets/lights)
-  by adding the mutator, no ontology change needed.
+  upstream. The `dhc_points_mutator` is on nearly every device (all sources/sinks,
+  meter, AGCP, SPD, RCD, circuit/breaker); **distribution boards** carry a
+  *combined* `dhc_board_mutator` (rails **and** points) because Blockly allows one
+  mutator per block. On translation each `dhcb:Point` node also wants its
+  `dhc:hasBlocklyReference` (the parked overlay property above) so the automation
+  hook is traceable back to its block.
 
 - **The `dhcb` ↔ A-Box translator (the big parked item), bidirectional.** The
   complete toolbox authors everything a residential A-Box needs, but nothing yet

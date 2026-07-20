@@ -162,7 +162,8 @@
       "colour": "#3b82f6",
       "tooltip": "The point of supply from the distribution network (dhc:EnergyDelivery). Carries the energy provider, the subscribed / contracted power in kVA (dhc:contractedPowerKVA), and the current type (dhc:currentType). A source member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:EnergyDelivery"
+      "data": "dhc:blocklyBlockTemplate=dhc:EnergyDelivery",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:PV_Generation_System",
@@ -190,7 +191,8 @@
       "colour": "#3b82f6",
       "tooltip": "A photovoltaic generation system (brick:PV_Generation_System). powerRating in kWp (dhc:powerRating). A source member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=brick:PV_Generation_System"
+      "data": "dhc:blocklyBlockTemplate=brick:PV_Generation_System",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:Battery",
@@ -285,7 +287,8 @@
       "colour": "#3b82f6",
       "tooltip": "The main disconnect at the origin of the installation — the AGCP / disjoncteur d'abonné (dhc:EmergencyDisconnect). ratedCurrent in A (dhc:ratedCurrent). A control & routing member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:EmergencyDisconnect"
+      "data": "dhc:blocklyBlockTemplate=dhc:EmergencyDisconnect",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:SurgeProtector",
@@ -303,7 +306,8 @@
       "colour": "#3b82f6",
       "tooltip": "A Surge Protective Device / parafoudre (dhc:SurgeProtector), mandatory per NF C 15-100 §443. A control & routing member; typically at the main board.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:SurgeProtector"
+      "data": "dhc:blocklyBlockTemplate=dhc:SurgeProtector",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:Inverter",
@@ -548,7 +552,8 @@
       "colour": "#3b82f6",
       "tooltip": "A protected line (dhc:Circuit) — the unit the C-Box validates. Sits on a board rail. Its `line` variable is the token loads reference via 'protected by'. The `differential` variable references the dhc:RCD device protecting it — SHARED referencing is how the topology is expressed: all circuits → one differential = one-per-install (older NF C 15-100); one differential per rail = one-per-rail (newer editions). An RCBO circuit is its own differential (protection = RCBO). On blockly→abox it becomes dhc:Circuit + dhc:hasProtection (its breaker + the referenced RCD) + dhc:hasWiring.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:Circuit"
+      "data": "dhc:blocklyBlockTemplate=dhc:Circuit",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:RCD",
@@ -639,7 +644,8 @@
       "colour": "#3b82f6",
       "tooltip": "A differential device (dhc:RCD) — this is where the differential is DEFINED (rcdType, sensitivityMA, ratedCurrent). Its `id` variable is the token circuits reference via 'differential'. Drop ONE and have every circuit reference it for one-per-install (older norm); drop one per rail and reference it from that rail's circuits for one-per-rail (newer norm). A DIN-rail module.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:RCD"
+      "data": "dhc:blocklyBlockTemplate=dhc:RCD",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:WiringSegment",
@@ -761,7 +767,8 @@
       "colour": "#3b82f6",
       "tooltip": "An electrical socket outlet (dhc:Socket). 'protected by' references the circuit line that feeds it (→ dhc:feedsEquipment). A sink member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:Socket"
+      "data": "dhc:blocklyBlockTemplate=dhc:Socket",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:Luminaire",
@@ -791,7 +798,8 @@
       "colour": "#3b82f6",
       "tooltip": "A lighting fixture (brick:Luminaire). 'protected by' references its circuit line. A sink member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=brick:Luminaire"
+      "data": "dhc:blocklyBlockTemplate=brick:Luminaire",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:Electric_Vehicle_Charging_Station",
@@ -885,7 +893,8 @@
       "colour": "#3b82f6",
       "tooltip": "A generic consumer appliance (dhc:Appliance — parked; maps to brick:Equipment, with applianceType hinting the specific Brick/223P class). 'protected by' references its circuit line. A sink member.",
       "helpUrl": "",
-      "data": "dhc:blocklyBlockTemplate=dhc:Appliance"
+      "data": "dhc:blocklyBlockTemplate=dhc:Appliance",
+      "mutator": "dhc_points_mutator"
     },
     {
       "type": "dhcb:SubDistributionBoard",

@@ -95,7 +95,8 @@
                             "name": "Resi9 Board"
                           },
                           "extraState": {
-                            "itemCount": 2
+                            "rows": 2,
+                            "points": 1
                           },
                           "inputs": {
                             "row_0": {
@@ -186,6 +187,15 @@
                                   },
                                   "maxPoints": 1,
                                   "dedicated": "TRUE"
+                                }
+                              }
+                            },
+                            "point_0": {
+                              "block": {
+                                "type": "dhcb:Point",
+                                "fields": {
+                                  "name": "Board temperature",
+                                  "pointType": "brick:Sensor"
                                 }
                               }
                             }
