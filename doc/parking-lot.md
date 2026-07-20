@@ -267,10 +267,23 @@ than promoted now.
   honour:
   - Each `dhc:Circuit` block → a `dhc:Circuit` with `dhc:hasCircuitType` /
     `ratedCurrent` / `crossSection` / `phase` / `maxPoints` / `dedicated`;
-    `dhc:hasProtection` → a `dhc:ProtectionDevice` (or `dhc:RCBO`) at the same
-    `dhc:ratedCurrent` (+ a `dhc:RCD` with `rcdType` / `sensitivityMA` when
-    differential); `dhc:hasWiring` → L/N/PE `dhc:WiringSegment`s at `crossSection`
-    (inferred — the harness deliberately does not draw individual conductors).
+    `dhc:hasProtection` → a `dhc:ProtectionDevice` (or `dhc:RCBO` when
+    `protection = RCBO`) at the same `dhc:ratedCurrent`; `dhc:hasWiring` → L/N/PE
+    `dhc:WiringSegment`s at `crossSection` (inferred — the harness deliberately
+    does not draw individual conductors).
+  - **Differential**: each `dhc:RCD` block → one `dhc:RCD` individual (with
+    `rcdType` / `sensitivityMA` / `ratedCurrent`), keyed by its `RCD_VAR` token.
+    Each circuit's **`DIFFERENTIAL`** variable is paired with the matching
+    `RCD_VAR`, and that one `dhc:RCD` is added to the circuit's `dhc:hasProtection`
+    — so a token shared by N circuits emits **one** `dhc:RCD` referenced N times.
+    This is exactly the reference A-Box's `ex:rcd-main` pattern, and it is how the
+    topology is carried: all circuits → one token = one-per-install; one token per
+    rail = one-per-rail; `protection = RCBO` = the circuit is its own integral
+    differential (no shared `dhc:RCD`). **Which topology is compliant is not the
+    translator's business — it emits faithfully and the per-edition C-Box decides**
+    (an older NF C 15-100 edition passes one-per-install; a newer edition's shape
+    would flag it). A parked C-Box item: no shape yet checks differential grouping
+    per edition (§ 1 coverage gap).
   - Each load's **`FED_BY`** variable is paired with the matching circuit's
     **`CIRCUIT_VAR`**; emit the load as that circuit's `dhc:feedsEquipment` /
     `brick:feeds` target.

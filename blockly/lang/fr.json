@@ -76,14 +76,16 @@
       "message0": "● Circuit %1",
       "message1": "ligne %1",
       "message2": "type %1 · %2 A · %3 mm²",
-      "message3": "%1-phasé · protection %2 · DDR %3 · %4 mA",
-      "message4": "points max %1 · dédié %2",
-      "tooltip": "Une ligne protégée (dhc:Circuit) — l'unité que la C-Box valide. Posée sur un rail du tableau. Sa variable `ligne` est le jeton que les consommateurs référencent via « protégé par ». Porte le dimensionnement du circuit et sa protection (disjoncteur/DDR + type/sensibilité DDR). Devient dhc:Circuit + dhc:hasProtection + dhc:hasWiring lors de blockly→abox."
+      "message3": "%1-phasé · protection %2",
+      "message4": "différentiel %1",
+      "message5": "points max %1 · dédié %2",
+      "tooltip": "Une ligne protégée (dhc:Circuit) — l'unité que la C-Box valide. Posée sur un rail. `ligne` est le jeton que les consommateurs référencent via « protégé par ». `différentiel` référence le dhc:RCD qui la protège — le référencement partagé exprime la topologie : tous les circuits → un différentiel = un par installation (ancienne NF C 15-100) ; un différentiel par rangée = un par rangée (éditions récentes). Un circuit DDR/disjoncteur (protection = RCBO) est son propre différentiel. Devient dhc:Circuit + dhc:hasProtection + dhc:hasWiring lors de blockly→abox."
     },
     "dhc:RCD": {
-      "message0": "⧉ Interrupteur différentiel %1",
-      "message1": "type %1 · %2 mA",
-      "tooltip": "Un différentiel de tête (dhc:RCD) regroupant les circuits de son rail. rcdType (AC/A/B/F) et sensitivityMA. Un module sur rail DIN."
+      "message0": "⧉ Différentiel %1",
+      "message1": "id %1",
+      "message2": "type %1 · %2 mA · calibre %3 A",
+      "tooltip": "Un dispositif différentiel (dhc:RCD) — c'est ici que le différentiel est DÉFINI (rcdType, sensitivityMA, ratedCurrent). Son `id` est le jeton que les circuits référencent via « différentiel ». En placer un et le référencer depuis tous les circuits = un par installation (ancienne norme) ; un par rangée = un par rangée (norme récente). Un module sur rail DIN."
     },
     "dhc:Socket": {
       "message0": "◵ Prise %1",

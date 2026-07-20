@@ -78,7 +78,30 @@ by a **typed Blockly variable** — a flat, readable model.
   `dhc:SubDistributionBoard`) each have a **"protected by"** `field_variable`
   (`FED_BY`, `variableTypes: ["Circuit"]`) whose dropdown lists **only circuit
   tokens** — so a load can only be fed by a defined circuit. The native
-  **Circuit lines** toolbox category is the variable flyout.
+  **Circuit lines** toolbox category is the variable flyout (Circuit and
+  Differential tokens, plus buttons to create each).
+
+### Where the differential (RCD) is defined
+
+The **`dhc:RCD` block is where a differential is defined** — it owns a
+`Differential`-typed token (`ID_Main`, `ID_Garage`, …) and carries `rcdType`,
+`sensitivityMA`, `ratedCurrent`. A **`dhc:Circuit`** references its differential
+through a `differential` `field_variable` (`variableTypes: ["Differential"]`).
+**Reference-sharing is how the topology is expressed**, so both what old and new
+editions require is representable:
+
+| Topology | How to draw it |
+|---|---|
+| **one per install** (older NF C 15-100 allows it) | one `dhc:RCD`; **every** circuit's `differential ▾` points to it |
+| **one per rail / per group** (newer editions) | one `dhc:RCD` per rail; each rail's circuits point to that rail's token |
+| **one per circuit** (RCBO) | circuit `protection = RCBO` — it is its own integral differential |
+
+This mirrors the reference A-Box, where a single `ex:rcd-main` appears in every
+circuit's `dhc:hasProtection`. **The blocks only *represent* the topology; which
+one is legal is the C-Box edition's call** — exactly the per-edition compliance
+the viewer already computes. So the designer draws freely and the norm layer
+judges (old edition passes one-per-install; a newer edition's shape would fail it
+and demand per-rail).
 
 The token represents a **`dhc:Circuit`** (the unit the C-Box targets — 24 shapes),
 not a bare breaker. On **blockly→abox** the translator pairs each load's `FED_BY`

@@ -76,14 +76,16 @@
       "message0": "● Stromkreis %1",
       "message1": "Leitung %1",
       "message2": "Typ %1 · %2 A · %3 mm²",
-      "message3": "%1-phasig · Schutz %2 · FI %3 · %4 mA",
-      "message4": "max. Punkte %1 · dediziert %2",
-      "tooltip": "Eine geschützte Leitung (dhc:Circuit) — die Einheit, die die C-Box prüft. Sitzt auf einer Verteilerschiene. Ihre Variable `Leitung` ist das Token, das Lasten über „geschützt durch“ referenzieren. Trägt die Kreis-Auslegung und den Schutz (LS/FI-LS + FI-Typ/-Empfindlichkeit). Wird bei blockly→abox zu dhc:Circuit + dhc:hasProtection + dhc:hasWiring."
+      "message3": "%1-phasig · Schutz %2",
+      "message4": "Differential %1",
+      "message5": "max. Punkte %1 · dediziert %2",
+      "tooltip": "Eine geschützte Leitung (dhc:Circuit) — die Einheit, die die C-Box prüft. Sitzt auf einer Verteilerschiene. `Leitung` ist das Token, das Lasten über „geschützt durch“ referenzieren. `Differential` referenziert die dhc:RCD, die sie schützt — gemeinsame Referenzierung drückt die Topologie aus: alle Kreise → ein Differential = eines pro Anlage (ältere NF C 15-100); ein Differential pro Schiene = eines pro Schiene (neuere Editionen). Ein FI-LS-Kreis (Schutz = RCBO) ist sein eigenes Differential. Wird bei blockly→abox zu dhc:Circuit + dhc:hasProtection + dhc:hasWiring."
     },
     "dhc:RCD": {
-      "message0": "⧉ FI-Schutzschalter %1",
-      "message1": "Typ %1 · %2 mA",
-      "tooltip": "Ein FI-Vorschalter (dhc:RCD), der die Kreise seiner Schiene gruppiert. rcdType (AC/A/B/F) und sensitivityMA. Ein DIN-Schienen-Modul."
+      "message0": "⧉ FI / Differential %1",
+      "message1": "id %1",
+      "message2": "Typ %1 · %2 mA · Bemessung %3 A",
+      "tooltip": "Ein Differenzstrom-Schutzgerät (dhc:RCD) — hier wird das Differential DEFINIERT (rcdType, sensitivityMA, ratedCurrent). Seine `id` ist das Token, das Kreise über „Differential“ referenzieren. Eines platzieren und von allen Kreisen referenzieren = eines pro Anlage (ältere Norm); eines pro Schiene = eines pro Schiene (neuere Norm). Ein DIN-Schienen-Modul."
     },
     "dhc:Socket": {
       "message0": "◵ Steckdose %1",

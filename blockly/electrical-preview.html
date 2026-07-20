@@ -363,12 +363,15 @@
     // so our Circuit-typed tokens never appear there. This lists them and adds
     // a button to create a new one, typed "Circuit".
     function circuitLinesFlyout(ws) {
-      const items = [{ kind: 'button', text: '＋ New circuit line', callbackKey: 'CREATE_CIRCUIT_VAR' }];
+      const items = [
+        { kind: 'button', text: '＋ New circuit line (Circuit)', callbackKey: 'CREATE_CIRCUIT_VAR' },
+        { kind: 'button', text: '＋ New differential (RCD)', callbackKey: 'CREATE_DIFF_VAR' },
+      ];
       // Reuse Blockly's own getter-block builder (version-correct field shape).
-      // All our variables are type "Circuit", so this is the circuit-line list.
+      // Lists every token — Circuit lines and Differential (RCD) tokens alike.
       let blocks = [];
       try { blocks = Blockly.VariablesDynamic.flyoutCategoryBlocks(ws) || []; } catch (e) { log('flyout: ' + e.message, 'err'); }
-      if (!blocks.length) items.push({ kind: 'label', text: 'No circuit lines yet — drop a Circuit block' });
+      if (!blocks.length) items.push({ kind: 'label', text: 'No tokens yet — drop a Circuit or RCD block' });
       return items.concat(blocks);
     }
 
@@ -393,6 +396,8 @@
       workspace.registerToolboxCategoryCallback('CIRCUIT_LINES', circuitLinesFlyout);
       workspace.registerButtonCallback('CREATE_CIRCUIT_VAR', (b) =>
         Blockly.Variables.createVariableButtonHandler(b.getTargetWorkspace(), null, 'Circuit'));
+      workspace.registerButtonCallback('CREATE_DIFF_VAR', (b) =>
+        Blockly.Variables.createVariableButtonHandler(b.getTargetWorkspace(), null, 'Differential'));
 
       if (restoreState) {
         try { Blockly.serialization.workspaces.load(restoreState, workspace); }
@@ -519,7 +524,9 @@
         if (root) document.getElementById('install-name').textContent = root;
 
         const lines = workspace.getVariablesOfType('Circuit').map((v) => v.name);
+        const diffs = workspace.getVariablesOfType('Differential').map((v) => v.name);
         log(`circuit lines (${lines.length}): ${lines.join(', ') || '—'}`, 'ok');
+        log(`differentials (${diffs.length}): ${diffs.join(', ') || '—'}`, 'ok');
 
       } catch (e) {
         log(String(e), 'err');

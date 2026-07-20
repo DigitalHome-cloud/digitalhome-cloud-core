@@ -241,15 +241,17 @@
           "options": [["1.5", "1.5"], ["2.5", "2.5"], ["4", "4"], ["6", "6"], ["10", "10"], ["16", "16"]]
         }
       ],
-      "message3": "%1-phase · protection %2 · RCD %3 · %4 mA",
+      "message3": "%1-phase · protection %2",
       "args3": [
         { "type": "field_dropdown", "name": "phase", "options": [["1", "1"], ["3", "3"]] },
-        { "type": "field_dropdown", "name": "protection", "options": [["MCB", "MCB"], ["RCBO", "RCBO"]] },
-        { "type": "field_dropdown", "name": "rcdType", "options": [["—", "none"], ["AC", "AC"], ["A", "A"], ["B", "B"], ["F", "F"]] },
-        { "type": "field_dropdown", "name": "sensitivityMA", "options": [["—", "none"], ["30", "30"], ["300", "300"]] }
+        { "type": "field_dropdown", "name": "protection", "options": [["MCB (needs a differential)", "MCB"], ["RCBO (integral differential)", "RCBO"]] }
       ],
-      "message4": "max points %1 · dedicated %2",
+      "message4": "differential %1",
       "args4": [
+        { "type": "field_variable", "name": "DIFFERENTIAL", "variable": "ID_Main", "variableTypes": ["Differential"], "defaultType": "Differential" }
+      ],
+      "message5": "max points %1 · dedicated %2",
+      "args5": [
         { "type": "field_number", "name": "maxPoints", "value": 8, "min": 0, "precision": 1 },
         { "type": "field_checkbox", "name": "dedicated", "checked": false }
       ],
@@ -257,26 +259,31 @@
       "nextStatement": "module",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "A protected line (dhc:Circuit) — the unit the C-Box validates. Sits on a board rail. Its `line` variable is the token loads reference via 'protected by'. Carries the circuit design (type, ratedCurrent, crossSection, phase, maxPoints, dedicated) and its protection (MCB/RCBO + RCD type/sensitivity). On blockly→abox it becomes dhc:Circuit + dhc:hasProtection + dhc:hasWiring.",
+      "tooltip": "A protected line (dhc:Circuit) — the unit the C-Box validates. Sits on a board rail. Its `line` variable is the token loads reference via 'protected by'. The `differential` variable references the dhc:RCD device protecting it — SHARED referencing is how the topology is expressed: all circuits → one differential = one-per-install (older NF C 15-100); one differential per rail = one-per-rail (newer editions). An RCBO circuit is its own differential (protection = RCBO). On blockly→abox it becomes dhc:Circuit + dhc:hasProtection (its breaker + the referenced RCD) + dhc:hasWiring.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:Circuit"
     },
     {
       "type": "dhc:RCD",
-      "message0": "⧉ RCD incomer %1",
+      "message0": "⧉ RCD / differential %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "RCD" }
+        { "type": "field_input", "name": "name", "text": "Main differential" }
       ],
-      "message1": "type %1 · %2 mA",
+      "message1": "id %1",
       "args1": [
+        { "type": "field_variable", "name": "RCD_VAR", "variable": "ID_Main", "variableTypes": ["Differential"], "defaultType": "Differential" }
+      ],
+      "message2": "type %1 · %2 mA · rated %3 A",
+      "args2": [
         { "type": "field_dropdown", "name": "rcdType", "options": [["AC", "AC"], ["A", "A"], ["B", "B"], ["F", "F"]] },
-        { "type": "field_dropdown", "name": "sensitivityMA", "options": [["30", "30"], ["300", "300"]] }
+        { "type": "field_dropdown", "name": "sensitivityMA", "options": [["30", "30"], ["300", "300"]] },
+        { "type": "field_dropdown", "name": "ratedCurrent", "options": [["25", "25"], ["40", "40"], ["63", "63"], ["80", "80"]] }
       ],
       "previousStatement": "module",
       "nextStatement": "module",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "A differential incomer (dhc:RCD) grouping the circuits on its rail. rcdType (AC/A/B/F) and sensitivityMA (dhc:rcdType, dhc:sensitivityMA). A DIN-rail module.",
+      "tooltip": "A differential device (dhc:RCD) — this is where the differential is DEFINED (rcdType, sensitivityMA, ratedCurrent). Its `id` variable is the token circuits reference via 'differential'. Drop ONE and have every circuit reference it for one-per-install (older norm); drop one per rail and reference it from that rail's circuits for one-per-rail (newer norm). A DIN-rail module.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:RCD"
     },

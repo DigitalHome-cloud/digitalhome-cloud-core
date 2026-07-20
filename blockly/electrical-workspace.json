@@ -1,5 +1,7 @@
 {
   "variables": [
+    { "name": "ID_Main", "id": "idMain", "type": "Differential" },
+    { "name": "ID_Garage", "id": "idGarage", "type": "Differential" },
     { "name": "CB_Sockets_LR", "id": "cbSockLR", "type": "Circuit" },
     { "name": "CB_Lighting_LR", "id": "cbLightLR", "type": "Circuit" },
     { "name": "CB_Garage_Wallbox", "id": "cbEV", "type": "Circuit" }
@@ -55,25 +57,37 @@
                           "inputs": {
                             "row_0": {
                               "block": {
-                                "type": "dhc:Circuit",
+                                "type": "dhc:RCD",
                                 "fields": {
-                                  "name": "Living-room sockets",
-                                  "CIRCUIT_VAR": { "id": "cbSockLR" },
-                                  "hasCircuitType": "dhc:CircuitType_Socket",
-                                  "ratedCurrent": "16", "crossSection": "2.5",
-                                  "phase": "1", "protection": "MCB", "rcdType": "A", "sensitivityMA": "30",
-                                  "maxPoints": 8, "dedicated": "FALSE"
+                                  "name": "Main 30 mA (row head)",
+                                  "RCD_VAR": { "id": "idMain" },
+                                  "rcdType": "A", "sensitivityMA": "30", "ratedCurrent": "63"
                                 },
                                 "next": {
                                   "block": {
                                     "type": "dhc:Circuit",
                                     "fields": {
-                                      "name": "Living-room lighting",
-                                      "CIRCUIT_VAR": { "id": "cbLightLR" },
-                                      "hasCircuitType": "dhc:CircuitType_Lighting",
-                                      "ratedCurrent": "10", "crossSection": "1.5",
-                                      "phase": "1", "protection": "MCB", "rcdType": "A", "sensitivityMA": "30",
-                                      "maxPoints": 6, "dedicated": "FALSE"
+                                      "name": "Living-room sockets",
+                                      "CIRCUIT_VAR": { "id": "cbSockLR" },
+                                      "hasCircuitType": "dhc:CircuitType_Socket",
+                                      "ratedCurrent": "16", "crossSection": "2.5",
+                                      "phase": "1", "protection": "MCB",
+                                      "DIFFERENTIAL": { "id": "idMain" },
+                                      "maxPoints": 8, "dedicated": "FALSE"
+                                    },
+                                    "next": {
+                                      "block": {
+                                        "type": "dhc:Circuit",
+                                        "fields": {
+                                          "name": "Living-room lighting",
+                                          "CIRCUIT_VAR": { "id": "cbLightLR" },
+                                          "hasCircuitType": "dhc:CircuitType_Lighting",
+                                          "ratedCurrent": "10", "crossSection": "1.5",
+                                          "phase": "1", "protection": "MCB",
+                                          "DIFFERENTIAL": { "id": "idMain" },
+                                          "maxPoints": 6, "dedicated": "FALSE"
+                                        }
+                                      }
                                     }
                                   }
                                 }
@@ -87,7 +101,8 @@
                                   "CIRCUIT_VAR": { "id": "cbEV" },
                                   "hasCircuitType": "dhc:CircuitType_IRVE",
                                   "ratedCurrent": "32", "crossSection": "6",
-                                  "phase": "1", "protection": "RCBO", "rcdType": "A", "sensitivityMA": "30",
+                                  "phase": "1", "protection": "RCBO",
+                                  "DIFFERENTIAL": { "id": "idGarage" },
                                   "maxPoints": 1, "dedicated": "TRUE"
                                 }
                               }
