@@ -16,7 +16,7 @@
     "lbl.lang": "Langue"
   },
   "blocks": {
-    "dhc:PowerDistributionSystem": {
+    "dhcb:PowerDistributionSystem": {
       "message0": "⚡ Système de distribution électrique %1",
       "message1": "régime de neutre %1",
       "message2": "médium (système électrique) %1",
@@ -25,8 +25,14 @@
           "type": "field_dropdown",
           "name": "hasMedium",
           "options": [
-            ["230 V · monophasé · 50 Hz", "s223:AC-230VLN-1Ph-50Hz"],
-            ["400/230 V · triphasé · 50 Hz", "s223:AC-400VLL-230VLN-3Ph-50Hz"]
+            [
+              "230 V · monophasé · 50 Hz",
+              "s223:AC-230VLN-1Ph-50Hz"
+            ],
+            [
+              "400/230 V · triphasé · 50 Hz",
+              "s223:AC-400VLL-230VLN-3Ph-50Hz"
+            ]
           ]
         }
       ],
@@ -35,44 +41,44 @@
       "message5": "③ sous-système consommateurs %1",
       "tooltip": "Racine d'une installation électrique (dhc:PowerDistributionSystem ⊑ brick:System). Regroupe trois sous-systèmes — sources, distribution, consommateurs — dont les membres deviennent brick:hasPart lors de blockly→abox. neutralSystem est le régime de neutre ; hasMedium (s223:hasMedium) nomme le système électrique."
     },
-    "dhc:EnergyDelivery": {
+    "dhcb:EnergyDelivery": {
       "message0": "🔌 Raccordement réseau %1",
       "message1": "fournisseur %1 · souscrit %2 kVA · %3",
       "tooltip": "Le point de livraison depuis le réseau (dhc:EnergyDelivery). Porte le fournisseur, la puissance souscrite en kVA (dhc:contractedPowerKVA) et le type de courant (dhc:currentType). Un membre source."
     },
-    "brick:PV_Generation_System": {
+    "dhcb:PV_Generation_System": {
       "message0": "☀ Système PV %1",
       "message1": "puissance %1 kWc",
       "tooltip": "Un système de génération photovoltaïque (brick:PV_Generation_System), powerRating en kWc. Un membre source."
     },
-    "brick:Battery": {
+    "dhcb:Battery": {
       "message0": "🔋 Batterie %1",
       "message1": "puissance %1 kW",
       "tooltip": "Une batterie de stockage électrique (brick:Battery), powerRating en kW. Un membre source."
     },
-    "dhc:EnergyMeter": {
+    "dhcb:EnergyMeter": {
       "message0": "▭ Compteur %1",
       "tooltip": "Le compteur de facturation au point de livraison, p. ex. Linky (dhc:EnergyMeter). Un membre distribution."
     },
-    "dhc:EmergencyDisconnect": {
+    "dhcb:EmergencyDisconnect": {
       "message0": "⛔ Disjoncteur de branchement / AGCP %1",
       "message1": "calibre %1 A",
       "tooltip": "Le disjoncteur à l'origine de l'installation — AGCP / disjoncteur d'abonné (dhc:EmergencyDisconnect), ratedCurrent en A. Un membre distribution."
     },
-    "dhc:SurgeProtector": {
+    "dhcb:SurgeProtector": {
       "message0": "↯ Parafoudre / SPD %1",
       "tooltip": "Un parasurtenseur / parafoudre (dhc:SurgeProtector), obligatoire selon NF C 15-100 §443. Un membre distribution."
     },
-    "brick:Inverter": {
+    "dhcb:Inverter": {
       "message0": "⇄ Onduleur %1",
       "message1": "puissance %1 kW",
       "tooltip": "Convertit et achemine l'énergie entre les sources et le tableau (brick:Inverter), powerRating en kW. Un membre distribution."
     },
-    "dhc:DistributionBoard": {
+    "dhcb:DistributionBoard": {
       "message0": "▦ Tableau principal %1",
       "tooltip": "Le tableau principal (dhc:DistributionBoard). Un membre distribution. Utilisez l'engrenage ⚙ pour gérer les rangées (rails DIN) ; chaque rail porte des définitions de circuit et des modules de protection."
     },
-    "dhc:Circuit": {
+    "dhcb:Circuit": {
       "message0": "● Circuit %1",
       "message1": "ligne %1",
       "message2": "type %1 · %2 A · %3 mm²",
@@ -81,34 +87,34 @@
       "message5": "points max %1 · dédié %2",
       "tooltip": "Une ligne protégée (dhc:Circuit) — l'unité que la C-Box valide. Posée sur un rail. `ligne` est le jeton que les consommateurs référencent via « protégé par ». `différentiel` référence le dhc:RCD qui la protège — le référencement partagé exprime la topologie : tous les circuits → un différentiel = un par installation (ancienne NF C 15-100) ; un différentiel par rangée = un par rangée (éditions récentes). Un circuit DDR/disjoncteur (protection = RCBO) est son propre différentiel. Devient dhc:Circuit + dhc:hasProtection + dhc:hasWiring lors de blockly→abox."
     },
-    "dhc:RCD": {
+    "dhcb:RCD": {
       "message0": "⧉ Différentiel %1",
       "message1": "id %1",
       "message2": "type %1 · %2 mA · calibre %3 A",
       "tooltip": "Un dispositif différentiel (dhc:RCD) — c'est ici que le différentiel est DÉFINI (rcdType, sensitivityMA, ratedCurrent). Son `id` est le jeton que les circuits référencent via « différentiel ». En placer un et le référencer depuis tous les circuits = un par installation (ancienne norme) ; un par rangée = un par rangée (norme récente). Un module sur rail DIN."
     },
-    "dhc:Socket": {
+    "dhcb:Socket": {
       "message0": "◵ Prise %1",
       "message1": "protégé par %1",
       "tooltip": "Une prise de courant (dhc:Socket). « protégé par » référence la ligne qui l'alimente (→ dhc:feedsEquipment). Un membre consommateur."
     },
-    "brick:Luminaire": {
+    "dhcb:Luminaire": {
       "message0": "💡 Luminaire %1",
       "message1": "protégé par %1",
       "tooltip": "Un luminaire (brick:Luminaire). « protégé par » référence sa ligne. Un membre consommateur."
     },
-    "brick:Electric_Vehicle_Charging_Station": {
+    "dhcb:Electric_Vehicle_Charging_Station": {
       "message0": "🚗 Borne de recharge VE %1",
       "message1": "protégé par %1",
       "tooltip": "Une borne de recharge VE / wallbox (brick:Electric_Vehicle_Charging_Station), une charge IRVE. « protégé par » référence sa ligne. Un membre consommateur."
     },
-    "dhc:Appliance": {
+    "dhcb:Appliance": {
       "message0": "⊡ Appareil %1",
       "message1": "type %1",
       "message2": "protégé par %1",
       "tooltip": "Un consommateur générique (dhc:Appliance — en attente ; correspond à brick:Equipment, applianceType précise la classe Brick/223P). « protégé par » référence sa ligne. Un membre consommateur."
     },
-    "dhc:SubDistributionBoard": {
+    "dhcb:SubDistributionBoard": {
       "message0": "▥ Tableau divisionnaire %1",
       "message1": "protégé par %1",
       "tooltip": "Un tableau divisionnaire alimenté en aval par une ligne (dhc:SubDistributionBoard). « protégé par » référence la ligne d'alimentation. Utilisez l'engrenage ⚙ pour gérer les rangées (rails DIN)."

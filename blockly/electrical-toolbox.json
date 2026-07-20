@@ -6,8 +6,14 @@
       "name": "Start",
       "colour": "#3b82f6",
       "contents": [
-        { "kind": "label", "text": "— Installation Root —" },
-        { "kind": "block", "type": "dhc:PowerDistributionSystem" }
+        {
+          "kind": "label",
+          "text": "— Installation Root —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:PowerDistributionSystem"
+        }
       ]
     },
     {
@@ -15,10 +21,22 @@
       "name": "Sources",
       "colour": "#3b82f6",
       "contents": [
-        { "kind": "label", "text": "— Energy Generators —" },
-        { "kind": "block", "type": "dhc:EnergyDelivery" },
-        { "kind": "block", "type": "brick:PV_Generation_System" },
-        { "kind": "block", "type": "brick:Battery" }
+        {
+          "kind": "label",
+          "text": "— Energy Generators —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:EnergyDelivery"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:PV_Generation_System"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Battery"
+        }
       ]
     },
     {
@@ -26,14 +44,38 @@
       "name": "Routing",
       "colour": "#3b82f6",
       "contents": [
-        { "kind": "label", "text": "— Metering & Protection —" },
-        { "kind": "block", "type": "dhc:EnergyMeter" },
-        { "kind": "block", "type": "dhc:EmergencyDisconnect" },
-        { "kind": "block", "type": "dhc:SurgeProtector" },
-        { "kind": "sep", "gap": 12 },
-        { "kind": "label", "text": "— Conversion & Boards —" },
-        { "kind": "block", "type": "brick:Inverter" },
-        { "kind": "block", "type": "dhc:DistributionBoard" }
+        {
+          "kind": "label",
+          "text": "— Metering & Protection —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:EnergyMeter"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:EmergencyDisconnect"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:SurgeProtector"
+        },
+        {
+          "kind": "sep",
+          "gap": 12
+        },
+        {
+          "kind": "label",
+          "text": "— Conversion & Boards —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Inverter"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:DistributionBoard"
+        }
       ]
     },
     {
@@ -41,9 +83,18 @@
       "name": "Circuits",
       "colour": "#3b82f6",
       "contents": [
-        { "kind": "label", "text": "— Rail modules (on a board rail) —" },
-        { "kind": "block", "type": "dhc:Circuit" },
-        { "kind": "block", "type": "dhc:RCD" }
+        {
+          "kind": "label",
+          "text": "— Rail modules (on a board rail) —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Circuit"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:RCD"
+        }
       ]
     },
     {
@@ -51,14 +102,38 @@
       "name": "Sinks",
       "colour": "#3b82f6",
       "contents": [
-        { "kind": "label", "text": "— Consumers —" },
-        { "kind": "block", "type": "dhc:Socket" },
-        { "kind": "block", "type": "brick:Luminaire" },
-        { "kind": "block", "type": "brick:Electric_Vehicle_Charging_Station" },
-        { "kind": "block", "type": "dhc:Appliance" },
-        { "kind": "sep", "gap": 12 },
-        { "kind": "label", "text": "— Sub-boards (fed downstream) —" },
-        { "kind": "block", "type": "dhc:SubDistributionBoard" }
+        {
+          "kind": "label",
+          "text": "— Consumers —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Socket"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Luminaire"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Electric_Vehicle_Charging_Station"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Appliance"
+        },
+        {
+          "kind": "sep",
+          "gap": 12
+        },
+        {
+          "kind": "label",
+          "text": "— Sub-boards (fed downstream) —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:SubDistributionBoard"
+        }
       ]
     },
     {

@@ -133,11 +133,16 @@ plugin, not the block JSON, so they are not yet localized.)
 `electrical-blocks.json` is a `{ "blocks": [ … ] }` array fed to
 `Blockly.defineBlocksWithJsonArray`. Conventions:
 
-- **Block `type` is the ontology curie** it represents (e.g. `dhc:Socket`). It
-  collides by name with the A-Box class on purpose — that *is* the mapping.
-- **`data: "dhc:blocklyBlockTemplate=<curie>"`** carries the same mapping in the
-  serialized workspace, so a saved file names its templates without the block
-  registry.
+- **Block `type` is in the `dhcb:` (dhc-blockly) namespace** — e.g.
+  `dhcb:Socket`, `dhcb:Circuit`, `dhcb:PowerDistributionSystem`. A block is a
+  UI/design artifact, **not** its ontology class (several — the PDS, the sub-board,
+  the generic appliance — have no class at all), so the block registry keeps its
+  own namespace. **`dhcb:` is never emitted to RDF** — it is not an RDF prefix.
+- **The ontology class lives in `data: "dhc:blocklyBlockTemplate=<curie>"`** — the
+  *only* thing that maps a block to RDF (e.g. `dhcb:Luminaire` →
+  `data=…=brick:Luminaire`; `dhcb:Socket` → `dhc:Socket`). `dhc:blocklyBlockTemplate`
+  is a real `owl:AnnotationProperty` in `dhc-app-metadata.ttl`. The translator
+  (parked) reads `data`, never the `type`.
 - **Children stack via `previousStatement` / `nextStatement` type-checks**; the
   parent exposes matching `input_statement` slots with a `check`.
 - **Distinct input names** are required — Blockly rejects a block whose inputs

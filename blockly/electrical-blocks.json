@@ -1,10 +1,14 @@
 {
   "blocks": [
     {
-      "type": "dhc:PowerDistributionSystem",
+      "type": "dhcb:PowerDistributionSystem",
       "message0": "⚡ Power Distribution System %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Main Installation" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Main Installation"
+        }
       ],
       "message1": "neutral system (régime de neutre) %1",
       "args1": [
@@ -12,10 +16,22 @@
           "type": "field_dropdown",
           "name": "neutralSystem",
           "options": [
-            ["TT", "TT"],
-            ["TN-S", "TN-S"],
-            ["TN-C", "TN-C"],
-            ["IT", "IT"]
+            [
+              "TT",
+              "TT"
+            ],
+            [
+              "TN-S",
+              "TN-S"
+            ],
+            [
+              "TN-C",
+              "TN-C"
+            ],
+            [
+              "IT",
+              "IT"
+            ]
           ]
         }
       ],
@@ -25,22 +41,40 @@
           "type": "field_dropdown",
           "name": "hasMedium",
           "options": [
-            ["230 V · 1-phase · 50 Hz", "s223:AC-230VLN-1Ph-50Hz"],
-            ["400/230 V · 3-phase · 50 Hz", "s223:AC-400VLL-230VLN-3Ph-50Hz"]
+            [
+              "230 V · 1-phase · 50 Hz",
+              "s223:AC-230VLN-1Ph-50Hz"
+            ],
+            [
+              "400/230 V · 3-phase · 50 Hz",
+              "s223:AC-400VLL-230VLN-3Ph-50Hz"
+            ]
           ]
         }
       ],
       "message3": "① source sub-system — energy generators %1",
       "args3": [
-        { "type": "input_statement", "name": "sources", "check": "source" }
+        {
+          "type": "input_statement",
+          "name": "sources",
+          "check": "source"
+        }
       ],
       "message4": "② routing sub-system — inverter & distribution boards %1",
       "args4": [
-        { "type": "input_statement", "name": "routes", "check": "route" }
+        {
+          "type": "input_statement",
+          "name": "routes",
+          "check": "route"
+        }
       ],
       "message5": "③ load sub-system — consumers %1",
       "args5": [
-        { "type": "input_statement", "name": "sinks", "check": "sink" }
+        {
+          "type": "input_statement",
+          "name": "sinks",
+          "check": "sink"
+        }
       ],
       "inputsInline": false,
       "colour": "#3b82f6",
@@ -48,30 +82,77 @@
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:PowerDistributionSystem"
     },
-
     {
-      "type": "dhc:EnergyDelivery",
+      "type": "dhcb:EnergyDelivery",
       "message0": "🔌 Grid Delivery %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Grid" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Grid"
+        }
       ],
       "message1": "provider %1 · subscribed %2 kVA · %3",
       "args1": [
-        { "type": "field_input", "name": "energyProviderName", "text": "Enedis" },
+        {
+          "type": "field_input",
+          "name": "energyProviderName",
+          "text": "Enedis"
+        },
         {
           "type": "field_dropdown",
           "name": "contractedPowerKVA",
           "options": [
-            ["3", "3"], ["6", "6"], ["9", "9"], ["12", "12"], ["15", "15"],
-            ["18", "18"], ["24", "24"], ["30", "30"], ["36", "36"]
+            [
+              "3",
+              "3"
+            ],
+            [
+              "6",
+              "6"
+            ],
+            [
+              "9",
+              "9"
+            ],
+            [
+              "12",
+              "12"
+            ],
+            [
+              "15",
+              "15"
+            ],
+            [
+              "18",
+              "18"
+            ],
+            [
+              "24",
+              "24"
+            ],
+            [
+              "30",
+              "30"
+            ],
+            [
+              "36",
+              "36"
+            ]
           ]
         },
         {
           "type": "field_dropdown",
           "name": "currentType",
           "options": [
-            ["single-phase", "SinglePhase"],
-            ["three-phase", "ThreePhase"]
+            [
+              "single-phase",
+              "SinglePhase"
+            ],
+            [
+              "three-phase",
+              "ThreePhase"
+            ]
           ]
         }
       ],
@@ -84,14 +165,24 @@
       "data": "dhc:blocklyBlockTemplate=dhc:EnergyDelivery"
     },
     {
-      "type": "brick:PV_Generation_System",
+      "type": "dhcb:PV_Generation_System",
       "message0": "☀ PV System %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Rooftop PV" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Rooftop PV"
+        }
       ],
       "message1": "power %1 kWp",
       "args1": [
-        { "type": "field_number", "name": "powerRating", "value": 6, "min": 0, "precision": 0.1 }
+        {
+          "type": "field_number",
+          "name": "powerRating",
+          "value": 6,
+          "min": 0,
+          "precision": 0.1
+        }
       ],
       "previousStatement": "source",
       "nextStatement": "source",
@@ -102,14 +193,24 @@
       "data": "dhc:blocklyBlockTemplate=brick:PV_Generation_System"
     },
     {
-      "type": "brick:Battery",
+      "type": "dhcb:Battery",
       "message0": "🔋 Battery %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Home Battery" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Home Battery"
+        }
       ],
       "message1": "power %1 kW",
       "args1": [
-        { "type": "field_number", "name": "powerRating", "value": 5, "min": 0, "precision": 0.1 }
+        {
+          "type": "field_number",
+          "name": "powerRating",
+          "value": 5,
+          "min": 0,
+          "precision": 0.1
+        }
       ],
       "previousStatement": "source",
       "nextStatement": "source",
@@ -119,12 +220,15 @@
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=brick:Battery"
     },
-
     {
-      "type": "dhc:EnergyMeter",
+      "type": "dhcb:EnergyMeter",
       "message0": "▭ Energy Meter %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Linky" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Linky"
+        }
       ],
       "previousStatement": "route",
       "nextStatement": "route",
@@ -135,17 +239,42 @@
       "data": "dhc:blocklyBlockTemplate=dhc:EnergyMeter"
     },
     {
-      "type": "dhc:EmergencyDisconnect",
+      "type": "dhcb:EmergencyDisconnect",
       "message0": "⛔ Main Disconnect / AGCP %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "AGCP" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "AGCP"
+        }
       ],
       "message1": "rated %1 A",
       "args1": [
         {
           "type": "field_dropdown",
           "name": "ratedCurrent",
-          "options": [["15", "15"], ["30", "30"], ["45", "45"], ["60", "60"], ["63", "63"]]
+          "options": [
+            [
+              "15",
+              "15"
+            ],
+            [
+              "30",
+              "30"
+            ],
+            [
+              "45",
+              "45"
+            ],
+            [
+              "60",
+              "60"
+            ],
+            [
+              "63",
+              "63"
+            ]
+          ]
         }
       ],
       "previousStatement": "route",
@@ -157,10 +286,14 @@
       "data": "dhc:blocklyBlockTemplate=dhc:EmergencyDisconnect"
     },
     {
-      "type": "dhc:SurgeProtector",
+      "type": "dhcb:SurgeProtector",
       "message0": "↯ Surge Protector / SPD %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Parafoudre" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Parafoudre"
+        }
       ],
       "previousStatement": "route",
       "nextStatement": "route",
@@ -171,14 +304,24 @@
       "data": "dhc:blocklyBlockTemplate=dhc:SurgeProtector"
     },
     {
-      "type": "brick:Inverter",
+      "type": "dhcb:Inverter",
       "message0": "⇄ Inverter %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Hybrid Inverter" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Hybrid Inverter"
+        }
       ],
       "message1": "power %1 kW",
       "args1": [
-        { "type": "field_number", "name": "powerRating", "value": 6, "min": 0, "precision": 0.1 }
+        {
+          "type": "field_number",
+          "name": "powerRating",
+          "value": 6,
+          "min": 0,
+          "precision": 0.1
+        }
       ],
       "previousStatement": "route",
       "nextStatement": "route",
@@ -189,10 +332,14 @@
       "data": "dhc:blocklyBlockTemplate=brick:Inverter"
     },
     {
-      "type": "dhc:DistributionBoard",
+      "type": "dhcb:DistributionBoard",
       "message0": "▦ Main Distribution Board %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Main Board" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Main Board"
+        }
       ],
       "mutator": "dhc_board_mutator",
       "previousStatement": "route",
@@ -203,16 +350,27 @@
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:DistributionBoard"
     },
-
     {
-      "type": "dhc:Circuit",
+      "type": "dhcb:Circuit",
       "message0": "● Circuit %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Circuit" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Circuit"
+        }
       ],
       "message1": "line %1",
       "args1": [
-        { "type": "field_variable", "name": "CIRCUIT_VAR", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+        {
+          "type": "field_variable",
+          "name": "CIRCUIT_VAR",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
       ],
       "message2": "type %1 · %2 A · %3 mm²",
       "args2": [
@@ -220,40 +378,166 @@
           "type": "field_dropdown",
           "name": "hasCircuitType",
           "options": [
-            ["Lighting", "dhc:CircuitType_Lighting"],
-            ["Socket", "dhc:CircuitType_Socket"],
-            ["Cooking", "dhc:CircuitType_Cooking"],
-            ["Dedicated appliance", "dhc:CircuitType_DedicatedAppliance"],
-            ["Water heater", "dhc:CircuitType_WaterHeater"],
-            ["Heating", "dhc:CircuitType_Heating"],
-            ["Floor heating", "dhc:CircuitType_FloorHeating"],
-            ["IRVE (EV)", "dhc:CircuitType_IRVE"]
+            [
+              "Lighting",
+              "dhc:CircuitType_Lighting"
+            ],
+            [
+              "Socket",
+              "dhc:CircuitType_Socket"
+            ],
+            [
+              "Cooking",
+              "dhc:CircuitType_Cooking"
+            ],
+            [
+              "Dedicated appliance",
+              "dhc:CircuitType_DedicatedAppliance"
+            ],
+            [
+              "Water heater",
+              "dhc:CircuitType_WaterHeater"
+            ],
+            [
+              "Heating",
+              "dhc:CircuitType_Heating"
+            ],
+            [
+              "Floor heating",
+              "dhc:CircuitType_FloorHeating"
+            ],
+            [
+              "IRVE (EV)",
+              "dhc:CircuitType_IRVE"
+            ]
           ]
         },
         {
           "type": "field_dropdown",
           "name": "ratedCurrent",
-          "options": [["6", "6"], ["10", "10"], ["16", "16"], ["20", "20"], ["25", "25"], ["32", "32"], ["40", "40"], ["63", "63"]]
+          "options": [
+            [
+              "6",
+              "6"
+            ],
+            [
+              "10",
+              "10"
+            ],
+            [
+              "16",
+              "16"
+            ],
+            [
+              "20",
+              "20"
+            ],
+            [
+              "25",
+              "25"
+            ],
+            [
+              "32",
+              "32"
+            ],
+            [
+              "40",
+              "40"
+            ],
+            [
+              "63",
+              "63"
+            ]
+          ]
         },
         {
           "type": "field_dropdown",
           "name": "crossSection",
-          "options": [["1.5", "1.5"], ["2.5", "2.5"], ["4", "4"], ["6", "6"], ["10", "10"], ["16", "16"]]
+          "options": [
+            [
+              "1.5",
+              "1.5"
+            ],
+            [
+              "2.5",
+              "2.5"
+            ],
+            [
+              "4",
+              "4"
+            ],
+            [
+              "6",
+              "6"
+            ],
+            [
+              "10",
+              "10"
+            ],
+            [
+              "16",
+              "16"
+            ]
+          ]
         }
       ],
       "message3": "%1-phase · protection %2",
       "args3": [
-        { "type": "field_dropdown", "name": "phase", "options": [["1", "1"], ["3", "3"]] },
-        { "type": "field_dropdown", "name": "protection", "options": [["MCB (needs a differential)", "MCB"], ["RCBO (integral differential)", "RCBO"]] }
+        {
+          "type": "field_dropdown",
+          "name": "phase",
+          "options": [
+            [
+              "1",
+              "1"
+            ],
+            [
+              "3",
+              "3"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "protection",
+          "options": [
+            [
+              "MCB (needs a differential)",
+              "MCB"
+            ],
+            [
+              "RCBO (integral differential)",
+              "RCBO"
+            ]
+          ]
+        }
       ],
       "message4": "differential %1",
       "args4": [
-        { "type": "field_variable", "name": "DIFFERENTIAL", "variable": "ID_Main", "variableTypes": ["Differential"], "defaultType": "Differential" }
+        {
+          "type": "field_variable",
+          "name": "DIFFERENTIAL",
+          "variable": "ID_Main",
+          "variableTypes": [
+            "Differential"
+          ],
+          "defaultType": "Differential"
+        }
       ],
       "message5": "max points %1 · dedicated %2",
       "args5": [
-        { "type": "field_number", "name": "maxPoints", "value": 8, "min": 0, "precision": 1 },
-        { "type": "field_checkbox", "name": "dedicated", "checked": false }
+        {
+          "type": "field_number",
+          "name": "maxPoints",
+          "value": 8,
+          "min": 0,
+          "precision": 1
+        },
+        {
+          "type": "field_checkbox",
+          "name": "dedicated",
+          "checked": false
+        }
       ],
       "previousStatement": "module",
       "nextStatement": "module",
@@ -264,20 +548,87 @@
       "data": "dhc:blocklyBlockTemplate=dhc:Circuit"
     },
     {
-      "type": "dhc:RCD",
+      "type": "dhcb:RCD",
       "message0": "⧉ RCD / differential %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Main differential" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Main differential"
+        }
       ],
       "message1": "id %1",
       "args1": [
-        { "type": "field_variable", "name": "RCD_VAR", "variable": "ID_Main", "variableTypes": ["Differential"], "defaultType": "Differential" }
+        {
+          "type": "field_variable",
+          "name": "RCD_VAR",
+          "variable": "ID_Main",
+          "variableTypes": [
+            "Differential"
+          ],
+          "defaultType": "Differential"
+        }
       ],
       "message2": "type %1 · %2 mA · rated %3 A",
       "args2": [
-        { "type": "field_dropdown", "name": "rcdType", "options": [["AC", "AC"], ["A", "A"], ["B", "B"], ["F", "F"]] },
-        { "type": "field_dropdown", "name": "sensitivityMA", "options": [["30", "30"], ["300", "300"]] },
-        { "type": "field_dropdown", "name": "ratedCurrent", "options": [["25", "25"], ["40", "40"], ["63", "63"], ["80", "80"]] }
+        {
+          "type": "field_dropdown",
+          "name": "rcdType",
+          "options": [
+            [
+              "AC",
+              "AC"
+            ],
+            [
+              "A",
+              "A"
+            ],
+            [
+              "B",
+              "B"
+            ],
+            [
+              "F",
+              "F"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "sensitivityMA",
+          "options": [
+            [
+              "30",
+              "30"
+            ],
+            [
+              "300",
+              "300"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "ratedCurrent",
+          "options": [
+            [
+              "25",
+              "25"
+            ],
+            [
+              "40",
+              "40"
+            ],
+            [
+              "63",
+              "63"
+            ],
+            [
+              "80",
+              "80"
+            ]
+          ]
+        }
       ],
       "previousStatement": "module",
       "nextStatement": "module",
@@ -287,16 +638,27 @@
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:RCD"
     },
-
     {
-      "type": "dhc:Socket",
+      "type": "dhcb:Socket",
       "message0": "◵ Socket %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Socket" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Socket"
+        }
       ],
       "message1": "protected by %1",
       "args1": [
-        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
       ],
       "previousStatement": "sink",
       "nextStatement": "sink",
@@ -307,14 +669,26 @@
       "data": "dhc:blocklyBlockTemplate=dhc:Socket"
     },
     {
-      "type": "brick:Luminaire",
+      "type": "dhcb:Luminaire",
       "message0": "💡 Luminaire %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Light" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Light"
+        }
       ],
       "message1": "protected by %1",
       "args1": [
-        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
       ],
       "previousStatement": "sink",
       "nextStatement": "sink",
@@ -325,14 +699,26 @@
       "data": "dhc:blocklyBlockTemplate=brick:Luminaire"
     },
     {
-      "type": "brick:Electric_Vehicle_Charging_Station",
+      "type": "dhcb:Electric_Vehicle_Charging_Station",
       "message0": "🚗 EV Charger %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Wallbox" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Wallbox"
+        }
       ],
       "message1": "protected by %1",
       "args1": [
-        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
       ],
       "previousStatement": "sink",
       "nextStatement": "sink",
@@ -343,10 +729,14 @@
       "data": "dhc:blocklyBlockTemplate=brick:Electric_Vehicle_Charging_Station"
     },
     {
-      "type": "dhc:Appliance",
+      "type": "dhcb:Appliance",
       "message0": "⊡ Appliance %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Appliance" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Appliance"
+        }
       ],
       "message1": "type %1",
       "args1": [
@@ -354,18 +744,44 @@
           "type": "field_dropdown",
           "name": "applianceType",
           "options": [
-            ["Washing machine", "WashingMachine"],
-            ["Dishwasher", "Dishwasher"],
-            ["Oven", "Oven"],
-            ["Water heater", "WaterHeater"],
-            ["Dryer", "Dryer"],
-            ["Other", "Other"]
+            [
+              "Washing machine",
+              "WashingMachine"
+            ],
+            [
+              "Dishwasher",
+              "Dishwasher"
+            ],
+            [
+              "Oven",
+              "Oven"
+            ],
+            [
+              "Water heater",
+              "WaterHeater"
+            ],
+            [
+              "Dryer",
+              "Dryer"
+            ],
+            [
+              "Other",
+              "Other"
+            ]
           ]
         }
       ],
       "message2": "protected by %1",
       "args2": [
-        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
       ],
       "previousStatement": "sink",
       "nextStatement": "sink",
@@ -376,14 +792,26 @@
       "data": "dhc:blocklyBlockTemplate=dhc:Appliance"
     },
     {
-      "type": "dhc:SubDistributionBoard",
+      "type": "dhcb:SubDistributionBoard",
       "message0": "▥ Sub-Distribution Board %1",
       "args0": [
-        { "type": "field_input", "name": "name", "text": "Sub Board" }
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Sub Board"
+        }
       ],
       "message1": "protected by %1",
       "args1": [
-        { "type": "field_variable", "name": "FED_BY", "variable": "CB_Circuit", "variableTypes": ["Circuit"], "defaultType": "Circuit" }
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
       ],
       "mutator": "dhc_board_mutator",
       "previousStatement": "sink",

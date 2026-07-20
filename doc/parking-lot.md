@@ -258,13 +258,15 @@ than promoted now.
   `dhc-core` has none. If curve selectivity ever matters to a norm rule, add e.g.
   `dhc:breakerCurve` (enum B/C/D) alongside `dhc:ratedCurrent`.
 
-- **The blockly→abox translator (the big parked item).** The complete toolbox
-  authors everything a residential A-Box needs, but nothing yet turns the
-  workspace JSON into TTL. The Designer's `src/blockly/aboxSerializer.js` already
-  maps the predicate vocabulary (`hasProtection`, `hasWiring`, `feedsEquipment`,
-  `hasCircuitType`, `hasPart`, `feeds`) and is the natural starting point. The
-  electrical harness adds a **variable-linking** contract the translator must
-  honour:
+- **The `dhcb` ↔ A-Box translator (the big parked item), bidirectional.** The
+  complete toolbox authors everything a residential A-Box needs, but nothing yet
+  turns the workspace JSON into TTL or back. The Designer's
+  `src/blockly/aboxSerializer.js` already maps the predicate vocabulary
+  (`hasProtection`, `hasWiring`, `feedsEquipment`, `hasCircuitType`, `hasPart`,
+  `feeds`) and is the natural starting point. **Block `type` is the `dhcb:` UI
+  namespace and is never emitted — the ontology class comes from each block's
+  `data: dhc:blocklyBlockTemplate=<curie>`.** The electrical harness adds a
+  **variable-linking** contract the translator must honour:
   - Each `dhc:Circuit` block → a `dhc:Circuit` with `dhc:hasCircuitType` /
     `ratedCurrent` / `crossSection` / `phase` / `maxPoints` / `dedicated`;
     `dhc:hasProtection` → a `dhc:ProtectionDevice` (or `dhc:RCBO` when
@@ -293,6 +295,23 @@ than promoted now.
     circuits binding one token). This check is the price of trading structural
     nesting for reference tokens, and it is exactly the kind of pre-flight the
     C-Box cannot do (it validates the emitted A-Box, not the Blockly graph).
+  - **Backward (A-Box → `dhcb`)**: per individual `<iri> a <class>`, pick the
+    block whose `data` template = `<class>`, set its `id` from `<iri>`, restore
+    fields from properties, and rebuild the variable links — a circuit's
+    `dhc:feedsEquipment` targets set each load's `FED_BY`; each circuit's
+    protecting `dhc:RCD` sets its `DIFFERENTIAL`. Round-trips because identity is
+    the stable id (below).
+
+- **Deploy identity + highlight (NanoID).** `experimental/deploy.js` +
+  `deploy.py` are the prototype: walk the workspace and swap each **draft** Blockly
+  id (≤20 chars or containing symbols) for a fresh **21-char NanoID** asset id,
+  which becomes the individual's IRI (`<assetId> a <class>`). This gives each
+  deployed asset a **permanent identity** that survives edits and anchors the
+  round-trip, and makes **draft vs deployed detectable by id shape** so the
+  designer/viewer can **highlight the deployed** part of a design. Fold the
+  recursive `inputs`/`next` walk into the translator's deploy step; the JS and
+  Python id generators are already alphabet/size-identical so either stack mints
+  matching ids.
 
 - **Offline vendoring is deferred.** The harness loads Blockly from
   `unpkg.com` (a deliberate, user-approved shortcut), so it breaks the `js-tools`
