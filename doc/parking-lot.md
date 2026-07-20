@@ -313,6 +313,46 @@ than promoted now.
   Python id generators are already alphabet/size-identical so either stack mints
   matching ids.
 
+- **T-Box annotation shift: retire block-generation, add `dhc:hasBlocklyReference`.**
+  `dhc-app-metadata.ttl` carries five `blockly*` annotations built to **generate
+  blocks from the T-Box** — `dhc:blocklyBlockTemplate` (24 uses),
+  `dhc:blocklyCategory` (11), `dhc:blocklyDisposition` (33),
+  `dhc:blocklyFieldType` (3), `dhc:blocklyParentProperty` (2), ~73 assertions
+  across ~27 subjects (declared ~L62–96), plus the meta-props `dhc:isInstantiated`
+  (the `sh:condition` guard) and `dhc:choicesFrom` (dynamic-enum source). The
+  hand-authored `dhcb:` harness supersedes that generation approach, so the
+  annotations' **purpose inverts** — from *T-Box → block generation* to *A-Box →
+  Blockly-program reflection*:
+
+  - **(a) Retire the five generation annotations** (declarations + all per-class
+    assertions) via `ontology_explorer.py` — `--purge` the declarations,
+    `--massupdate` with the `__delete__` sentinel for the per-class assertions (or
+    extend the tool for a bulk predicate purge); remove `isInstantiated` /
+    `choicesFrom` if orphaned. **Prerequisite — cross-repo**: the Modeller
+    actively consumes them (`repos/modeler/src/utils/blocklyGenerator.js` +
+    `ttlParser.js`, `components/BlocklyTestWorkspace.js`); retire or repoint those
+    first. No core test asserts on them (only the comment in
+    `tests/tbox/core-schema.test.js:82`, which should be refreshed), so `npm test`
+    is unaffected. Do **not** remove piecemeal while the Modeller still reads them.
+  - **(b) Add `dhc:hasBlocklyReference` + `dhc:BlocklyReference`**, styled after
+    `s223:hasExternalReference` / `ref:ExternalReference` (an entity → an
+    `ExternalReference` reification carrying the external system's ids). Here an
+    A-Box individual → a `dhc:BlocklyReference` node carrying the block's **`dhcb:`
+    type** (`dhc:blocklyBlockType`, e.g. `"dhcb:Circuit"`), its **deploy id**
+    (`dhc:blocklyBlockId`, the 21-char NanoID above) and optional program-structure
+    hints (slot, resolved variable links). No narrow `rdfs:domain`, like
+    `hasExternalReference`. So `rdf:type` gives the ontology class and
+    `hasBlocklyReference` gives the originating block — the A-Box **reflects the
+    Blockly program structure**, giving the backward translator and the
+    deploy-highlight (above) a first-class anchor. Add via `ontology_explorer.py`
+    with trilingual labels + `dhc:designView` (`annotation-coverage.test.js` gates
+    them).
+  - **(c) Harness `data` key**: the block `data: dhc:blocklyBlockTemplate=<curie>`
+    reuses the soon-retired property name as its design-time block→class marker.
+    Keep it as an opaque marker or rename it (it is block data, not
+    ontology-validated) — decide when the translator lands, alongside whether the
+    design-time block→class map is declared or just the inverse of `data`.
+
 - **Offline vendoring is deferred.** The harness loads Blockly from
   `unpkg.com` (a deliberate, user-approved shortcut), so it breaks the `js-tools`
   `grep -c https:// = 0` invariant and needs a network. Vendoring a local

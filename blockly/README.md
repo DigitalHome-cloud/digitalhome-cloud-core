@@ -157,4 +157,8 @@ put the `dhc:neutralSystem` dropdown on the root, though that property is
 currently domained to `dhc:EnergyDelivery`. There is also no property for a
 breaker **curve** (B/C/D), so that field is omitted for now. The harness runs on
 static JSON without any of these changes; only the future blockly→abox translator
-needs them. All are recorded in `doc/parking-lot.md § 4`.
+needs them. All are recorded in `doc/parking-lot.md § 4`, which also plans the
+overlay's **annotation shift** — retiring the T-Box→block generation annotations
+(now superseded by this hand-authored harness) and adding an
+`s223:hasExternalReference`-style `dhc:hasBlocklyReference` so the emitted A-Box
+reflects the Blockly program structure.
