@@ -1,0 +1,475 @@
+{
+  "variables": [
+    {
+      "name": "Diff 300 mA (tete, 40A)",
+      "id": "b2d300",
+      "type": "Differential"
+    },
+    {
+      "name": "Diff 30 mA (40A)",
+      "id": "b2d30",
+      "type": "Differential"
+    },
+    {
+      "name": "b2c1",
+      "id": "b2c1",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c2",
+      "id": "b2c2",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c3",
+      "id": "b2c3",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c4",
+      "id": "b2c4",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c5",
+      "id": "b2c5",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c6",
+      "id": "b2c6",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c7",
+      "id": "b2c7",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c8",
+      "id": "b2c8",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c9",
+      "id": "b2c9",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c10",
+      "id": "b2c10",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c11",
+      "id": "b2c11",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c12",
+      "id": "b2c12",
+      "type": "Circuit"
+    },
+    {
+      "name": "b2c13",
+      "id": "b2c13",
+      "type": "Circuit"
+    }
+  ],
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "dhcb:PowerDistributionSystem",
+        "x": 40,
+        "y": 40,
+        "fields": {
+          "name": "Board 2 — vynckier (3-phase)",
+          "neutralSystem": "TT",
+          "hasMedium": "s223:AC-400VLL-230VLN-3Ph-50Hz"
+        },
+        "inputs": {
+          "sources": {
+            "block": {
+              "type": "dhcb:EnergyDelivery",
+              "fields": {
+                "name": "Fluvius",
+                "energyProviderName": "Fluvius",
+                "contractedPowerKVA": "24",
+                "currentType": "ThreePhase"
+              }
+            }
+          },
+          "routes": {
+            "block": {
+              "type": "dhcb:EnergyMeter",
+              "fields": {
+                "name": "Compteur"
+              },
+              "next": {
+                "block": {
+                  "type": "dhcb:DistributionBoard",
+                  "fields": {
+                    "name": "vynckier tableau"
+                  },
+                  "extraState": {
+                    "itemCount": 2
+                  },
+                  "inputs": {
+                    "row_0": {
+                      "block": {
+                        "type": "dhcb:RCD",
+                        "fields": {
+                          "name": "Diff 300 mA (tete, 40A)",
+                          "RCD_VAR": {
+                            "id": "b2d300"
+                          },
+                          "rcdType": "AC",
+                          "sensitivityMA": "300",
+                          "ratedCurrent": "40"
+                        },
+                        "next": {
+                          "block": {
+                            "type": "dhcb:Circuit",
+                            "fields": {
+                              "name": "Machine 1 (3~ C16)",
+                              "CIRCUIT_VAR": {
+                                "id": "b2c1"
+                              },
+                              "hasCircuitType": "dhc:CircuitType_DedicatedAppliance",
+                              "ratedCurrent": "16",
+                              "crossSection": "2.5",
+                              "phase": "3",
+                              "protection": "MCB",
+                              "DIFFERENTIAL": {
+                                "id": "b2d300"
+                              },
+                              "maxPoints": 8,
+                              "dedicated": "TRUE"
+                            },
+                            "next": {
+                              "block": {
+                                "type": "dhcb:Circuit",
+                                "fields": {
+                                  "name": "Machine 2 (3~ C16)",
+                                  "CIRCUIT_VAR": {
+                                    "id": "b2c2"
+                                  },
+                                  "hasCircuitType": "dhc:CircuitType_DedicatedAppliance",
+                                  "ratedCurrent": "16",
+                                  "crossSection": "2.5",
+                                  "phase": "3",
+                                  "protection": "MCB",
+                                  "DIFFERENTIAL": {
+                                    "id": "b2d300"
+                                  },
+                                  "maxPoints": 8,
+                                  "dedicated": "TRUE"
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "dhcb:Circuit",
+                                    "fields": {
+                                      "name": "Machine 3 (3~ C16)",
+                                      "CIRCUIT_VAR": {
+                                        "id": "b2c3"
+                                      },
+                                      "hasCircuitType": "dhc:CircuitType_DedicatedAppliance",
+                                      "ratedCurrent": "16",
+                                      "crossSection": "2.5",
+                                      "phase": "3",
+                                      "protection": "MCB",
+                                      "DIFFERENTIAL": {
+                                        "id": "b2d300"
+                                      },
+                                      "maxPoints": 8,
+                                      "dedicated": "TRUE"
+                                    },
+                                    "next": {
+                                      "block": {
+                                        "type": "dhcb:Circuit",
+                                        "fields": {
+                                          "name": "Four (3~ C16)",
+                                          "CIRCUIT_VAR": {
+                                            "id": "b2c4"
+                                          },
+                                          "hasCircuitType": "dhc:CircuitType_Cooking",
+                                          "ratedCurrent": "16",
+                                          "crossSection": "2.5",
+                                          "phase": "3",
+                                          "protection": "MCB",
+                                          "DIFFERENTIAL": {
+                                            "id": "b2d300"
+                                          },
+                                          "maxPoints": 8,
+                                          "dedicated": "TRUE"
+                                        },
+                                        "next": {
+                                          "block": {
+                                            "type": "dhcb:Circuit",
+                                            "fields": {
+                                              "name": "Moteur (3~ C25)",
+                                              "CIRCUIT_VAR": {
+                                                "id": "b2c5"
+                                              },
+                                              "hasCircuitType": "dhc:CircuitType_DedicatedAppliance",
+                                              "ratedCurrent": "25",
+                                              "crossSection": "4",
+                                              "phase": "3",
+                                              "protection": "MCB",
+                                              "DIFFERENTIAL": {
+                                                "id": "b2d300"
+                                              },
+                                              "maxPoints": 8,
+                                              "dedicated": "TRUE"
+                                            },
+                                            "next": {
+                                              "block": {
+                                                "type": "dhcb:Circuit",
+                                                "fields": {
+                                                  "name": "Chauffe-eau (C20)",
+                                                  "CIRCUIT_VAR": {
+                                                    "id": "b2c6"
+                                                  },
+                                                  "hasCircuitType": "dhc:CircuitType_WaterHeater",
+                                                  "ratedCurrent": "20",
+                                                  "crossSection": "2.5",
+                                                  "phase": "1",
+                                                  "protection": "MCB",
+                                                  "DIFFERENTIAL": {
+                                                    "id": "b2d300"
+                                                  },
+                                                  "maxPoints": 8,
+                                                  "dedicated": "TRUE"
+                                                },
+                                                "next": {
+                                                  "block": {
+                                                    "type": "dhcb:Circuit",
+                                                    "fields": {
+                                                      "name": "Prises exterieur (C20)",
+                                                      "CIRCUIT_VAR": {
+                                                        "id": "b2c7"
+                                                      },
+                                                      "hasCircuitType": "dhc:CircuitType_Socket",
+                                                      "ratedCurrent": "20",
+                                                      "crossSection": "2.5",
+                                                      "phase": "1",
+                                                      "protection": "MCB",
+                                                      "DIFFERENTIAL": {
+                                                        "id": "b2d300"
+                                                      },
+                                                      "maxPoints": 8,
+                                                      "dedicated": "FALSE"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "row_1": {
+                      "block": {
+                        "type": "dhcb:RCD",
+                        "fields": {
+                          "name": "Diff 30 mA (40A)",
+                          "RCD_VAR": {
+                            "id": "b2d30"
+                          },
+                          "rcdType": "A",
+                          "sensitivityMA": "30",
+                          "ratedCurrent": "40"
+                        },
+                        "next": {
+                          "block": {
+                            "type": "dhcb:Circuit",
+                            "fields": {
+                              "name": "Prises sejour",
+                              "CIRCUIT_VAR": {
+                                "id": "b2c8"
+                              },
+                              "hasCircuitType": "dhc:CircuitType_Socket",
+                              "ratedCurrent": "16",
+                              "crossSection": "2.5",
+                              "phase": "1",
+                              "protection": "MCB",
+                              "DIFFERENTIAL": {
+                                "id": "b2d30"
+                              },
+                              "maxPoints": 8,
+                              "dedicated": "FALSE"
+                            },
+                            "next": {
+                              "block": {
+                                "type": "dhcb:Circuit",
+                                "fields": {
+                                  "name": "Prises cuisine",
+                                  "CIRCUIT_VAR": {
+                                    "id": "b2c9"
+                                  },
+                                  "hasCircuitType": "dhc:CircuitType_Socket",
+                                  "ratedCurrent": "16",
+                                  "crossSection": "2.5",
+                                  "phase": "1",
+                                  "protection": "MCB",
+                                  "DIFFERENTIAL": {
+                                    "id": "b2d30"
+                                  },
+                                  "maxPoints": 8,
+                                  "dedicated": "FALSE"
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "dhcb:Circuit",
+                                    "fields": {
+                                      "name": "Eclairage RDC",
+                                      "CIRCUIT_VAR": {
+                                        "id": "b2c10"
+                                      },
+                                      "hasCircuitType": "dhc:CircuitType_Lighting",
+                                      "ratedCurrent": "16",
+                                      "crossSection": "1.5",
+                                      "phase": "1",
+                                      "protection": "MCB",
+                                      "DIFFERENTIAL": {
+                                        "id": "b2d30"
+                                      },
+                                      "maxPoints": 8,
+                                      "dedicated": "FALSE"
+                                    },
+                                    "next": {
+                                      "block": {
+                                        "type": "dhcb:Circuit",
+                                        "fields": {
+                                          "name": "Eclairage etage",
+                                          "CIRCUIT_VAR": {
+                                            "id": "b2c11"
+                                          },
+                                          "hasCircuitType": "dhc:CircuitType_Lighting",
+                                          "ratedCurrent": "16",
+                                          "crossSection": "1.5",
+                                          "phase": "1",
+                                          "protection": "MCB",
+                                          "DIFFERENTIAL": {
+                                            "id": "b2d30"
+                                          },
+                                          "maxPoints": 8,
+                                          "dedicated": "FALSE"
+                                        },
+                                        "next": {
+                                          "block": {
+                                            "type": "dhcb:Circuit",
+                                            "fields": {
+                                              "name": "Salle de bain",
+                                              "CIRCUIT_VAR": {
+                                                "id": "b2c12"
+                                              },
+                                              "hasCircuitType": "dhc:CircuitType_Socket",
+                                              "ratedCurrent": "16",
+                                              "crossSection": "2.5",
+                                              "phase": "1",
+                                              "protection": "MCB",
+                                              "DIFFERENTIAL": {
+                                                "id": "b2d30"
+                                              },
+                                              "maxPoints": 8,
+                                              "dedicated": "FALSE"
+                                            },
+                                            "next": {
+                                              "block": {
+                                                "type": "dhcb:Circuit",
+                                                "fields": {
+                                                  "name": "Lave-linge",
+                                                  "CIRCUIT_VAR": {
+                                                    "id": "b2c13"
+                                                  },
+                                                  "hasCircuitType": "dhc:CircuitType_DedicatedAppliance",
+                                                  "ratedCurrent": "16",
+                                                  "crossSection": "2.5",
+                                                  "phase": "1",
+                                                  "protection": "MCB",
+                                                  "DIFFERENTIAL": {
+                                                    "id": "b2d30"
+                                                  },
+                                                  "maxPoints": 8,
+                                                  "dedicated": "TRUE"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "sinks": {
+            "block": {
+              "type": "dhcb:Appliance",
+              "fields": {
+                "name": "Lave-linge",
+                "applianceType": "WashingMachine",
+                "FED_BY": {
+                  "id": "b2c13"
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "dhcb:Socket",
+                  "fields": {
+                    "name": "Prise cuisine",
+                    "FED_BY": {
+                      "id": "b2c9"
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "dhcb:Luminaire",
+                      "fields": {
+                        "name": "Eclairage RDC",
+                        "FED_BY": {
+                          "id": "b2c10"
+                        }
+                      },
+                      "next": {
+                        "block": {
+                          "type": "dhcb:Appliance",
+                          "fields": {
+                            "name": "Chauffe-eau",
+                            "applianceType": "WaterHeater",
+                            "FED_BY": {
+                              "id": "b2c6"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

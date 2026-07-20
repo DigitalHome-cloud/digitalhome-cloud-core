@@ -10,7 +10,12 @@ npm run preview:blockly:spatial       # spatial hierarchy designer      → :876
 ```
 
 Each opens a Blockly workspace, its toolbox, and a starter workspace. Drag blocks,
-edit fields, **Save** to download the workspace JSON. Ctrl-C to stop the server.
+edit fields, **Save** to download the workspace JSON and **Load** to open one back
+(a saved file, or `?load=<url>` to open one by link — e.g. the worked example
+boards in `blockly/examples/board{1,2}.workspace.json`, two real 3-phase boards
+reverse-engineered from photos). Ctrl-C to stop the server. *(Loading is
+schema-fragile today — a file saved against an older block schema may not open;
+see the "persist the A-Box, regenerate the workspace" item in `doc/parking-lot.md`.)*
 
 > ⚠ **Not offline.** Unlike `js-tools/`, these harnesses load Blockly from
 > `https://unpkg.com/blockly@11.2.2` and need a network connection. Vendoring a

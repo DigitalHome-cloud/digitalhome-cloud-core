@@ -185,7 +185,9 @@
     <div class="right">
       <button class="hbtn" id="btn-clear" title="Clear workspace">Clear</button>
       <button class="hbtn" id="btn-json"  title="View workspace JSON">View JSON</button>
+      <button class="hbtn" id="btn-load"  title="Load a workspace JSON file">Load</button>
       <button class="hbtn primary" id="btn-save" title="Download workspace JSON">Save</button>
+      <input type="file" id="file-input" accept="application/json,.json" style="display:none">
       <div class="divider"></div>
       <span id="status" class="status loading">loading…</span>
     </div>
@@ -464,6 +466,36 @@
       if (workspace) { workspace.clear(); updateStats(); log('workspace cleared', 'info'); }
     });
 
+    // Load a workspace JSON file (both the Blockly serialization and any
+    // { variables, blocks } saved by this app). Replaces the current workspace.
+    const fileInput = document.getElementById('file-input');
+    document.getElementById('btn-load').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const state = JSON.parse(reader.result);
+          Blockly.serialization.workspaces.load(state, workspace);
+          updateStats();
+          const lines = workspace.getVariablesOfType('Circuit').map((v) => v.name);
+          const diffs = workspace.getVariablesOfType('Differential').map((v) => v.name);
+          const root = state?.blocks?.blocks?.[0]?.fields?.name;
+          if (root) document.getElementById('install-name').textContent = root;
+          log(`↑ loaded ${file.name} — ${workspace.getAllBlocks(false).length} blocks`, 'ok');
+          if (lines.length) log(`  circuit lines: ${lines.join(', ')}`, 'info');
+          if (diffs.length) log(`  differentials: ${diffs.join(', ')}`, 'info');
+          setStatus('loaded', 'ok');
+        } catch (err) {
+          log(`✗ load ${file.name}: ${err.message}`, 'err');
+          setStatus('load error', 'error');
+        }
+      };
+      reader.readAsText(file);
+      fileInput.value = '';   // allow re-loading the same file
+    });
+
     const rendSelect = document.getElementById('renderer-select');
     rendSelect.value = getRenderer();
     rendSelect.addEventListener('change', (e) => {
@@ -527,6 +559,19 @@
         const diffs = workspace.getVariablesOfType('Differential').map((v) => v.name);
         log(`circuit lines (${lines.length}): ${lines.join(', ') || '—'}`, 'ok');
         log(`differentials (${diffs.length}): ${diffs.join(', ') || '—'}`, 'ok');
+
+        // ?load=<url> — fetch and load a workspace file (linkable; e.g. an example board)
+        const wantLoad = new URLSearchParams(location.search).get('load');
+        if (wantLoad) {
+          try {
+            const state = await fetchJson(wantLoad);
+            Blockly.serialization.workspaces.load(state, workspace);
+            updateStats();
+            const rn = state?.blocks?.blocks?.[0]?.fields?.name;
+            if (rn) document.getElementById('install-name').textContent = rn;
+            log(`↑ loaded ${wantLoad} — ${workspace.getAllBlocks(false).length} blocks`, 'ok');
+          } catch (le) { log(`✗ load ${wantLoad}: ${le.message}`, 'err'); }
+        }
 
       } catch (e) {
         log(String(e), 'err');

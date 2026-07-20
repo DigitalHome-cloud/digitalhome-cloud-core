@@ -1,0 +1,406 @@
+{
+  "variables": [
+    {
+      "name": "FI 30 mA (Hager 4P)",
+      "id": "b1fi",
+      "type": "Differential"
+    },
+    {
+      "name": "b1c1",
+      "id": "b1c1",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c2",
+      "id": "b1c2",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c3",
+      "id": "b1c3",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c4",
+      "id": "b1c4",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c5",
+      "id": "b1c5",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c6",
+      "id": "b1c6",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c7",
+      "id": "b1c7",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c8",
+      "id": "b1c8",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c9",
+      "id": "b1c9",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c10",
+      "id": "b1c10",
+      "type": "Circuit"
+    },
+    {
+      "name": "b1c11",
+      "id": "b1c11",
+      "type": "Circuit"
+    }
+  ],
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "dhcb:PowerDistributionSystem",
+        "x": 40,
+        "y": 40,
+        "fields": {
+          "name": "Board 1 — Hager (3-phase)",
+          "neutralSystem": "TN-S",
+          "hasMedium": "s223:AC-400VLL-230VLN-3Ph-50Hz"
+        },
+        "inputs": {
+          "sources": {
+            "block": {
+              "type": "dhcb:EnergyDelivery",
+              "fields": {
+                "name": "Stadtwerke",
+                "energyProviderName": "Stadtwerke",
+                "contractedPowerKVA": "24",
+                "currentType": "ThreePhase"
+              }
+            }
+          },
+          "routes": {
+            "block": {
+              "type": "dhcb:EnergyMeter",
+              "fields": {
+                "name": "Zähler"
+              },
+              "next": {
+                "block": {
+                  "type": "dhcb:DistributionBoard",
+                  "fields": {
+                    "name": "Hager Verteiler"
+                  },
+                  "extraState": {
+                    "itemCount": 1
+                  },
+                  "inputs": {
+                    "row_0": {
+                      "block": {
+                        "type": "dhcb:RCD",
+                        "fields": {
+                          "name": "FI 30 mA (Hager 4P)",
+                          "RCD_VAR": {
+                            "id": "b1fi"
+                          },
+                          "rcdType": "A",
+                          "sensitivityMA": "30",
+                          "ratedCurrent": "25"
+                        },
+                        "next": {
+                          "block": {
+                            "type": "dhcb:Circuit",
+                            "fields": {
+                              "name": "Steckdosen",
+                              "CIRCUIT_VAR": {
+                                "id": "b1c1"
+                              },
+                              "hasCircuitType": "dhc:CircuitType_Socket",
+                              "ratedCurrent": "16",
+                              "crossSection": "2.5",
+                              "phase": "1",
+                              "protection": "MCB",
+                              "DIFFERENTIAL": {
+                                "id": "b1fi"
+                              },
+                              "maxPoints": 8,
+                              "dedicated": "FALSE"
+                            },
+                            "next": {
+                              "block": {
+                                "type": "dhcb:Circuit",
+                                "fields": {
+                                  "name": "Licht Keller / Waschkueche / Klingeltrafo",
+                                  "CIRCUIT_VAR": {
+                                    "id": "b1c2"
+                                  },
+                                  "hasCircuitType": "dhc:CircuitType_Lighting",
+                                  "ratedCurrent": "16",
+                                  "crossSection": "1.5",
+                                  "phase": "1",
+                                  "protection": "MCB",
+                                  "DIFFERENTIAL": {
+                                    "id": "b1fi"
+                                  },
+                                  "maxPoints": 8,
+                                  "dedicated": "FALSE"
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "dhcb:Circuit",
+                                    "fields": {
+                                      "name": "Bad / Waschmaschine",
+                                      "CIRCUIT_VAR": {
+                                        "id": "b1c3"
+                                      },
+                                      "hasCircuitType": "dhc:CircuitType_Socket",
+                                      "ratedCurrent": "16",
+                                      "crossSection": "2.5",
+                                      "phase": "1",
+                                      "protection": "MCB",
+                                      "DIFFERENTIAL": {
+                                        "id": "b1fi"
+                                      },
+                                      "maxPoints": 8,
+                                      "dedicated": "FALSE"
+                                    },
+                                    "next": {
+                                      "block": {
+                                        "type": "dhcb:Circuit",
+                                        "fields": {
+                                          "name": "Bel.+Steckd. Arbeitszimmer",
+                                          "CIRCUIT_VAR": {
+                                            "id": "b1c4"
+                                          },
+                                          "hasCircuitType": "dhc:CircuitType_Socket",
+                                          "ratedCurrent": "16",
+                                          "crossSection": "2.5",
+                                          "phase": "1",
+                                          "protection": "MCB",
+                                          "DIFFERENTIAL": {
+                                            "id": "b1fi"
+                                          },
+                                          "maxPoints": 8,
+                                          "dedicated": "FALSE"
+                                        },
+                                        "next": {
+                                          "block": {
+                                            "type": "dhcb:Circuit",
+                                            "fields": {
+                                              "name": "Bel.+Steckd. Wohn-/Schlafzimmer",
+                                              "CIRCUIT_VAR": {
+                                                "id": "b1c5"
+                                              },
+                                              "hasCircuitType": "dhc:CircuitType_Socket",
+                                              "ratedCurrent": "16",
+                                              "crossSection": "2.5",
+                                              "phase": "1",
+                                              "protection": "MCB",
+                                              "DIFFERENTIAL": {
+                                                "id": "b1fi"
+                                              },
+                                              "maxPoints": 8,
+                                              "dedicated": "FALSE"
+                                            },
+                                            "next": {
+                                              "block": {
+                                                "type": "dhcb:Circuit",
+                                                "fields": {
+                                                  "name": "Steckd. Bad / Waschmaschine",
+                                                  "CIRCUIT_VAR": {
+                                                    "id": "b1c6"
+                                                  },
+                                                  "hasCircuitType": "dhc:CircuitType_Socket",
+                                                  "ratedCurrent": "16",
+                                                  "crossSection": "2.5",
+                                                  "phase": "1",
+                                                  "protection": "MCB",
+                                                  "DIFFERENTIAL": {
+                                                    "id": "b1fi"
+                                                  },
+                                                  "maxPoints": 8,
+                                                  "dedicated": "FALSE"
+                                                },
+                                                "next": {
+                                                  "block": {
+                                                    "type": "dhcb:Circuit",
+                                                    "fields": {
+                                                      "name": "Licht / Flur",
+                                                      "CIRCUIT_VAR": {
+                                                        "id": "b1c7"
+                                                      },
+                                                      "hasCircuitType": "dhc:CircuitType_Lighting",
+                                                      "ratedCurrent": "16",
+                                                      "crossSection": "1.5",
+                                                      "phase": "1",
+                                                      "protection": "MCB",
+                                                      "DIFFERENTIAL": {
+                                                        "id": "b1fi"
+                                                      },
+                                                      "maxPoints": 8,
+                                                      "dedicated": "FALSE"
+                                                    },
+                                                    "next": {
+                                                      "block": {
+                                                        "type": "dhcb:Circuit",
+                                                        "fields": {
+                                                          "name": "Steckd. Kueche (Legrand)",
+                                                          "CIRCUIT_VAR": {
+                                                            "id": "b1c8"
+                                                          },
+                                                          "hasCircuitType": "dhc:CircuitType_Socket",
+                                                          "ratedCurrent": "16",
+                                                          "crossSection": "2.5",
+                                                          "phase": "1",
+                                                          "protection": "MCB",
+                                                          "DIFFERENTIAL": {
+                                                            "id": "b1fi"
+                                                          },
+                                                          "maxPoints": 8,
+                                                          "dedicated": "FALSE"
+                                                        },
+                                                        "next": {
+                                                          "block": {
+                                                            "type": "dhcb:Circuit",
+                                                            "fields": {
+                                                              "name": "Steckd. Geschirrspueler",
+                                                              "CIRCUIT_VAR": {
+                                                                "id": "b1c9"
+                                                              },
+                                                              "hasCircuitType": "dhc:CircuitType_DedicatedAppliance",
+                                                              "ratedCurrent": "16",
+                                                              "crossSection": "2.5",
+                                                              "phase": "1",
+                                                              "protection": "MCB",
+                                                              "DIFFERENTIAL": {
+                                                                "id": "b1fi"
+                                                              },
+                                                              "maxPoints": 8,
+                                                              "dedicated": "TRUE"
+                                                            },
+                                                            "next": {
+                                                              "block": {
+                                                                "type": "dhcb:Circuit",
+                                                                "fields": {
+                                                                  "name": "Herd (3~)",
+                                                                  "CIRCUIT_VAR": {
+                                                                    "id": "b1c10"
+                                                                  },
+                                                                  "hasCircuitType": "dhc:CircuitType_Cooking",
+                                                                  "ratedCurrent": "16",
+                                                                  "crossSection": "2.5",
+                                                                  "phase": "3",
+                                                                  "protection": "MCB",
+                                                                  "DIFFERENTIAL": {
+                                                                    "id": "b1fi"
+                                                                  },
+                                                                  "maxPoints": 8,
+                                                                  "dedicated": "TRUE"
+                                                                },
+                                                                "next": {
+                                                                  "block": {
+                                                                    "type": "dhcb:Circuit",
+                                                                    "fields": {
+                                                                      "name": "Durchlauferhitzer (3~)",
+                                                                      "CIRCUIT_VAR": {
+                                                                        "id": "b1c11"
+                                                                      },
+                                                                      "hasCircuitType": "dhc:CircuitType_WaterHeater",
+                                                                      "ratedCurrent": "32",
+                                                                      "crossSection": "6",
+                                                                      "phase": "3",
+                                                                      "protection": "MCB",
+                                                                      "DIFFERENTIAL": {
+                                                                        "id": "b1fi"
+                                                                      },
+                                                                      "maxPoints": 8,
+                                                                      "dedicated": "TRUE"
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "sinks": {
+            "block": {
+              "type": "dhcb:Appliance",
+              "fields": {
+                "name": "Geschirrspueler",
+                "applianceType": "Dishwasher",
+                "FED_BY": {
+                  "id": "b1c9"
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "dhcb:Appliance",
+                  "fields": {
+                    "name": "Waschmaschine",
+                    "applianceType": "WashingMachine",
+                    "FED_BY": {
+                      "id": "b1c3"
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "dhcb:Appliance",
+                      "fields": {
+                        "name": "Herd",
+                        "applianceType": "Oven",
+                        "FED_BY": {
+                          "id": "b1c10"
+                        }
+                      },
+                      "next": {
+                        "block": {
+                          "type": "dhcb:Appliance",
+                          "fields": {
+                            "name": "Durchlauferhitzer",
+                            "applianceType": "WaterHeater",
+                            "FED_BY": {
+                              "id": "b1c11"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}
