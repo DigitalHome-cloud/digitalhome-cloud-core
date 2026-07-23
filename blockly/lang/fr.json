@@ -128,7 +128,7 @@
     "dhcb:Point": {
       "message0": "◦ Point %1",
       "message1": "type %1",
-      "tooltip": "Un point d’automatisation (une sous-classe de brick:Point selon le type : Sensor/Setpoint/Command/Status/Alarm/Parameter). Se branche dans les emplacements de points ⚙ d’un appareil intelligent → brick:hasPoint. Un point d’accroche pour l’automatisation."
+      "tooltip": "Un point d’automatisation (une sous-classe de brick:Point selon le type). Se branche dans les emplacements de points ⚙ d’un appareil intelligent → brick:hasPoint. Types : Command = une commande manuelle/directe (un interrupteur) ; Setpoint = une consigne que le régulateur cherche à atteindre ; Sensor = une mesure ; Status = l’état résultant ; Alarm = un défaut ; Parameter = une valeur de configuration."
     },
     "dhcb:IoTDevice": {
       "message0": "📟 Appareil IoT %1",

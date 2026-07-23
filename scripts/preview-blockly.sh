@@ -29,6 +29,17 @@ if [ ! -f "${DIR}/preview.html" ]; then
   exit 1
 fi
 
+# Terminate any previous preview server on this port, so every start is fresh
+# (no "Address already in use", no stale instance). Best-effort — never fails.
+kill_prev() {
+  if   command -v fuser >/dev/null 2>&1; then fuser -k "${PORT}/tcp" >/dev/null 2>&1
+  elif command -v lsof  >/dev/null 2>&1; then lsof -ti "tcp:${PORT}" 2>/dev/null | xargs -r kill >/dev/null 2>&1
+  else pkill -f "http\.server ${PORT}\b" >/dev/null 2>&1
+  fi
+}
+if kill_prev; then echo "→ Terminated previous instance on port ${PORT}"; fi
+sleep 0.3   # let the OS release the socket
+
 echo "→ Serving ${DIR} on http://localhost:${PORT}"
 echo "→ Will open ${URL} (${WS} tab) in 1 second"
 echo "→ Ctrl-C to stop"

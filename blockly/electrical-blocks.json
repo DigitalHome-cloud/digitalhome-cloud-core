@@ -1017,11 +1017,11 @@
               "brick:Sensor"
             ],
             [
-              "Setpoint",
+              "Setpoint (controller target)",
               "brick:Setpoint"
             ],
             [
-              "Command",
+              "Command (manual / direct)",
               "brick:Command"
             ],
             [
@@ -1046,7 +1046,7 @@
       "output": "brick:Point",
       "inputsInline": true,
       "colour": "#a855f7",
-      "tooltip": "An automation point (a brick:Point subclass chosen by kind: Sensor/Setpoint/Command/Status/Alarm/Parameter). Plugs into a smart device's ⚙ point slots → brick:hasPoint. A hook for automation.",
+      "tooltip": "An automation point (a brick:Point subclass chosen by kind). Plugs into a smart device's ⚙ point slots → brick:hasPoint. Kinds: Command = a manual / direct actuation (a switch); Setpoint = a target the controller works toward; Sensor = a measured read-back; Status = resulting state; Alarm = a fault condition; Parameter = a configuration value.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=brick:Point"
     }
