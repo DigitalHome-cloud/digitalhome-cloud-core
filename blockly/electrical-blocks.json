@@ -414,6 +414,18 @@
               "dhc:CircuitType_FloorHeating"
             ],
             [
+              "Heat pump",
+              "dhc:CircuitType_HeatPump"
+            ],
+            [
+              "Ventilation (VMC)",
+              "dhc:CircuitType_Ventilation"
+            ],
+            [
+              "Shutters (store/volet)",
+              "dhc:CircuitType_Shutters"
+            ],
+            [
               "IRVE (EV)",
               "dhc:CircuitType_IRVE"
             ]
@@ -612,6 +624,10 @@
             [
               "300",
               "300"
+            ],
+            [
+              "500",
+              "500"
             ]
           ]
         },
@@ -638,11 +654,28 @@
           ]
         }
       ],
+      "message3": "selectivity %1",
+      "args3": [
+        {
+          "type": "field_dropdown",
+          "name": "selectivity",
+          "options": [
+            [
+              "instantaneous",
+              "instantaneous"
+            ],
+            [
+              "selective (S)",
+              "S"
+            ]
+          ]
+        }
+      ],
       "previousStatement": "module",
       "nextStatement": "module",
       "inputsInline": false,
       "colour": "#3b82f6",
-      "tooltip": "A differential device (dhc:RCD) — this is where the differential is DEFINED (rcdType, sensitivityMA, ratedCurrent). Its `id` variable is the token circuits reference via 'differential'. Drop ONE and have every circuit reference it for one-per-install (older norm); drop one per rail and reference it from that rail's circuits for one-per-rail (newer norm). A DIN-rail module.",
+      "tooltip": "A differential device (dhc:RCD) — this is where the differential is DEFINED (rcdType, sensitivityMA, ratedCurrent, selectivity). Its `id` variable is the token circuits reference via 'differential'. Drop ONE and have every circuit reference it for one-per-install (older norm); drop one per rail and reference it from that rail's circuits for one-per-rail (newer norm). Selectivity 'S' (selective/time-delayed) is used upstream, e.g. the 500 mA type-S differential integral to the disjoncteur de branchement. A DIN-rail module.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=dhc:RCD",
       "mutator": "dhc_points_mutator"
@@ -1049,6 +1082,131 @@
       "tooltip": "An automation point (a brick:Point subclass chosen by kind). Plugs into a smart device's ⚙ point slots → brick:hasPoint. Kinds: Command = a manual / direct actuation (a switch); Setpoint = a target the controller works toward; Sensor = a measured read-back; Status = resulting state; Alarm = a fault condition; Parameter = a configuration value.",
       "helpUrl": "",
       "data": "dhc:blocklyBlockTemplate=brick:Point"
+    },
+    {
+      "type": "dhcb:CommunicationPanel",
+      "message0": "🖧 Communication panel (VDI) %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Coffret VDI" }
+      ],
+      "message1": "grade %1 · arrival %2",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "grade",
+          "options": [
+            ["grade 2 TV (1 Gbit/s)", "2"],
+            ["grade 3 TV (10 Gbit/s)", "3"]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "arrival",
+          "options": [
+            ["DTi (copper)", "DTi"],
+            ["DTiO (fibre-ready)", "DTiO"],
+            ["Fibre (ONT)", "Fibre"]
+          ]
+        }
+      ],
+      "message2": "Hager ref %1",
+      "args2": [
+        { "type": "field_input", "name": "ref", "text": "TN415" }
+      ],
+      "mutator": "dhc_vdi_outlets_mutator",
+      "inputsInline": false,
+      "colour": "#14b8a6",
+      "tooltip": "The low-voltage / data panel (coffret de communication, VDI — courants faibles), sitting in the GTL alongside the power board. Use the ⚙ gear to add outlets (RJ45 data, TV/SAT). grade 2 = 1 Gbit/s, grade 3 = 10 Gbit/s. A separate network from the power distribution — a first-pass block; the ontology classes are parked (see doc/gap-analysis-nfc15100-hager.md).",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:CommunicationPanel"
+    },
+    {
+      "type": "dhcb:DTI",
+      "message0": "⇥ Network arrival (DTI) %1",
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "arrival",
+          "options": [
+            ["DTi (copper / xDSL)", "DTi"],
+            ["DTiO (optical)", "DTiO"]
+          ]
+        }
+      ],
+      "previousStatement": "vdi",
+      "nextStatement": "vdi",
+      "inputsInline": true,
+      "colour": "#14b8a6",
+      "tooltip": "The network demarcation / arrival point (DTI or DTIO) inside the VDI panel — where the operator line lands.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:DTI"
+    },
+    {
+      "type": "dhcb:InternetBox",
+      "message0": "📶 Internet box %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Box internet" }
+      ],
+      "previousStatement": "vdi",
+      "nextStatement": "vdi",
+      "inputsInline": true,
+      "colour": "#14b8a6",
+      "tooltip": "The operator's internet box housed in / fed from the VDI panel.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:InternetBox"
+    },
+    {
+      "type": "dhcb:RJ45Outlet",
+      "message0": "🔌 RJ45 outlet %1 ×%2",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "RJ45" },
+        { "type": "field_number", "name": "quantity", "value": 1, "min": 1, "precision": 1 }
+      ],
+      "message1": "category %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "category",
+          "options": [
+            ["Cat 6 STP (grade 2)", "Cat6"],
+            ["Cat 6a STP (grade 3)", "Cat6a"]
+          ]
+        }
+      ],
+      "previousStatement": "vdi",
+      "nextStatement": "vdi",
+      "inputsInline": true,
+      "colour": "#14b8a6",
+      "tooltip": "An RJ45 data outlet served from the VDI panel (brassage). `category` sets the grade (Cat 6 = grade 2, Cat 6a = grade 3). A placeable leaf — place it in the room it serves.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:RJ45Outlet"
+    },
+    {
+      "type": "dhcb:TVOutlet",
+      "message0": "📺 TV/SAT outlet %1 ×%2",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "TV" },
+        { "type": "field_number", "name": "quantity", "value": 1, "min": 1, "precision": 1 }
+      ],
+      "message1": "signal %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "signal",
+          "options": [
+            ["TNT", "TNT"],
+            ["Câble", "Cable"],
+            ["SAT", "SAT"]
+          ]
+        }
+      ],
+      "previousStatement": "vdi",
+      "nextStatement": "vdi",
+      "inputsInline": true,
+      "colour": "#14b8a6",
+      "tooltip": "A TV/SAT outlet from the VDI panel's TV distributor (répartiteur TV). A placeable leaf — place it in the room it serves.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:TVOutlet"
     }
   ]
 }

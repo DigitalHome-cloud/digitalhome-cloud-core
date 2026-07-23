@@ -230,5 +230,33 @@
     ['dhc_board_container', 'dhc_board_item']
   );
 
-  console.info('[dhc/registerPlugins-electrical] mutators registered: dhc_points_mutator (brick:hasPoint), dhc_board_mutator (rows = DIN rails)');
+  /* ══════════════════════════════════════════════════════════════════════════
+   *  dhc_vdi_outlets_mutator  (VDI / communication panel outlets = a stack of
+   *  RJ45 / TV / DTI / box blocks, check "vdi")
+   * ══════════════════════════════════════════════════════════════════════════ */
+  registerHelperBlocks(
+    'dhc_vdi_container', 'communication panel',
+    'dhc_vdi_item',      'outlet',
+    '#14b8a6'
+  );
+
+  const DHC_VDI_MIXIN = makeMutatorMixin({
+    containerType: 'dhc_vdi_container',
+    itemType:      'dhc_vdi_item',
+    inputPrefix:   'vdi_',
+    inputCheck:    'vdi',
+    perItemLabel:  'outlet',
+    defaultCount:  1,
+  });
+
+  function DHC_VDI_HELPER() { this.updateShape_(this.itemCount_); }
+
+  Blockly.Extensions.registerMutator(
+    'dhc_vdi_outlets_mutator',
+    DHC_VDI_MIXIN,
+    DHC_VDI_HELPER,
+    ['dhc_vdi_container', 'dhc_vdi_item']
+  );
+
+  console.info('[dhc/registerPlugins-electrical] mutators registered: dhc_points_mutator (brick:hasPoint), dhc_board_mutator (rows = DIN rails), dhc_vdi_outlets_mutator (VDI outlets)');
 })();

@@ -17,15 +17,17 @@
  * combined-file shape, this fails instead of the link silently going `(missing)`.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const FIXTURE = fileURLToPath(new URL('../../blockly/examples/dhc-designer-demo.json', import.meta.url));
+const EXAMPLES_DIR = fileURLToPath(new URL('../../blockly/examples/', import.meta.url));
+const FIXTURE = EXAMPLES_DIR + 'dhc-designer-demo.json';
 
 // Placeable electrical leaf types (mirrors PLACEABLE in preview.html).
 const PLACEABLE = new Set([
   'dhcb:Socket', 'dhcb:Luminaire', 'dhcb:Electric_Vehicle_Charging_Station',
   'dhcb:Appliance', 'dhcb:Point', 'dhcb:SubDistributionBoard',
+  'dhcb:RJ45Outlet', 'dhcb:TVOutlet',
 ]);
 
 /** Walk a Blockly serialization, yielding every block object (inputs + next). */
@@ -121,5 +123,26 @@ describe('unified designer — combined Save file round-trip', () => {
     const leaves = electricalLeafNames(combined.electrical);
     expect(leaves.size).toBeGreaterThan(0);
     expect(leaves.has('')).toBe(false);                    // no unnamed placeable leaf
+  });
+});
+
+// The worked NF C 15-100 demo panels (Hager guide): every one must be a valid
+// combined file whose every placement resolves to an electrical leaf.
+const DEMOS = readdirSync(EXAMPLES_DIR).filter((f) => f.endsWith('.designer.json')).sort();
+describe.each(DEMOS)('worked demo — %s', (file) => {
+  const doc = JSON.parse(readFileSync(EXAMPLES_DIR + file, 'utf8'));
+
+  it('is a combined { electrical, spatial } file', () => {
+    expect(doc.electrical?.blocks?.blocks?.length).toBeGreaterThan(0);
+    expect(doc.spatial?.blocks?.blocks?.length).toBeGreaterThan(0);
+  });
+
+  it('every placement resolves to an electrical leaf', () => {
+    const leaves = electricalLeafIds(doc.electrical);
+    const placements = spatialPlacements(doc.spatial);
+    expect(placements.length).toBeGreaterThan(0);
+    for (const ref of placements) {
+      expect(leaves.has(ref), `${file}: placement "${ref}" ∉ {${[...leaves].join(', ')}}`).toBe(true);
+    }
   });
 });
