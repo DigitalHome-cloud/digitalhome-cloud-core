@@ -2,180 +2,775 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>DHC Spatial — Blockly Preview</title>
+  <title>DHC — SmartHome Designer (Electrical · Spatial)</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; background: #1e293b; color: #e2e8f0; }
-    header { padding: 8px 16px; background: #0f172a; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #334155; }
-    header h1 { font-size: 14px; margin: 0; font-weight: 600; }
-    header .meta { font-size: 12px; color: #94a3b8; }
-    header .status { margin-left: auto; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
-    header .status.ok    { background: #064e3b; color: #6ee7b7; }
-    header .status.error { background: #7f1d1d; color: #fca5a5; }
-    header label { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
-    header select, header button { font: 12px system-ui, sans-serif; background: #1e293b; color: #e2e8f0;
-                                   border: 1px solid #334155; border-radius: 4px; padding: 2px 8px; }
-    header button { cursor: pointer; }
-    header button:hover { background: #334155; }
-    #blockly-host { position: absolute; top: 40px; left: 0; right: 0; bottom: 200px; }
-    #log { position: absolute; left: 0; right: 0; bottom: 0; height: 200px; padding: 8px 16px; background: #0f172a; border-top: 1px solid #334155; overflow: auto; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; }
-    #log .line { white-space: pre-wrap; margin: 0 0 2px; }
-    #log .err  { color: #fca5a5; }
-    #log .info { color: #94a3b8; }
-    #log .ok   { color: #6ee7b7; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:    #020617;
+      --bg-surface: #0f172a;
+      --bg-panel:   #0f172a;
+      --bg-raised:  #1e293b;
+      --border:     rgba(148,163,184,0.18);
+      --border-mid: rgba(148,163,184,0.3);
+      --text-primary: #e2e8f0;
+      --text-muted:   #64748b;
+      --text-subtle:  #475569;
+
+      --col-electrical: #3b82f6;
+      --col-spatial:    #22c55e;
+    }
+
+    html, body { height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg-deep); color: var(--text-primary); -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+    /* ── Header ──────────────────────────────────────────────────────── */
+    #header {
+      height: 40px;
+      background: rgba(15,23,42,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-mid);
+      display: flex; align-items: center; gap: 10px; padding: 0 12px;
+      flex-shrink: 0; position: relative; z-index: 40;
+    }
+    #header .logo {
+      width: 26px; height: 26px; border-radius: 6px;
+      background: linear-gradient(135deg, #3b82f6, #0ea5e9);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #fff; font-size: 13px; flex-shrink: 0;
+    }
+    #header .brand { display: flex; flex-direction: column; gap: 1px; }
+    #header .brand-title { font-size: 11px; font-weight: 700; color: var(--text-primary); }
+    #header .brand-sub   { font-size: 9px; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
+
+    #header .divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+    #header label { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+    #header select {
+      font: 10px system-ui; background: var(--bg-raised); color: var(--text-primary);
+      border: 1px solid var(--border-mid); border-radius: 4px; padding: 2px 6px;
+      cursor: pointer; outline: none;
+    }
+    #header select:focus { border-color: var(--col-electrical); }
+
+    .hbtn {
+      padding: 3px 10px; font-size: 10px; font-weight: 500; border-radius: 99px;
+      cursor: pointer; border: 1px solid var(--border-mid);
+      background: transparent; color: var(--text-muted);
+      transition: background 0.15s, color 0.15s;
+    }
+    .hbtn:hover { background: var(--bg-raised); color: var(--text-primary); }
+    .hbtn.primary { color: #bfdbfe; background: rgba(37,99,235,0.15); border-color: rgba(59,130,246,0.5); }
+    .hbtn.primary:hover { background: rgba(37,99,235,0.28); }
+    .hbtn.danger { color: #fca5a5; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); }
+    .hbtn.danger:hover { background: rgba(239,68,68,0.2); }
+
+    /* ── Unsaved-work guard modal ─────────────────────────────────────── */
+    #guard-overlay {
+      position: fixed; inset: 0; background: rgba(2,6,23,0.72); backdrop-filter: blur(2px);
+      display: none; align-items: center; justify-content: center; z-index: 100;
+    }
+    #guard-overlay.show { display: flex; }
+    #guard {
+      width: 360px; background: var(--bg-raised); border: 1px solid var(--border-mid);
+      border-radius: 10px; padding: 18px 18px 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    #guard h3 { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary); }
+    #guard p { font-size: 11px; color: var(--text-muted); line-height: 1.55; margin-bottom: 14px; }
+    #guard .row { display: flex; gap: 8px; justify-content: flex-end; }
+
+    #header .right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+    #status {
+      font-size: 9px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+      letter-spacing: 0.04em;
+    }
+    #status.loading { background: rgba(100,116,139,0.2); color: #94a3b8; }
+    #status.ok      { background: rgba(34,197,94,0.15);  color: #4ade80; }
+    #status.error   { background: rgba(239,68,68,0.15);  color: #f87171; }
+
+    /* ── Workspace tab bar (Electrical | Spatial) ────────────────────── */
+    #tabs {
+      height: 32px; background: rgba(15,23,42,0.85);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-end; padding: 0 10px; flex-shrink: 0;
+    }
+    .tab {
+      padding: 0 12px 5px; font-size: 11px; font-weight: 500;
+      cursor: pointer; color: var(--text-subtle);
+      border-bottom: 2px solid transparent;
+      display: flex; align-items: center; gap: 6px;
+      background: none; border-top: none; border-left: none; border-right: none;
+      transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active { color: var(--text-primary); font-weight: 700; }
+    .tab .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Layout ──────────────────────────────────────────────────────── */
+    #layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 72px); }
+    #blockly-host { flex: 1; position: relative; overflow: hidden; }
+
+    /* ── Right panel ─────────────────────────────────────────────────── */
+    #right-panel {
+      width: 240px; border-left: 1px solid var(--border);
+      background: var(--bg-panel); display: flex; flex-direction: column;
+      flex-shrink: 0; overflow: hidden;
+    }
+    #right-panel .panel-title {
+      padding: 8px 10px 6px; font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--text-subtle);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    #log {
+      flex: 1; overflow-y: auto; padding: 6px 8px;
+      font: 10px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    }
+    #log::-webkit-scrollbar { width: 3px; }
+    #log::-webkit-scrollbar-track { background: transparent; }
+    #log::-webkit-scrollbar-thumb { background: var(--bg-raised); border-radius: 2px; }
+    .log-line { white-space: pre-wrap; margin-bottom: 1px; }
+    .log-line.info { color: var(--text-muted); }
+    .log-line.ok   { color: #4ade80; }
+    .log-line.err  { color: #f87171; }
+    .log-line.evt  { color: #93c5fd; }
+
+    #stats {
+      border-top: 1px solid var(--border); padding: 6px 10px;
+      display: flex; flex-direction: column; gap: 3px; flex-shrink: 0;
+    }
+    .stat-row { display: flex; justify-content: space-between; align-items: center; }
+    .stat-label { font-size: 9px; color: var(--text-subtle); }
+    .stat-value { font-size: 10px; font-weight: 600; color: var(--text-primary); font-family: ui-monospace, Menlo, monospace; }
+
+    /* ── Blockly toolbox overrides ───────────────────────────────────── */
+    .blocklyToolboxDiv {
+      background: var(--bg-surface) !important;
+      border-right: 1px solid var(--border) !important;
+      padding-top: 4px !important;
+    }
+    .blocklyTreeRow { border-radius: 0 !important; }
+    .blocklyTreeRow:hover { background: rgba(148,163,184,0.07) !important; }
+    .blocklyTreeSelected { background: rgba(148,163,184,0.12) !important; }
+    .blocklyTreeLabel {
+      font-family: system-ui, -apple-system, sans-serif !important;
+      font-size: 11px !important; font-weight: 500 !important;
+      padding: 4px 6px !important; color: #cbd5e1 !important; letter-spacing: 0.01em !important;
+    }
+    .blocklyFlyoutBackground { fill: #0c1628 !important; }
+    .blocklyScrollbarBackground { fill: transparent !important; }
+    .blocklyScrollbarHandle { fill: #334155 !important; rx: 3px !important; }
+    .blocklyMainBackground { fill: #0d1929 !important; }
+    .blocklyGrid line { stroke: rgba(51,65,85,0.7) !important; }
+    .blocklyZoom > image, .blocklyTrash > image { filter: invert(0.7) !important; }
   </style>
-  <!-- Blockly v11 — single bundle, no separate msg/blocks files needed -->
+
+  <!-- Blockly v11 — CDN (this harness is NOT offline; see blockly/README.md) -->
   <script src="https://unpkg.com/blockly@11.2.2/blockly.min.js"></script>
-  <!-- DHC mutators / extensions — must load AFTER Blockly, BEFORE block defs -->
-  <script src="./registerPlugins.js"></script>
+  <!-- DHC mutators — must load AFTER Blockly, BEFORE block defs. Both harnesses'
+       plugins are loaded up front; mutator names + dhcb: types are all distinct. -->
+  <script src="./registerPlugins-electrical.js"></script>
+  <script src="./registerPlugins-spatial.js"></script>
 </head>
 <body>
-  <header>
-    <h1>DHC Spatial — Blockly Preview</h1>
-    <span class="meta">repos/core/blockly/</span>
-    <label>renderer
-      <select id="renderer-select">
-        <option value="geras">geras (classic, square)</option>
-        <option value="thrasos">thrasos (default, rounded edges)</option>
-        <option value="zelos">zelos (Scratch-style, large)</option>
-        <option value="minimalist">minimalist (flat)</option>
+
+  <!-- ── Header ───────────────────────────────────────────────────────── -->
+  <header id="header">
+    <div class="logo" id="brand-logo">⚡</div>
+    <div class="brand">
+      <div class="brand-title" id="brand-title">Electrical Installation Designer</div>
+      <div class="brand-sub" id="brand-sub">Power Distribution System</div>
+    </div>
+    <div class="divider"></div>
+    <label id="lbl-lang">
+      Language
+      <select id="lang-select">
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
       </select>
     </label>
-    <button id="view-json"     title="Open the current workspace JSON in a new tab">View JSON</button>
-    <button id="download-json" title="Download the current workspace JSON">Download</button>
-    <span id="status" class="status">loading…</span>
+    <label id="lbl-renderer">
+      Renderer
+      <select id="renderer-select">
+        <option value="thrasos">thrasos</option>
+        <option value="geras">geras</option>
+        <option value="zelos">zelos</option>
+        <option value="minimalist">minimalist</option>
+      </select>
+    </label>
+    <div class="right">
+      <button class="hbtn" id="btn-new" title="Start a new design — blank Electrical + Spatial (both workspaces)">New</button>
+      <button class="hbtn" id="btn-json"  title="View the active workspace JSON">View JSON</button>
+      <button class="hbtn" id="btn-load"  title="Load a saved designer file (combined or single workspace)">Load</button>
+      <button class="hbtn primary" id="btn-save" title="Download both workspaces (combined JSON)">Save</button>
+      <input type="file" id="file-input" accept="application/json,.json" style="display:none">
+      <div class="divider"></div>
+      <span id="status" class="status loading">loading…</span>
+    </div>
   </header>
-  <div id="blockly-host"></div>
-  <div id="log"></div>
+
+  <!-- ── Workspace tabs ────────────────────────────────────────────────── -->
+  <div id="tabs">
+    <button class="tab active" data-ws="electrical"><span class="dot" style="background: var(--col-electrical)"></span><span class="tab-label">Electrical</span></button>
+    <button class="tab" data-ws="spatial"><span class="dot" style="background: var(--col-spatial)"></span><span class="tab-label">Spatial</span></button>
+  </div>
+
+  <!-- ── Main layout ──────────────────────────────────────────────────── -->
+  <div id="layout">
+    <div id="blockly-host"></div>
+
+    <aside id="right-panel">
+      <div class="panel-title">Event Log</div>
+      <div id="log"></div>
+      <div id="stats">
+        <div class="stat-row"><span class="stat-label">Workspace</span><span class="stat-value" id="stat-ws">—</span></div>
+        <div class="stat-row"><span class="stat-label">Blocks</span><span class="stat-value" id="stat-blocks">0</span></div>
+        <div class="stat-row"><span class="stat-label">Electrical leaves</span><span class="stat-value" id="stat-leaves">0</span></div>
+        <div class="stat-row"><span class="stat-label">Leaves placed</span><span class="stat-value" id="stat-placed">0/0</span></div>
+        <div class="stat-row"><span class="stat-label">Renderer</span><span class="stat-value" id="stat-renderer">—</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ── Unsaved-work guard (shown by New when there are unexported edits) ─ -->
+  <div id="guard-overlay">
+    <div id="guard">
+      <h3>Start a new design?</h3>
+      <p>This replaces <b>both</b> workspaces with a blank Electrical + Spatial
+         design. The current design hasn't been exported to a file — Save it first,
+         or discard it.</p>
+      <div class="row">
+        <button class="hbtn" id="guard-cancel">Cancel</button>
+        <button class="hbtn danger" id="guard-discard">Discard &amp; New</button>
+        <button class="hbtn primary" id="guard-save">Save &amp; New</button>
+      </div>
+    </div>
+  </div>
 
   <script>
+  (function () {
+
+    /* ══════════════════════════════════════════════════════════════════════
+     *  Two workspaces, one page. The top tabs switch between the Electrical and
+     *  Spatial designers; each shows its full toolbox. A shared, in-memory leaf
+     *  registry (projected from the Electrical workspace) lets a socket / light /
+     *  point defined in Electrical be *placed* into a Spatial room. In the online
+     *  app that registry becomes a backend/GraphQL query (see doc/parking-lot.md).
+     * ══════════════════════════════════════════════════════════════════════ */
+
+    /* ── Per-workspace themes ──────────────────────────────────────────── */
+    const ELEC_THEME = Blockly.Theme.defineTheme('dhc-electrical', {
+      base: Blockly.Themes.Classic,
+      componentStyles: {
+        workspaceBackgroundColour: '#0d1929', toolboxBackgroundColour: '#0f172a',
+        toolboxForegroundColour: '#cbd5e1', flyoutBackgroundColour: '#0c1628',
+        flyoutForegroundColour: '#94a3b8', flyoutOpacity: 1, scrollbarColour: '#334155',
+        scrollbarOpacity: 0.6, insertionMarkerColour: '#3b82f6', insertionMarkerOpacity: 0.5,
+        markerColour: '#3b82f6', cursorColour: '#3b82f6',
+      },
+      fontStyle: { family: 'system-ui, -apple-system, sans-serif', weight: '500', size: 11 },
+    });
+    const SPAT_THEME = Blockly.Theme.defineTheme('dhc-spatial', {
+      base: Blockly.Themes.Classic,
+      componentStyles: {
+        workspaceBackgroundColour: '#0d1929', toolboxBackgroundColour: '#0f172a',
+        toolboxForegroundColour: '#cbd5e1', flyoutBackgroundColour: '#0c1628',
+        flyoutForegroundColour: '#94a3b8', flyoutOpacity: 1, scrollbarColour: '#334155',
+        scrollbarOpacity: 0.6, insertionMarkerColour: '#22c55e', insertionMarkerOpacity: 0.5,
+        markerColour: '#22c55e', cursorColour: '#22c55e',
+      },
+      fontStyle: { family: 'system-ui, -apple-system, sans-serif', weight: '500', size: 11 },
+    });
+
+    const WORKSPACES = {
+      electrical: {
+        blocks: 'electrical-blocks.json', toolbox: 'electrical-toolbox.json',
+        workspace: 'electrical-workspace.json', theme: ELEC_THEME, hasLang: true,
+        logo: '⚡', title: 'Electrical Installation Designer', color: '#3b82f6',
+        subFrom: (st) => st?.blocks?.blocks?.[0]?.fields?.name || 'Power Distribution System',
+        registerCallbacks: registerElectricalCallbacks,
+      },
+      spatial: {
+        blocks: 'spatial-blocks.json', toolbox: 'spatial-toolbox.json',
+        workspace: 'spatial-workspace.json', theme: SPAT_THEME, hasLang: false,
+        logo: '🏡', title: 'SmartHome Designer', color: '#22c55e',
+        subFrom: (st) => st?.blocks?.blocks?.[0]?.fields?.smartHomeId || 'DE-DEMO-01',
+        registerCallbacks: registerSpatialCallbacks,
+      },
+    };
+
+    /* ── Logging + status ──────────────────────────────────────────────── */
     const logEl = document.getElementById('log');
     const statusEl = document.getElementById('status');
+    const statWs = document.getElementById('stat-ws');
+    const statBlocks = document.getElementById('stat-blocks');
+    const statLeaves = document.getElementById('stat-leaves');
+    const statPlaced = document.getElementById('stat-placed');
+    const statRend = document.getElementById('stat-renderer');
+
     function log(msg, cls = 'info') {
-      const line = document.createElement('div');
-      line.className = 'line ' + cls;
-      line.textContent = msg;
-      logEl.appendChild(line);
+      const d = document.createElement('div');
+      d.className = 'log-line ' + cls;
+      d.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }) + '  ' + msg;
+      logEl.appendChild(d);
       logEl.scrollTop = logEl.scrollHeight;
+      while (logEl.children.length > 200) logEl.removeChild(logEl.firstChild);
     }
-    function setStatus(text, cls) {
-      statusEl.textContent = text;
-      statusEl.className = 'status ' + cls;
-    }
+    function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = 'status ' + cls; }
+    async function fetchJson(path) { const r = await fetch(path); if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`); return r.json(); }
 
-    async function fetchJson(path) {
-      const r = await fetch(path);
-      if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
-      return r.json();
-    }
-
+    /* ── Renderer persistence ──────────────────────────────────────────── */
     const RENDERER_KEY = 'dhc.blockly.renderer';
-    const VALID_RENDERERS = ['geras', 'thrasos', 'zelos', 'minimalist'];
-    function getRenderer() {
-      const stored = localStorage.getItem(RENDERER_KEY);
-      return VALID_RENDERERS.includes(stored) ? stored : 'thrasos';
+    const VALID_RENDERERS = ['thrasos', 'geras', 'zelos', 'minimalist'];
+    function getRenderer() { const s = localStorage.getItem(RENDERER_KEY); return VALID_RENDERERS.includes(s) ? s : 'thrasos'; }
+
+    /* ── Localization (electrical defs only) ───────────────────────────── */
+    const LANG_KEY = 'dhc.blockly.lang';
+    const VALID_LANGS = ['en', 'de', 'fr'];
+    const _langParam = new URLSearchParams(location.search).get('lang');
+    let activeLang = VALID_LANGS.includes(_langParam) ? _langParam
+      : (VALID_LANGS.includes(localStorage.getItem(LANG_KEY)) ? localStorage.getItem(LANG_KEY) : 'en');
+    const localeCache = {};
+    async function getLocale(lang) {
+      if (lang === 'en') return null;
+      if (lang in localeCache) return localeCache[lang];
+      try { localeCache[lang] = await fetchJson('./lang/' + lang + '.json'); }
+      catch (e) { log('⚠ locale ' + lang + ': ' + e.message, 'err'); localeCache[lang] = null; }
+      return localeCache[lang];
+    }
+    function elecDefsFor(locale) {
+      const defs = JSON.parse(JSON.stringify(baseDefs.electrical));
+      if (locale && locale.blocks) for (const d of defs) if (locale.blocks[d.type]) Object.assign(d, locale.blocks[d.type]);
+      return defs;
     }
 
+    /* ── State ─────────────────────────────────────────────────────────── */
     let workspace = null;
-    let toolboxConfig = null;
-    let blockDefs = null;
+    let activeWs = 'electrical';
+    let injecting = false;
+    const baseDefs = { electrical: null, spatial: null };
+    const toolboxes = { electrical: null, spatial: null };
+    const states = { electrical: null, spatial: null };   // last serialization per workspace
 
-    function injectWorkspace(renderer, restoreState) {
-      if (workspace) {
-        // Capture current state if we're swapping renderers in-place
-        if (!restoreState) restoreState = Blockly.serialization.workspaces.save(workspace);
-        workspace.dispose();
+    // "Dirty" = the current design differs from the last New / Save / Load. We
+    // decide this by COMPARING serializations at click time — not by catching a
+    // change event — so the guard is robust even if an edit's event is missed.
+    let cleanSnapshot = null;
+    function snapshotNow() {
+      if (workspace) states[activeWs] = Blockly.serialization.workspaces.save(workspace);
+      return JSON.stringify({ electrical: states.electrical, spatial: states.spatial });
+    }
+    function markClean() { cleanSnapshot = snapshotNow(); }
+    function isDirty() { return snapshotNow() !== cleanSnapshot; }
+
+    /* ── Autosave (browser) — reopen restores the latest state ───────────── */
+    const STATE_KEY = 'dhc.blockly.designer.state';
+    function persist() {
+      try {
+        localStorage.setItem(STATE_KEY, JSON.stringify({
+          version: 'dhc-blockly-designer/1', electrical: states.electrical, spatial: states.spatial, activeWs,
+        }));
+      } catch (e) { /* storage full / disabled — autosave is best-effort */ }
+    }
+    function restore() {
+      try {
+        const raw = localStorage.getItem(STATE_KEY);
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+        if (s && (s.electrical || s.spatial)) return s;
+      } catch (e) { /* corrupt — fall back to starters */ }
+      return null;
+    }
+
+    // "New" seeds each workspace with just its root block (blank otherwise).
+    const ROOT_TEMPLATES = {
+      electrical: { blocks: { languageVersion: 0, blocks: [
+        { type: 'dhcb:PowerDistributionSystem', x: 48, y: 40,
+          fields: { name: 'New Installation', neutralSystem: 'TT', hasMedium: 's223:AC-230VLN-1Ph-50Hz' } },
+      ] } },
+      spatial: { blocks: { languageVersion: 0, blocks: [
+        { type: 'dhcb:DigitalHome', x: 40, y: 40, extraState: { itemCount: 1 },
+          fields: { smartHomeId: 'DE-DEMO-01', preferredLanguage: 'en' } },
+      ] } },
+    };
+
+    /* ── Leaf registry: electrical → spatial cross-link ────────────────────
+     * Projected from states.electrical. A "leaf" is a placeable electrical
+     * entity (sink or automation point). Its stable handle in the prototype is
+     * its `name` field (the online app swaps this for a NanoID = A-Box IRI —
+     * see doc/parking-lot.md). Spatial dhcb:Placement blocks read this via
+     * window.DHC_LEAF_OPTIONS(). */
+    const PLACEABLE = {
+      'dhcb:Socket': 'Socket', 'dhcb:Luminaire': 'Light',
+      'dhcb:Electric_Vehicle_Charging_Station': 'EV charger', 'dhcb:Appliance': 'Appliance',
+      'dhcb:Point': 'Point', 'dhcb:SubDistributionBoard': 'Sub-board',
+    };
+    let classByType = {};   // dhcb:type → ontology CURIE (from electrical block `data`)
+
+    function buildClassByType() {
+      classByType = {};
+      for (const d of (baseDefs.electrical || [])) {
+        const m = /dhc:blocklyBlockTemplate=(\S+)/.exec(d.data || '');
+        if (m) classByType[d.type] = m[1];
       }
-      workspace = Blockly.inject('blockly-host', {
-        toolbox: toolboxConfig,
-        renderer: renderer,
-        theme: 'classic',
-        grid: { spacing: 24, length: 3, colour: '#334155', snap: true },
-        zoom: { controls: true, wheel: true, startScale: 0.95, maxScale: 2, minScale: 0.5 },
-        trashcan: true,
-      });
-      if (restoreState) Blockly.serialization.workspaces.load(restoreState, workspace);
+    }
 
-      // Reflect edits back to the log so you can see the round-trip
+    function leafRegistry() {
+      const st = states.electrical;
+      if (!st) return [];
+      const varName = {};
+      for (const v of (st.variables || [])) varName[v.id] = v.name;
+      const out = [];
+      let auto = 0;
+      // parentName = the enclosing device/consumer (a point rides on it).
+      function walk(b, parentName) {
+        if (!b || typeof b !== 'object') return;
+        const t = b.type;
+        if (PLACEABLE[t]) {
+          const nm = (b.fields && b.fields.name) || '';
+          const fedId = b.fields && b.fields.FED_BY && b.fields.FED_BY.id;
+          const fed = fedId ? varName[fedId] : null;
+          let id, label;
+          if (t === 'dhcb:Point') {
+            // an automation point — keyed & labelled by the consumer it sits on
+            id = (parentName ? parentName + ' / ' : '') + (nm || ('point#' + (++auto)));
+            label = (parentName ? parentName + ' · ' : '') + 'point ' + (nm || '(unnamed)');
+          } else {
+            id = nm || (t + '#' + (++auto));
+            const qty = b.fields && b.fields.quantity;
+            label = PLACEABLE[t] + ' · ' + (nm || '(unnamed)');
+            if (qty && qty > 1) label += ' ×' + qty;   // how many sockets / bulbs at this point
+            if (fed) label += ' · ' + fed;
+          }
+          out.push({ id, label, blockType: t, ontologyClass: classByType[t] || null, fedBy: fed, parent: parentName || null });
+        }
+        const childParent = (b.fields && b.fields.name) || parentName;   // this block hosts its point children
+        const inp = b.inputs || {};
+        for (const k in inp) { if (inp[k].block) walk(inp[k].block, childParent); if (inp[k].shadow) walk(inp[k].shadow, childParent); }
+        if (b.next && b.next.block) walk(b.next.block, parentName);   // a sibling shares the same parent
+      }
+      for (const tb of (st.blocks && st.blocks.blocks) || []) walk(tb, null);
+      // dedupe by id (last definition wins)
+      const seen = {}; const dedup = [];
+      for (const l of out) { if (!(l.id in seen)) { seen[l.id] = dedup.length; dedup.push(l); } else dedup[seen[l.id]] = l; }
+      return dedup;
+    }
+    // Spatial dhcb:Placement dropdowns call this.
+    window.DHC_LEAF_OPTIONS = leafRegistry;
+
+    // The reverse view: which electrical leaves are placed in a spatial room.
+    // Collected from every dhcb:Placement's LEAF value in the spatial workspace.
+    function placedLeafIds() {
+      const ids = new Set();
+      const st = states.spatial;
+      const walk = (b) => {
+        if (!b || typeof b !== 'object') return;
+        if (b.type === 'dhcb:Placement') { const v = b.fields && b.fields.LEAF; if (v && v !== 'NONE') ids.add(v); }
+        const inp = b.inputs || {};
+        for (const k in inp) { if (inp[k].block) walk(inp[k].block); if (inp[k].shadow) walk(inp[k].shadow); }
+        if (b.next && b.next.block) walk(b.next.block);
+      };
+      for (const tb of (st && st.blocks && st.blocks.blocks) || []) walk(tb);
+      return ids;
+    }
+    // A live electrical block's leaf id — same scheme as leafRegistry (a point is
+    // keyed by the consumer it rides on).
+    function liveLeafId(block) {
+      const nm = block.getFieldValue('name') || '';
+      if (block.type === 'dhcb:Point') {
+        const p = block.getParent && block.getParent();
+        const pn = (p && p.getFieldValue && p.getFieldValue('name')) || '';
+        return (pn ? pn + ' / ' : '') + nm;
+      }
+      return nm;
+    }
+    // Stat "placed/total" + a ⚠ badge on each unplaced electrical leaf block.
+    function updatePlacementStatus() {
+      const placed = placedLeafIds();
+      const reg = leafRegistry();
+      statPlaced.textContent = reg.filter((l) => placed.has(l.id)).length + '/' + reg.length;
+      if (activeWs !== 'electrical' || !workspace) return;
+      Blockly.Events.disable();
+      try {
+        for (const blk of workspace.getAllBlocks(false)) {
+          if (!PLACEABLE[blk.type]) continue;
+          const txt = placed.has(liveLeafId(blk)) ? null : 'Not placed in any spatial room yet';
+          if (blk._placedWarn !== txt) { blk.setWarningText(txt); blk._placedWarn = txt; }
+        }
+      } finally { Blockly.Events.enable(); }
+    }
+
+    /* ── Toolbox callbacks ─────────────────────────────────────────────── */
+    function registerElectricalCallbacks(ws) {
+      // "Circuit lines" — the Circuit/Differential typed-variable flyout.
+      ws.registerToolboxCategoryCallback('CIRCUIT_LINES', (w) => {
+        const items = [
+          { kind: 'button', text: '＋ New circuit line (Circuit)', callbackKey: 'CREATE_CIRCUIT_VAR' },
+          { kind: 'button', text: '＋ New differential (RCD)', callbackKey: 'CREATE_DIFF_VAR' },
+        ];
+        let blocks = [];
+        try { blocks = Blockly.VariablesDynamic.flyoutCategoryBlocks(w) || []; } catch (e) { log('flyout: ' + e.message, 'err'); }
+        if (!blocks.length) items.push({ kind: 'label', text: 'No tokens yet — drop a Circuit or RCD block' });
+        return items.concat(blocks);
+      });
+      ws.registerButtonCallback('CREATE_CIRCUIT_VAR', (b) => Blockly.Variables.createVariableButtonHandler(b.getTargetWorkspace(), null, 'Circuit'));
+      ws.registerButtonCallback('CREATE_DIFF_VAR', (b) => Blockly.Variables.createVariableButtonHandler(b.getTargetWorkspace(), null, 'Differential'));
+    }
+    function registerSpatialCallbacks(ws) {
+      // "Placements" — a fresh dhcb:Placement (its dropdown lists the live leaf
+      // registry) plus a hint of how many electrical leaves are available.
+      ws.registerToolboxCategoryCallback('PLACEMENTS', () => {
+        const n = leafRegistry().length;
+        const items = [{
+          kind: 'label',
+          text: n ? ('Electrical leaves available: ' + n) : 'No electrical leaves yet — add sinks / points in the Electrical tab',
+        }];
+        items.push({ kind: 'block', type: 'dhcb:Placement' });
+        return items;
+      });
+    }
+
+    /* ── Stats ─────────────────────────────────────────────────────────── */
+    function updateStats() {
+      statWs.textContent = activeWs;
+      statBlocks.textContent = workspace ? workspace.getAllBlocks(false).length : 0;
+      statLeaves.textContent = leafRegistry().length;
+      updatePlacementStatus();
+    }
+
+    /* ── Inject a workspace ────────────────────────────────────────────── */
+    function injectWs(ws, restoreState) {
+      const cfg = WORKSPACES[ws];
+      injecting = true;
+      if (workspace) { workspace.dispose(); workspace = null; }
+      workspace = Blockly.inject('blockly-host', {
+        toolbox: toolboxes[ws], renderer: getRenderer(), theme: cfg.theme,
+        grid: { spacing: 28, length: 4, colour: 'rgba(51,65,85,0.5)', snap: true },
+        zoom: { controls: true, wheel: true, startScale: 0.9, maxScale: 2.5, minScale: 0.4, scaleSpeed: 1.1 },
+        trashcan: true, move: { scrollbars: true, drag: true, wheel: false },
+      });
+      cfg.registerCallbacks(workspace);
+
+      const st = restoreState !== undefined ? restoreState : states[ws];
+      if (st) { try { Blockly.serialization.workspaces.load(st, workspace); } catch (e) { log('⚠ restore ' + ws + ': ' + e.message, 'err'); } }
+
       workspace.addChangeListener((ev) => {
         if (ev.isUiEvent) return;
-        if (ev.type === Blockly.Events.BLOCK_CREATE)  log(`+ created  ${ev.json?.type || ev.blockId}`);
-        if (ev.type === Blockly.Events.BLOCK_DELETE)  log(`− deleted  ${ev.oldJson?.type || ev.blockId}`);
-        if (ev.type === Blockly.Events.BLOCK_CHANGE)  log(`~ changed  ${ev.blockId}.${ev.name} = ${JSON.stringify(ev.newValue)}`);
-        if (ev.type === Blockly.Events.BLOCK_MOVE)    log(`→ moved    ${ev.blockId}`);
+        if (!injecting) { states[activeWs] = Blockly.serialization.workspaces.save(workspace); persist(); }
+        if (ev.type === Blockly.Events.BLOCK_CREATE)      log('+ ' + (ev.json?.type || ev.blockId), 'ok');
+        else if (ev.type === Blockly.Events.BLOCK_DELETE) log('− ' + (ev.oldJson?.type || ev.blockId), 'info');
+        else if (ev.type === Blockly.Events.BLOCK_CHANGE) log('~ ' + ev.blockId + '.' + ev.name + ' = ' + JSON.stringify(ev.newValue), 'evt');
+        updateStats();
       });
-      log(`✓ rendered with '${renderer}'`, 'ok');
+
+      statRend.textContent = getRenderer();
+      injecting = false;
+      updateStats();
     }
 
+    /* ── Chrome (brand + lang visibility + sub-label) ──────────────────── */
+    function applyChrome() {
+      const cfg = WORKSPACES[activeWs];
+      document.getElementById('brand-logo').textContent = cfg.logo;
+      document.getElementById('brand-title').textContent = cfg.title;
+      document.getElementById('brand-sub').textContent = cfg.subFrom(states[activeWs]);
+      document.getElementById('lbl-lang').style.display = cfg.hasLang ? '' : 'none';
+    }
+
+    /* ── Tab switch = workspace switch ─────────────────────────────────── */
+    function styleTabs() {
+      document.querySelectorAll('.tab').forEach((btn) => {
+        const on = btn.dataset.ws === activeWs;
+        btn.classList.toggle('active', on);
+        btn.style.borderBottomColor = on ? WORKSPACES[activeWs].color : 'transparent';
+      });
+    }
+    function setActiveWs(ws) {
+      if (!WORKSPACES[ws] || ws === activeWs) return;
+      if (workspace) states[activeWs] = Blockly.serialization.workspaces.save(workspace);  // flush current
+      activeWs = ws;
+      styleTabs();
+      injectWs(ws);
+      applyChrome();
+      persist();
+      log('workspace → ' + ws, 'info');
+    }
+    document.querySelectorAll('.tab').forEach((btn) => btn.addEventListener('click', () => setActiveWs(btn.dataset.ws)));
+
+    /* ── Header buttons ────────────────────────────────────────────────── */
+    function currentJson() { return JSON.stringify(Blockly.serialization.workspaces.save(workspace), null, 2); }
+
+    document.getElementById('btn-json').addEventListener('click', () => {
+      const text = currentJson();
+      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+      if (!window.open(url, '_blank')) log('✗ popup blocked', 'err'); else log('↗ opened ' + activeWs + ' JSON (' + text.length + ' chars)', 'ok');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
+
+    // Save BOTH workspaces (combined) to a file so cross-workspace placements
+    // survive. Exporting marks the design "clean" (nothing unexported to lose).
+    function doExport() {
+      if (workspace) states[activeWs] = Blockly.serialization.workspaces.save(workspace);
+      const combined = { version: 'dhc-blockly-designer/1', electrical: states.electrical, spatial: states.spatial };
+      const text = JSON.stringify(combined, null, 2);
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const fname = 'dhc-designer-' + stamp + '.json';
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      const a = Object.assign(document.createElement('a'), { href: url, download: fname });
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      markClean(); persist();
+      log('↓ saved ' + fname + ' (electrical + spatial)', 'ok');
+    }
+    document.getElementById('btn-save').addEventListener('click', doExport);
+
+    // New: reset BOTH workspaces to a blank root-only design.
+    function doNew() {
+      states.electrical = JSON.parse(JSON.stringify(ROOT_TEMPLATES.electrical));
+      states.spatial = JSON.parse(JSON.stringify(ROOT_TEMPLATES.spatial));
+      injectWs(activeWs, states[activeWs]);
+      applyChrome(); updateStats();
+      markClean(); persist();
+      log('✦ new design (both workspaces reset)', 'info');
+    }
+    // The unsaved-work guard — only prompts when the design differs from the last
+    // New / Save / Load (compared at click time).
+    const guardOverlay = document.getElementById('guard-overlay');
+    function showGuard() { guardOverlay.classList.add('show'); }
+    function hideGuard() { guardOverlay.classList.remove('show'); }
+    document.getElementById('btn-new').addEventListener('click', () => { if (isDirty()) showGuard(); else doNew(); });
+    document.getElementById('guard-cancel').addEventListener('click', hideGuard);
+    document.getElementById('guard-discard').addEventListener('click', () => { hideGuard(); doNew(); });
+    document.getElementById('guard-save').addEventListener('click', () => { hideGuard(); doExport(); doNew(); });
+
+    // Insurance: flush the active workspace to autosave on tab close, so the
+    // latest edit is restored on reopen even if its change event was the last one.
+    window.addEventListener('beforeunload', () => {
+      if (workspace && !injecting) { try { states[activeWs] = Blockly.serialization.workspaces.save(workspace); persist(); } catch (e) { /* ignore */ } }
+    });
+
+    // Load: a combined { electrical, spatial } file, or a bare single-workspace
+    // Blockly state (e.g. the example boards) → into the active workspace.
+    function applyLoaded(state, srcName) {
+      if (state && (state.electrical || state.spatial)) {
+        if (state.electrical) states.electrical = state.electrical;
+        if (state.spatial) states.spatial = state.spatial;
+        injectWs(activeWs, states[activeWs]);
+        applyChrome(); updateStats();
+        log('↑ loaded ' + srcName + ' (combined) — electrical+spatial restored', 'ok');
+      } else if (state && state.blocks && state.blocks.blocks) {
+        states[activeWs] = state;
+        injectWs(activeWs, state);
+        applyChrome(); updateStats();
+        log('↑ loaded ' + srcName + ' into ' + activeWs + ' — ' + workspace.getAllBlocks(false).length + ' blocks', 'ok');
+      } else {
+        throw new Error('unrecognised file shape');
+      }
+      markClean(); persist();   // freshly loaded design matches its source
+    }
+    const fileInput = document.getElementById('file-input');
+    document.getElementById('btn-load').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try { applyLoaded(JSON.parse(reader.result), file.name); setStatus('loaded', 'ok'); }
+        catch (err) { log('✗ load ' + file.name + ': ' + err.message, 'err'); setStatus('load error', 'error'); }
+      };
+      reader.readAsText(file);
+      fileInput.value = '';
+    });
+
+    /* ── Renderer switch ───────────────────────────────────────────────── */
+    const rendSelect = document.getElementById('renderer-select');
+    rendSelect.value = getRenderer();
+    rendSelect.addEventListener('change', (e) => {
+      if (!VALID_RENDERERS.includes(e.target.value)) return;
+      localStorage.setItem(RENDERER_KEY, e.target.value);
+      if (workspace) states[activeWs] = Blockly.serialization.workspaces.save(workspace);
+      log('switching renderer → ' + e.target.value + '…');
+      injectWs(activeWs);
+    });
+
+    /* ── Language switch (electrical defs only) ────────────────────────── */
+    async function setLang(lang) {
+      if (!VALID_LANGS.includes(lang)) return;
+      activeLang = lang;
+      localStorage.setItem(LANG_KEY, lang);
+      const locale = await getLocale(lang);
+      Blockly.defineBlocksWithJsonArray(elecDefsFor(locale));
+      if (activeWs === 'electrical') {
+        if (workspace) states.electrical = Blockly.serialization.workspaces.save(workspace);
+        injectWs('electrical', states.electrical);
+      }
+      log('language → ' + lang, 'ok');
+    }
+    const langSelect = document.getElementById('lang-select');
+    langSelect.value = activeLang;
+    langSelect.addEventListener('change', (e) => setLang(e.target.value));
+
+    /* ── Bootstrap ─────────────────────────────────────────────────────── */
     async function load() {
       try {
-        log('Fetching JSON artifacts…');
-        const [blocksDoc, toolbox, workspaceState] = await Promise.all([
-          fetchJson('./dhc-spatial-blocks.json'),
-          fetchJson('./dhc-spatial-toolbox.json'),
-          fetchJson('./dhc-spatial-workspace.json'),
+        log('loading artifacts…');
+        const [eb, et, ew, sb, stbx, sw] = await Promise.all([
+          fetchJson('./electrical-blocks.json'), fetchJson('./electrical-toolbox.json'), fetchJson('./electrical-workspace.json'),
+          fetchJson('./spatial-blocks.json'), fetchJson('./spatial-toolbox.json'), fetchJson('./spatial-workspace.json'),
         ]);
+        baseDefs.electrical = eb.blocks || [];
+        baseDefs.spatial = sb.blocks || [];
+        toolboxes.electrical = et; toolboxes.spatial = stbx;
+        states.electrical = ew; states.spatial = sw;   // bundled starters (defaults)
+        buildClassByType();
 
-        blockDefs = blocksDoc.blocks || [];
-        toolboxConfig = toolbox;
+        // Autosave restore: reopen exactly where you left off. A restored design
+        // is unexported, so it counts as dirty (New guards it). Bundled starter
+        // is clean. ?load= (below) overrides either and marks clean.
+        const restored = restore();
+        if (restored) {
+          if (restored.electrical) states.electrical = restored.electrical;
+          if (restored.spatial) states.spatial = restored.spatial;
+        }
 
-        log(`✓ blocks.json    → ${blockDefs.length} block definition(s)`, 'ok');
-        log(`✓ toolbox.json   → ${(toolbox.contents || []).length} category/categories`, 'ok');
-        log(`✓ workspace.json → top-level: ${(workspaceState.blocks?.blocks || []).map(b => b.type).join(', ') || '(empty)'}`, 'ok');
+        // Register both block sets (electrical merged with the active locale).
+        const locale = await getLocale(activeLang);
+        Blockly.defineBlocksWithJsonArray(elecDefsFor(locale));
+        Blockly.defineBlocksWithJsonArray(baseDefs.spatial);
+        log('electrical: ' + baseDefs.electrical.length + ' defs · spatial: ' + baseDefs.spatial.length + ' defs', 'ok');
 
-        Blockly.defineBlocksWithJsonArray(blockDefs);
-        log(`✓ registered: ${blockDefs.map(b => b.type).join(', ')}`, 'ok');
+        rendSelect.value = getRenderer();
 
-        // Wire renderer dropdown — sync UI to stored choice, then attach handler
-        const select = document.getElementById('renderer-select');
-        const initial = getRenderer();
-        select.value = initial;
-        select.addEventListener('change', (e) => {
-          const r = e.target.value;
-          if (!VALID_RENDERERS.includes(r)) return;
-          localStorage.setItem(RENDERER_KEY, r);
-          log(`switching renderer → ${r}…`);
-          injectWorkspace(r);  // preserves current workspace state
-        });
-
-        // View / download — both operate on the LIVE workspace (post-edits),
-        // not the on-disk seed. Use these to capture an edited workspace
-        // back into dhc-spatial-workspace.json.
-        const currentJson = () => JSON.stringify(
-          Blockly.serialization.workspaces.save(workspace), null, 2);
-
-        document.getElementById('view-json').addEventListener('click', () => {
-          const text = currentJson();
-          // Open as text/plain so the browser shows it raw (not as parsed JSON).
-          const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-          const w = window.open(url, '_blank');
-          if (!w) log('✗ popup blocked — allow popups for localhost', 'err');
-          else    log(`opened JSON in new tab (${text.length} chars)`, 'ok');
-          // Revoke after a delay so the new tab finishes loading first.
-          setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        });
-
-        document.getElementById('download-json').addEventListener('click', () => {
-          const text = currentJson();
-          const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-          const filename = `dhc-spatial-workspace-${stamp}.json`;
-          const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-          const a = document.createElement('a');
-          a.href = url; a.download = filename;
-          document.body.appendChild(a); a.click(); a.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 5_000);
-          log(`↓ downloaded ${filename} (${text.length} chars)`, 'ok');
-        });
-
-        injectWorkspace(initial, workspaceState);
+        // Initial workspace from ?ws= (default: restored tab, else electrical).
+        const wsParam = new URLSearchParams(location.search).get('ws');
+        activeWs = (wsParam === 'spatial') ? 'spatial'
+                 : (wsParam === 'electrical') ? 'electrical'
+                 : ((restored && restored.activeWs === 'spatial') ? 'spatial' : 'electrical');
+        styleTabs();
+        injectWs(activeWs);
+        applyChrome();
+        // A restored autosave is unexported ⇒ dirty (New guards it); the bundled
+        // starter is treated as clean (losing it is harmless — it's rebuildable).
+        if (restored) { cleanSnapshot = null; log('↺ restored autosaved design', 'ok'); }
+        else markClean();
         setStatus('ready', 'ok');
+
+        const leaves = leafRegistry();
+        log('electrical leaves (' + leaves.length + '): ' + (leaves.map((l) => l.id).join(', ') || '—'), 'ok');
+
+        // ?load=<url> — combined or single workspace file.
+        const wantLoad = new URLSearchParams(location.search).get('load');
+        if (wantLoad) {
+          try { applyLoaded(await fetchJson(wantLoad), wantLoad); }
+          catch (le) { log('✗ load ' + wantLoad + ': ' + le.message, 'err'); }
+        }
       } catch (e) {
-        log(String(e), 'err');
-        setStatus('error', 'error');
-        console.error(e);
+        log(String(e), 'err'); setStatus('error', 'error'); console.error(e);
       }
     }
 
     load();
+  })();
   </script>
 </body>
 </html>

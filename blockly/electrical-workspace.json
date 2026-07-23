@@ -250,6 +250,7 @@
               "type": "dhcb:Socket",
               "fields": {
                 "name": "Living-room Sockets",
+                "quantity": 6,
                 "FED_BY": {
                   "id": "cbSockLR"
                 }
@@ -259,6 +260,7 @@
                   "type": "dhcb:Luminaire",
                   "fields": {
                     "name": "Living-room Light",
+                    "quantity": 3,
                     "FED_BY": {
                       "id": "cbLightLR"
                     }

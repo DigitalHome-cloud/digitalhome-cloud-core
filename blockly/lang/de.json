@@ -94,12 +94,12 @@
       "tooltip": "Ein Differenzstrom-Schutzgerät (dhc:RCD) — hier wird das Differential DEFINIERT (rcdType, sensitivityMA, ratedCurrent). Seine `id` ist das Token, das Kreise über „Differential“ referenzieren. Eines platzieren und von allen Kreisen referenzieren = eines pro Anlage (ältere Norm); eines pro Schiene = eines pro Schiene (neuere Norm). Ein DIN-Schienen-Modul."
     },
     "dhcb:Socket": {
-      "message0": "◵ Steckdose %1",
+      "message0": "◵ Steckdose %1 ×%2",
       "message1": "geschützt durch %1",
       "tooltip": "Eine Steckdose (dhc:Socket). „geschützt durch“ referenziert die speisende Leitung (→ dhc:feedsEquipment). Ein Lasten-Mitglied."
     },
     "dhcb:Luminaire": {
-      "message0": "💡 Leuchte %1",
+      "message0": "💡 Leuchte %1 ×%2",
       "message1": "geschützt durch %1",
       "tooltip": "Eine Leuchte (brick:Luminaire). „geschützt durch“ referenziert ihre Leitung. Ein Lasten-Mitglied."
     },

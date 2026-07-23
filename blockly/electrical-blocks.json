@@ -796,12 +796,19 @@
     },
     {
       "type": "dhcb:Socket",
-      "message0": "◵ Socket %1",
+      "message0": "◵ Socket %1 ×%2",
       "args0": [
         {
           "type": "field_input",
           "name": "name",
           "text": "Socket"
+        },
+        {
+          "type": "field_number",
+          "name": "quantity",
+          "value": 1,
+          "min": 1,
+          "precision": 1
         }
       ],
       "message1": "protected by %1",
@@ -827,12 +834,19 @@
     },
     {
       "type": "dhcb:Luminaire",
-      "message0": "💡 Luminaire %1",
+      "message0": "💡 Luminaire %1 ×%2",
       "args0": [
         {
           "type": "field_input",
           "name": "name",
           "text": "Light"
+        },
+        {
+          "type": "field_number",
+          "name": "quantity",
+          "value": 1,
+          "min": 1,
+          "precision": 1
         }
       ],
       "message1": "protected by %1",
@@ -1030,7 +1044,7 @@
         }
       ],
       "output": "brick:Point",
-      "inputsInline": false,
+      "inputsInline": true,
       "colour": "#a855f7",
       "tooltip": "An automation point (a brick:Point subclass chosen by kind: Sensor/Setpoint/Command/Status/Alarm/Parameter). Plugs into a smart device's ⚙ point slots → brick:hasPoint. A hook for automation.",
       "helpUrl": "",

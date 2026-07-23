@@ -94,12 +94,12 @@
       "tooltip": "Un dispositif différentiel (dhc:RCD) — c'est ici que le différentiel est DÉFINI (rcdType, sensitivityMA, ratedCurrent). Son `id` est le jeton que les circuits référencent via « différentiel ». En placer un et le référencer depuis tous les circuits = un par installation (ancienne norme) ; un par rangée = un par rangée (norme récente). Un module sur rail DIN."
     },
     "dhcb:Socket": {
-      "message0": "◵ Prise %1",
+      "message0": "◵ Prise %1 ×%2",
       "message1": "protégé par %1",
       "tooltip": "Une prise de courant (dhc:Socket). « protégé par » référence la ligne qui l'alimente (→ dhc:feedsEquipment). Un membre consommateur."
     },
     "dhcb:Luminaire": {
-      "message0": "💡 Luminaire %1",
+      "message0": "💡 Luminaire %1 ×%2",
       "message1": "protégé par %1",
       "tooltip": "Un luminaire (brick:Luminaire). « protégé par » référence sa ligne. Un membre consommateur."
     },

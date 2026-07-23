@@ -1,36 +1,45 @@
-# blockly — offline-ish Blockly authoring harnesses
+# blockly — offline-ish Blockly authoring harness
 
-Standalone sandboxes for iterating on the DHC Blockly **block + toolbox JSON**
+A standalone sandbox for iterating on the DHC Blockly **block + toolbox JSON**
 that the Designer consumes. Sibling of `js-tools/` (which *views* finished
-models); this one *authors* the structure.
+models); this one *authors* the structure. **One page, two workspaces** — an
+`Electrical` and a `Spatial` designer, switched by the top tabs.
 
 ```bash
-npm run preview:blockly:electrical    # electrical installation designer → :8767
-npm run preview:blockly:spatial       # spatial hierarchy designer      → :8765
+npm run preview:blockly               # unified designer, Electrical tab → :8767
+npm run preview:blockly:spatial       # …opens on the Spatial tab (?ws=spatial)
+npm run preview:blockly:electrical    # …opens on the Electrical tab (explicit)
 ```
 
-Each opens a Blockly workspace, its toolbox, and a starter workspace. Drag blocks,
-edit fields, **Save** to download the workspace JSON and **Load** to open one back
-(a saved file, or `?load=<url>` to open one by link — e.g. the worked example
-boards in `blockly/examples/board{1,2}.workspace.json`, two real 3-phase boards
-reverse-engineered from photos). Ctrl-C to stop the server. *(Loading is
-schema-fragile today — a file saved against an older block schema may not open;
-see the "persist the A-Box, regenerate the workspace" item in `doc/parking-lot.md`.)*
+All three run one script (`scripts/preview-blockly.sh [electrical|spatial]`) and
+open the **same page** (`preview.html`) on the same port; they differ only in the
+initial tab. Drag blocks, edit fields, **Save** to download *both*
+workspaces as one combined file and **Load** to open one back (a combined file, a
+single-workspace file, or `?load=<url>` to open one by link — e.g. the worked
+example boards in `blockly/examples/board{1,2}.workspace.json`, two real 3-phase
+boards reverse-engineered from photos, which load into the active workspace).
+Ctrl-C to stop the server. *(Loading is schema-fragile today — a file saved
+against an older block schema may not open; see the "persist the A-Box, regenerate
+the workspace" item in `doc/parking-lot.md`.)*
 
-> ⚠ **Not offline.** Unlike `js-tools/`, these harnesses load Blockly from
-> `https://unpkg.com/blockly@11.2.2` and need a network connection. Vendoring a
+> ⚠ **Not offline.** Unlike `js-tools/`, this harness loads Blockly from
+> `https://unpkg.com/blockly@11.2.2` and needs a network connection. Vendoring a
 > local `blockly.min.js` (to match the `js-tools` `grep -c https:// = 0`
 > invariant) is deferred — see `doc/parking-lot.md`.
 
-## Harnesses
+## The unified page
 
-| Harness | Files | Root block |
-|---|---|---|
-| **electrical** | `electrical-{blocks,toolbox,workspace}.json` + `electrical-preview.html` | `dhc:PowerDistributionSystem` |
-| **spatial** | `dhc-spatial-{blocks,toolbox,workspace}.json` + `preview.html` | `dhc:DigitalHome` |
+| Workspace | Files | Plugins | Root block |
+|---|---|---|---|
+| **Electrical** | `electrical-{blocks,toolbox,workspace}.json` | `registerPlugins-electrical.js` | `dhcb:PowerDistributionSystem` |
+| **Spatial** | `spatial-{blocks,toolbox,workspace}.json` | `registerPlugins-spatial.js` | `dhcb:DigitalHome` |
 
-Both share `registerPlugins.js` (variable-arity mutators, loaded after Blockly,
-before the block defs).
+`preview.html` loads both block sets and both plugin files up front (mutator names
+and `dhcb:` types are all distinct), and swaps toolbox + theme + starter when you
+switch tabs. Each tab shows its **full toolbox** — the old electrical
+Sources/Routing/Sinks view-filter tabs are gone; those are toolbox categories now.
+Switching preserves each workspace's in-memory state; **Save** captures both so
+**cross-workspace placements survive** (see below).
 
 ## The electrical harness
 
@@ -143,6 +152,75 @@ referenced token has exactly one definition (no dangling, no duplicate). See
 This is the **core residential set**. The rarer classes (`dhc:Contactor`,
 `dhc:EquipotentialBonding`, `dhc:Distribution`/`BusBar`, PV panel/array sub-parts)
 and the translator itself are the follow-up.
+
+## The spatial harness
+
+The **Spatial** tab authors the site → building → level → room → point spine.
+Root `dhcb:DigitalHome` (a `rec:Site`) holds **places** (buildings + outdoor
+areas) via a ⚙ mutator; a building (`dhcb:DetachedHouse` / `RowHouse` /
+`SemiDetachedHouse` / `VirtualBuilding`) holds **levels** (`dhcb:Level` = `rec:Level`);
+a level holds **rooms** (`dhcb:Room` = `rec:Room`, with a ~55-value `rec:RoomType`
+dropdown); a room holds **contents** — native points (`dhcb:Sensor` / `dhcb:Alarm`
+/ `dhcb:Setpoint`, each `output: brick:Point`, → `brick:hasPoint`) **and**
+placements of electrical leaves (below). Outdoor areas (`dhcb:Garden` / `Parking`
+/ `PoolArea`) take the **same contents** mutator, so an outdoor socket, an EV
+charger on the driveway, or garden lighting can be placed there too. All four mutators
+(`dhc_home_places_mutator`, `dhc_building_levels_mutator`, `dhc_level_rooms_mutator`,
+`dhc_room_contents_mutator`) are thin configs over the same generic
+statement/value factories the electrical harness uses. The slot `check` tags
+(`rec:Architecture` / `rec:Level` / `rec:Room`, and `["brick:Point","leaf"]` on a
+room's contents) are UI type-gates, **not** RDF.
+
+## Cross-workspace linking (electrical leaves → spatial rooms)
+
+A socket, luminaire, EV charger, appliance or automation point defined in the
+**Electrical** workspace is a *leaf* that physically lives somewhere. The
+**Spatial** workspace places it: a **`dhcb:Placement`** block (drawn electrical-blue,
+from the **Placements** toolbox category) carries a **dropdown of the current
+electrical leaves** and plugs into a room's (or outdoor area's) contents slot. On
+`blockly→abox` a placement becomes `<leaf> rec:locatedIn <room>`. A **point** leaf
+is labelled by the consumer it rides on (`<consumer> · point <name>`); a
+`dhcb:Socket` / `dhcb:Luminaire` carries a `quantity` (how many outlets / bulbs),
+which shows in the placement label (`… ×6`).
+
+The reverse view lives on the **Electrical** tab: the right panel shows
+**Leaves placed** `placed/total`, and every leaf block **not yet placed** in a
+spatial room carries a ⚠ badge — so you can see at a glance what still needs a
+home. (Computed from the spatial placements; it is the UI complement to the
+parked dangling-reference pre-flight.)
+
+- The bridge is a **shared, in-memory leaf registry**: `preview.html` projects the
+  Electrical workspace's serialization into `window.DHC_LEAF_OPTIONS()` — a list of
+  `{ id, label, blockType, ontologyClass, fedBy }` — which the placement dropdown
+  reads live. Add or rename a leaf in Electrical, switch to Spatial, and it appears.
+- **Leaf identity is the leaf's `name`** in this prototype (so the starter
+  placements resolve with no ids stored on electrical blocks). A stored id whose
+  leaf was deleted shows `⚠ … (missing)` rather than being dropped.
+- This in-memory registry is the **stand-in for a backend/GraphQL leaf query** in
+  the online app — same shape, swappable. Identity moves to the NanoID = A-Box IRI,
+  and dangling links become a pre-flight check. See `doc/parking-lot.md § 4`.
+
+`dhcb:Placement` is defined in code (in `registerPlugins-spatial.js`) rather than
+block JSON, because a **dynamic** dropdown (options computed at open time) can't be
+expressed in static `defineBlocksWithJsonArray` options.
+
+## New / Save / Load / autosave
+
+- **New** resets **both** workspaces to a blank root-only design (`dhcb:PowerDistributionSystem`
+  + `dhcb:DigitalHome`). If the current design differs from the last New / Save /
+  Load, a guard first offers **Save & New** / **Discard & New** / **Cancel** — the
+  "dirty" check is a serialization compare at click time, so it never depends on
+  catching a Blockly change event.
+- **Save** downloads a combined `{ version, electrical, spatial }` file — both
+  workspaces together, so cross-workspace placements persist. **Load** (and
+  `?load=<url>`) accepts either that combined shape **or** a bare single-workspace
+  Blockly state (which loads into the active tab) — so the single-state example
+  boards in `examples/` still open. `?ws=electrical|spatial` picks the initial tab.
+- **Autosave & restore.** The current state of both workspaces is kept in browser
+  `localStorage` and restored on reopen (a restored design counts as dirty, so New
+  guards it). New / Load overwrite it. This is per-browser convenience, *not* the
+  durable format — that is still an exported file (and, ultimately, the A-Box; see
+  `doc/parking-lot.md § 4`).
 
 ## Localization
 

@@ -206,14 +206,20 @@ compared to fact": the numbers are all in the model and nothing relates them.
 - **`schema/draft/` is untracked** — the remaining ~54 draft classes exist only
   on disk, with no git history. Losing that directory loses them.
 
-## 4. Electrical Blockly designer — the model changes it assumes
+## 4. Blockly designer (Electrical + Spatial) — the model changes it assumes
 
-The `blockly/` electrical harness (`blockly/electrical-*.json`) authors an
-installation structure whose root is `dhc:PowerDistributionSystem` with
-source / route / sink slots. Two T-Box changes are **assumed by the block
-templates but not yet made** — the harness runs on static JSON without them; only
-the future **blockly→abox translator** needs them, so they are parked here rather
-than promoted now.
+The `blockly/` harness is now **one page (`blockly/preview.html`) with two
+workspaces** — an `Electrical` and a `Spatial` designer selected by the top tabs,
+sharing an in-memory leaf registry (see the cross-workspace item at the end).
+The electrical workspace (`blockly/electrical-*.json`) authors an installation
+structure whose root is `dhc:PowerDistributionSystem` with source / route / sink
+slots; the spatial workspace (`blockly/spatial-*.json`) authors the
+`dhc:DigitalHome → building → level → room → point` spine. Both use the **`dhcb:`
+block namespace** with the ontology class carried in
+`data: dhc:blocklyBlockTemplate=<curie>`. Several T-Box changes are **assumed by
+the block templates but not yet made** — the harness runs on static JSON without
+them; only the future **blockly→abox translator** needs them, so they are parked
+here rather than promoted now.
 
 - **`dhc:PowerDistributionSystem` does not exist.** Intended
   `rdfs:subClassOf brick:System`, so its source/route/sink members translate to
@@ -409,6 +415,58 @@ than promoted now.
     Keep it as an opaque marker or rename it (it is block data, not
     ontology-validated) — decide when the translator lands, alongside whether the
     design-time block→class map is declared or just the inverse of `data`.
+
+- **Cross-workspace leaf linking → GraphQL.** A spatial `dhcb:Placement` block
+  references an **electrical leaf** (a placeable sink or point — `dhcb:Socket`,
+  `dhcb:Luminaire`, `dhcb:Electric_Vehicle_Charging_Station`, `dhcb:Appliance`,
+  `dhcb:Point`, `dhcb:SubDistributionBoard`) so the spatial design records **where
+  each electrical device physically sits**. In the prototype the bridge is entirely
+  in-memory: `preview.html` projects the Electrical workspace's serialization into
+  a **leaf registry** (`window.DHC_LEAF_OPTIONS()`), and the placement's dynamic
+  dropdown reads it live. On **blockly→abox** a placement becomes
+  `<leaf> rec:locatedIn <room>` (equivalently `<room> rec:hasPart <leaf>`) — the
+  spatial room and the electrical equipment are one A-Box, linked by these edges.
+  Productionization:
+  - **The registry becomes a backend query.** `window.DHC_LEAF_OPTIONS` /
+    `states.electrical` is a drop-in stand-in for a **GraphQL leaf query** against
+    the shared backend (same `{ id, label, blockType, ontologyClass, fedBy }`
+    shape). In the online app the two designers need not be co-resident; each
+    reads the other's leaves over the API.
+  - **Leaf identity.** The prototype keys a leaf by its **`name` field** (so the
+    starter placements resolve deterministically and no id is stored on the
+    electrical blocks). Production must swap this for the **21-char NanoID = A-Box
+    IRI** (the deploy-identity item above) — names are neither stable under rename
+    nor guaranteed unique. The placement stores that id; a stored-but-missing id is
+    shown `⚠ … (missing)` and must not be silently dropped.
+  - **Referential integrity, cross-workspace.** Same discipline as the circuit
+    tokens: a placement referencing a leaf that no longer exists is a **dangling**
+    link the translator/pre-flight must flag (the C-Box validates the emitted
+    A-Box, not the Blockly graphs).
+  - **`dhcb:Placement` has no ontology class of its own** — it is a UI edge, not a
+    node. Its `data` is the opaque marker `dhc:blocklyBlockTemplate=dhc:Placement`;
+    on translation it emits **only the `rec:locatedIn` edge**, and the leaf's own
+    class comes from the electrical block it points at (`ontologyClass` in the
+    registry entry). Do not promote a `dhc:Placement` class.
+
+- **Spatial harness — the T-Box terms it assumes.** The spatial blocks reuse
+  REC/Brick classes via `data` (`rec:Level`, `rec:Room`, `brick:Sensor/Alarm/
+  Setpoint`) and a few `dhc:` ones (`dhc:DigitalHome`, `dhc:DetachedHouse` /
+  `RowHouse` / `SemiDetachedHouse` / `VirtualBuilding`, `dhc:Garden` / `Parking` /
+  `PoolArea`, `dhc:HomeOffice`). Confirm each exists / is promoted with the
+  `spatial` `dhc:designView` overlay before the translator relies on it — the
+  harness itself runs on static JSON. The spatial slot-checks (`rec:Architecture`,
+  `rec:Level`, `rec:Room`, and `["brick:Point","leaf"]` on a room's contents) are
+  **UI type-gates, not RDF** (same convention as electrical's source/route/sink).
+  Note this diverges from the `dhc-build-blockly-elements-for-spatial-modeling`
+  skill, which generates `dhc:`-namespaced spatial blocks **from** the T-Box
+  `blockly*` annotations — the same purpose-inversion the electrical harness made
+  (see the annotation-shift item above); that skill and the stale `dhc-spatial-*`
+  approach are superseded by this hand-authored `dhcb:` harness.
+
+- **Spatial localization is not done.** `blockly/lang/{de,fr}.json` cover only the
+  electrical blocks; the Language switch is hidden on the Spatial tab. Add spatial
+  `dhcb:*` locale overrides (same delta-only merge, matching `%N` placeholder
+  counts) when the spatial designer needs DE/FR.
 
 - **Offline vendoring is deferred.** The harness loads Blockly from
   `unpkg.com` (a deliberate, user-approved shortcut), so it breaks the `js-tools`
