@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   METER, PTPAD, withGeometry, pointPos, moveOrResize, clampPointToRoom,
+  roomPoly, polyEdges, splitEdge, moveVertex, edgePointAt, pointInPoly, clampPointToPoly,
 } from '../../blockly/floorplan/geometry.mjs';
 
 const rooms = [
@@ -92,3 +93,74 @@ describe('floor-plan point clamp (a point stays in its linked room)', () => {
     }
   });
 });
+
+describe('floor-plan polygon rooms (Phase 2)', () => {
+  const rect = { x: 100, y: 100, w: 200, h: 160 };
+
+  it('roomPoly turns a rect into 4 clockwise corners, and passes a poly through', () => {
+    expect(roomPoly(rect)).toEqual([
+      { x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 260 }, { x: 100, y: 260 },
+    ]);
+    const poly = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 5, y: 15 }, { x: 0, y: 10 }];
+    expect(roomPoly({ ...rect, poly })).toBe(poly);
+  });
+
+  it('polyEdges wraps last→first with lengths', () => {
+    const edges = polyEdges(roomPoly(rect));
+    expect(edges).toHaveLength(4);
+    expect(edges[0].len).toBe(200);                    // top edge
+    expect(edges[1].len).toBe(160);                    // right edge
+    expect(edges[3].a).toEqual({ x: 100, y: 260 });    // last edge starts at SW…
+    expect(edges[3].b).toEqual({ x: 100, y: 100 });    // …and wraps back to NW
+  });
+
+  it('splitEdge inserts a vertex mid-edge (count +1) at the right spot', () => {
+    const out = splitEdge(roomPoly(rect), 0, 0.5);     // top edge midpoint
+    expect(out).toHaveLength(5);
+    expect(out[1]).toEqual({ x: 200, y: 100 });
+  });
+
+  it('moveVertex moves only the named vertex', () => {
+    const out = moveVertex(roomPoly(rect), 2, 30, -20);
+    expect(out[2]).toEqual({ x: 330, y: 240 });
+    expect(out[0]).toEqual({ x: 100, y: 100 });        // others untouched
+  });
+
+  it('edgePointAt interpolates along a segment', () => {
+    expect(edgePointAt({ x: 0, y: 0 }, { x: 100, y: 40 }, 0.25)).toEqual({ x: 25, y: 10 });
+  });
+
+  it('pointInPoly distinguishes inside from outside on an L-shape', () => {
+    // L-shape: notch cut out of the top-right quadrant
+    const L = [{ x: 0, y: 0 }, { x: 60, y: 0 }, { x: 60, y: 40 }, { x: 100, y: 40 },
+               { x: 100, y: 100 }, { x: 0, y: 100 }];
+    expect(pointInPoly({ x: 20, y: 20 }, L)).toBe(true);   // in the tall part
+    expect(pointInPoly({ x: 80, y: 20 }, L)).toBe(false);  // in the cut-out notch
+    expect(pointInPoly({ x: 80, y: 70 }, L)).toBe(true);   // in the foot
+  });
+
+  it('clampPointToPoly keeps an outside drag on/inside the polygon', () => {
+    const poly = roomPoly(rect);
+    for (const [dx, dy] of [[9999, 0], [0, 9999], [-9999, -9999], [9999, 9999]]) {
+      const p = clampPointToPoly({ x: 200, y: 180 }, dx, dy, poly, PTPAD);
+      expect(pointInPoly(p, poly) || onBoundary(p, poly)).toBe(true);
+    }
+  });
+
+  it('clampPointToPoly leaves an in-bounds drag alone', () => {
+    const poly = roomPoly(rect);
+    expect(clampPointToPoly({ x: 200, y: 180 }, 10, -5, poly, PTPAD)).toEqual({ x: 210, y: 175 });
+  });
+});
+
+// a point is "on the boundary" if it sits within 1.5px of some edge (rounding slack)
+function onBoundary(p, verts) {
+  for (let i = 0; i < verts.length; i++) {
+    const a = verts[i], b = verts[(i + 1) % verts.length];
+    const dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+    const d = Math.hypot(a.x + dx * t - p.x, a.y + dy * t - p.y);
+    if (d <= 1.5 + PTPAD) return true;
+  }
+  return false;
+}

@@ -60,6 +60,34 @@ describe('parseSpatial — levels added either way', () => {
   });
 });
 
+describe('parseSpatial — room identity survives rename/retype (block id keys)', () => {
+  // one home / building / level wrapping a single room block (optionally with ids)
+  const wrap = (roomBlock) => {
+    const lvl = { type: 'dhcb:Level', fields: { name: 'L0' }, inputs: { hasPart_0: { block: roomBlock } } };
+    const bld = { type: 'dhcb:DetachedHouse', fields: { name: 'H' }, inputs: { hasPart_0: { block: lvl } } };
+    return { blocks: { blocks: [{ type: 'dhcb:DigitalHome', inputs: { hasPart_0: { block: bld } } }] } };
+  };
+  const roomWithId = (name, roomType) => ({
+    type: 'dhcb:Room', id: 'ROOM_ID_1', fields: { name, 'rec:RoomType': roomType },
+    inputs: { hasPoint_0: { block: { type: 'dhcb:Sensor', id: 'PT_ID_1', fields: { pointId: 'temp' } } } },
+  });
+
+  it('keys the room by its block id, not its name', () => {
+    const before = parseSpatial(wrap(roomWithId('Kitchen', 'rec:Kitchen'))).floors[0].rooms[0];
+    const after = parseSpatial(wrap(roomWithId('Cuisine', 'rec:LivingRoom'))).floors[0].rooms[0];
+    expect(before.key).toBe('ROOM_ID_1');
+    expect(after.key).toBe('ROOM_ID_1');               // ← same key despite name+type change
+    expect(before.name).toBe('Kitchen');
+    expect(after.name).toBe('Cuisine');                // attributes updated
+    expect(after.points[0].key).toBe('PT_ID_1');       // points keyed by id too
+  });
+
+  it('falls back to the name-path when a block has no id', () => {
+    const spatial = wrap({ type: 'dhcb:Room', fields: { name: 'Bath' }, inputs: {} });
+    expect(parseSpatial(spatial).floors[0].rooms[0].key).toBe('0/0/Bath');
+  });
+});
+
 describe('parseSpatial — the shipped demos still parse', () => {
   const demos = readdirSync(BLK + 'examples').filter((f) => f.endsWith('.designer.json'));
   it.each(demos)('%s yields at least one floor with rooms', (f) => {

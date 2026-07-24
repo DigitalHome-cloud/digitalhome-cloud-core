@@ -37,14 +37,17 @@ export function parseSpatial(spatial) {
       const fKey = `${bi}/${li}`;
       const rooms = childBlocks(lvl, 'hasPart_').filter((r) => r.type === 'dhcb:Room').map((r) => {
         const rName = r.fields?.name || 'Room';
-        const rKey = `${fKey}/${rName}`;
+        // Geometry is keyed by the room's STABLE Blockly block id when present, so
+        // renaming/retyping the room keeps its saved sketch; fall back to the
+        // building/level/name path for id-less files (e.g. hand-authored examples).
+        const rKey = r.id || `${fKey}/${rName}`;
         const points = Object.entries(r.inputs || {})
           .filter(([k]) => k.startsWith('hasPoint_')).map(([, v]) => v.block).filter(Boolean)
           .map((p, pi) => {
             const isPlacement = p.type === 'dhcb:Placement';
             const label = isPlacement ? (p.fields?.LEAF || 'placement')
               : (p.fields?.pointId || ROOM_TYPE_SHORT(p.fields?.sensorType || p.fields?.alarmType || p.fields?.setpointType || p.type));
-            return { key: `${rKey}#${pi}:${label}`, label, isPlacement };
+            return { key: p.id || `${rKey}#${pi}:${label}`, label, isPlacement };
           });
         return { key: rKey, name: rName, roomType: ROOM_TYPE_SHORT(r.fields?.['rec:RoomType']), area: Number(r.fields?.area_M2) || 12, points };
       });

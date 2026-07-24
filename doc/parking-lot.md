@@ -520,32 +520,50 @@ Remaining:
   is fully local — the only remaining CDN dependency is Blockly (offline-vendoring
   item above).
 
-## 6. Floor-plan sketch (Floor plan tab) — rooms + points now, walls/furniture next
+## 6. Floor-plan sketch (Floor plan tab) — polygons/walls/openings now, furniture next
 
-**Phase 1 shipped:** the harness's **Floor plan** tab (a lazy React island,
+**Phase 1 + 2 shipped:** the harness's **Floor plan** tab (a lazy React island,
 `blockly/floorplan/floorplan-app.jsx`, compiled in-browser by Babel-standalone)
-sketches the *spatial* structure — each room of the active level as a draggable /
-resizable dotted rectangle, each point clamped inside its linked room. Structure is
-mastered by the Spatial Blockly; geometry persists to a `floorplan` layer of the
-combined Save file. Pure geometry is shared with the test in
-`blockly/floorplan/geometry.mjs`. Remaining:
+sketches the *spatial* structure. Phase 1: each room of the active level as a
+draggable/resizable rectangle, points clamped inside their room. Phase 2: "turn off
+rectangle" → free **polygon** (drag/split vertices); promote an edge to a **standard
+wall** (editable thickness, optional **partial height** → dashed/faded); place
+**doors/windows** on a wall and, for doors, **flip hinge/swing** (`Select · Split ·
+Wall · Door · Window` tools). Rooms/points are keyed by **Blockly block id** so
+renames keep the sketch. Structure is mastered by the Spatial Blockly; geometry
+persists to a `floorplan` layer (`rooms{ x,y,w,h, poly?, walls? }`, `points`,
+`openings`). Pure maths shared with the test in `blockly/floorplan/geometry.mjs`.
+Remaining:
 
-- **Phase 2 — standard walls, doors, windows, furniture.** Promote the dotted
-  sketch edges to real **standard walls** (thickness, from the Designer), place
-  **doors / windows** on a wall, and add the **furniture library** (the prototype's
-  `furniture-glyphs`) on top — cosmetic overlays that don't feed the ontology yet.
-  The prototype's Arcada wall/furniture model is the reference; port only what's
-  needed and keep the SVG canvas.
+- ~~**Phase 2b — furniture.**~~ **DONE** — `blockly/floorplan/furniture-glyphs.jsx`
+  (Arcada, Apache-2.0, attributed in `THIRD-PARTY-NOTICES.md`) provides a `Furniture`
+  tool + library; items place/drag/rotate/delete on a per-floor `floorplan.furniture`
+  layer. Remaining polish: furniture **resize** handles, snapping, and a free-rotate
+  handle (only 15° stepper today).
+- **Ontology feed (deferred).** Walls/doors/windows stay a **sketch overlay**; mapping
+  them to `rec:` / `brick:` A-Box entities (and possibly new Blockly blocks) is a
+  separate, larger effort. Blockly stays the master meanwhile.
+- **Shared walls / adjacency.** Per-room polygons duplicate a wall where two rooms
+  meet (each room owns its outline). A shared node-graph (the prototype's Arcada model:
+  `wallNodes` + `wallNodeLinks`) would unify shared walls and T-junctions — a bigger
+  rewrite, deliberately **not** taken so the tested per-room rect model survives.
+- **Openings keyed by edge index shift on split.** An opening references
+  `{room, edge}`; `splitEdge` inserts a vertex, so openings on *later* edges of the
+  same room shift by one. Fine for a fresh sketch; re-key openings to a stable
+  edge identity if split-after-placing becomes common.
 - **Point-label overlap.** When a room holds several points their labels overlap at
   the default grid positions (cosmetic — dragging separates them). Needs simple
   label anti-collision (leader lines or a spiral/force nudge) at render time.
-- **Durable geometry keys (shared with § 4).** `floorplan` rows are keyed by the
-  block `id` when present, else a `building/level/room` **path** — so renaming a room
-  in Spatial orphans its saved rect. The NanoID stable-identity fix parked in § 4
-  fixes this too; until then, renames reset that room's layout.
+- **Durable geometry keys (mostly done).** Rooms/points are now keyed by the
+  **Blockly block `id`** (`spatial-parse.mjs`), so renaming/retyping a room keeps its
+  sketch — `Blockly.serialization` save/load carries the ids. Remaining edges: an
+  **id-less hand-authored example** (e.g. `t4-…designer.json`) falls back to a
+  `building/level/room` path key until first saved through the harness; and **openings**
+  still reference `{room, edge}`, so `splitEdge` on an earlier edge shifts openings on
+  later edges of the same room (see the split-reindex item above).
 - **Offline vendoring (shared with § 4 / § 5).** React + ReactDOM + Babel load from
   unpkg on first tab activation, same posture as Blockly. Vendor them locally when the
   Blockly offline-vendoring item is done, so the whole harness runs without a CDN.
 - **No auto-fit / no wall snapping.** Auto-layout row-packs by area but never fits the
-  view to content on load (only the manual `Fit` button), and rooms don't snap to a
-  grid or to each other while dragging. Both are quality-of-life, deferred.
+  view to content on load (only the manual `Fit` button), and vertices/rooms don't snap
+  to a grid, to each other, or to right angles while dragging. Quality-of-life, deferred.

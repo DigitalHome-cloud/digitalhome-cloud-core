@@ -138,20 +138,38 @@
     .lg-used { color: #4ade80; }
     /* ── Floor-plan sketch (React island) — scoped under #floorplan-host ────── */
     #floorplan-host { flex: 1; display: none; flex-direction: column; background: #0d1929; overflow: hidden; }
-    #floorplan-root { flex: 1; display: flex; }
-    #floorplan-host .fp-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    #floorplan-root { flex: 1; display: flex; min-height: 0; }
+    #floorplan-host .fp-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
     #floorplan-host .fp-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     #floorplan-host .fp-select { font: 10px system-ui; background: var(--bg-raised); color: var(--text-primary); border: 1px solid var(--border-mid); border-radius: 4px; padding: 2px 6px; outline: none; }
     #floorplan-host .fp-btn { padding: 3px 9px; font-size: 10px; border-radius: 99px; cursor: pointer; border: 1px solid var(--border-mid); background: transparent; color: var(--text-muted); }
     #floorplan-host .fp-btn:hover { background: var(--bg-raised); color: var(--text-primary); }
     #floorplan-host .fp-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
     #floorplan-host .fp-hint { font-size: 10px; color: var(--text-subtle); margin-left: 8px; }
+    #floorplan-host .fp-tool { padding: 3px 10px; font-size: 10px; border-radius: 99px; cursor: pointer; border: 1px solid var(--border-mid); background: transparent; color: var(--text-muted); }
+    #floorplan-host .fp-tool:hover { background: var(--bg-raised); color: var(--text-primary); }
+    #floorplan-host .fp-tool.active { background: var(--accent, #22c55e); border-color: var(--accent, #22c55e); color: #0d1929; font-weight: 600; }
+    #floorplan-host .fp-wide { width: 100%; margin-top: 10px; text-align: center; }
+    #floorplan-host .fp-stepper { gap: 6px; }
+    #floorplan-host .fp-check { align-items: center; cursor: pointer; }
+    #floorplan-host .fp-check input { accent-color: var(--accent, #22c55e); cursor: pointer; }
+    #floorplan-host .fp-pal-cat { margin: 8px 0 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-subtle); }
+    #floorplan-host .fp-pal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    #floorplan-host .fp-pal-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 3px; border: 1px solid var(--border-mid); border-radius: 6px; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 9.5px; }
+    #floorplan-host .fp-pal-item:hover { background: var(--bg-raised); color: var(--text-primary); border-color: var(--accent, #22c55e); }
+    #floorplan-host .fp-pal-item svg { width: 34px; height: 26px; }
+    #floorplan-host .fp-danger { border-color: #b9556a; color: #f0a7b5; }
+    #floorplan-host .fp-danger:hover { background: #b9556a; color: #fff; }
     #floorplan-host .fp-body { flex: 1; display: flex; min-height: 0; }
     #floorplan-host .fp-canvas { flex: 1; min-width: 0; }
     #floorplan-host .fp-canvas svg { width: 100%; height: 100%; touch-action: none; }
-    #floorplan-host .fp-props { width: 230px; border-left: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column; flex-shrink: 0; }
+    #floorplan-host .fp-props { width: 230px; border-left: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; overflow: hidden; }
     #floorplan-host .fp-props-h { padding: 8px 10px 6px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-subtle); border-bottom: 1px solid var(--border); }
     #floorplan-host .fp-props-b { padding: 8px 10px; font-size: 11px; color: var(--text-primary); }
+    #floorplan-host .fp-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+    #floorplan-host .fp-pal-search-row { padding: 7px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    #floorplan-host .fp-pal-search { width: 100%; box-sizing: border-box; font: 11px system-ui; background: var(--bg-raised); color: var(--text-primary); border: 1px solid var(--border-mid); border-radius: 5px; padding: 4px 8px; outline: none; }
+    #floorplan-host .fp-pal-search:focus { border-color: var(--accent, #22c55e); }
     #floorplan-host .fp-prow { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
     #floorplan-host .fp-prow span { color: var(--text-subtle); }
     #floorplan-host .fp-note { margin-top: 10px; font-size: 10px; line-height: 1.5; color: var(--text-muted); }
@@ -791,6 +809,8 @@
         .then(() => loadScript('https://unpkg.com/@babel/standalone@7.29.0/babel.min.js'))
         .then(() => import('./floorplan/geometry.mjs?v=' + Date.now()).then((m) => { window.DHC_FLOORPLAN_GEOM = m; }))
         .then(() => import('./floorplan/spatial-parse.mjs?v=' + Date.now()).then((m) => { window.DHC_FLOORPLAN_PARSE = m; }))
+        .then(() => fetch('./floorplan/furniture-glyphs.jsx', { cache: 'no-store' }).then((r) => r.text()))
+        .then((code) => { (0, eval)(Babel.transform(code, { presets: ['env', 'react'] }).code); })  // → window.DHC_FURNITURE (Arcada, Apache-2.0)
         .then(() => fetch('./floorplan/floorplan-app.jsx', { cache: 'no-store' }).then((r) => r.text()))
         .then((code) => { (0, eval)(Babel.transform(code, { presets: ['env', 'react'] }).code); fpReady = true; fpLoading = false; log('✓ floor-plan engine ready', 'ok'); cb(); })
         .catch((e) => { fpLoading = false; log('✗ floor-plan load: ' + e.message, 'err'); });
