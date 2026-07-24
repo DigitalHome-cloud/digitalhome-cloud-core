@@ -1,0 +1,227 @@
+{
+  "version": "dhc-blockly-designer/1",
+  "electrical": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "dhcb:CommunicationPanel",
+          "x": 40,
+          "y": 40,
+          "fields": {
+            "name": "Coffret VDI grade 3",
+            "grade": "3",
+            "arrival": "DTiO",
+            "ref": "TN415"
+          },
+          "extraState": {
+            "itemCount": 7
+          },
+          "inputs": {
+            "vdi_0": {
+              "block": {
+                "type": "dhcb:DTI",
+                "fields": {
+                  "arrival": "DTiO"
+                }
+              }
+            },
+            "vdi_1": {
+              "block": {
+                "type": "dhcb:InternetBox",
+                "fields": {
+                  "name": "Box internet"
+                }
+              }
+            },
+            "vdi_2": {
+              "block": {
+                "type": "dhcb:RJ45Outlet",
+                "fields": {
+                  "name": "RJ45 séjour",
+                  "quantity": 2,
+                  "category": "Cat6a"
+                }
+              }
+            },
+            "vdi_3": {
+              "block": {
+                "type": "dhcb:RJ45Outlet",
+                "fields": {
+                  "name": "RJ45 chambre",
+                  "quantity": 1,
+                  "category": "Cat6a"
+                }
+              }
+            },
+            "vdi_4": {
+              "block": {
+                "type": "dhcb:RJ45Outlet",
+                "fields": {
+                  "name": "RJ45 bureau",
+                  "quantity": 1,
+                  "category": "Cat6a"
+                }
+              }
+            },
+            "vdi_5": {
+              "block": {
+                "type": "dhcb:TVOutlet",
+                "fields": {
+                  "name": "TV séjour",
+                  "quantity": 1,
+                  "signal": "TNT"
+                }
+              }
+            },
+            "vdi_6": {
+              "block": {
+                "type": "dhcb:TVOutlet",
+                "fields": {
+                  "name": "TV chambre",
+                  "quantity": 1,
+                  "signal": "SAT"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "spatial": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "dhcb:DigitalHome",
+          "x": 40,
+          "y": 40,
+          "fields": {
+            "smartHomeId": "FR-DEMO-VDI",
+            "preferredLanguage": "fr"
+          },
+          "extraState": {
+            "itemCount": 1
+          },
+          "inputs": {
+            "hasPart_0": {
+              "block": {
+                "type": "dhcb:VirtualBuilding",
+                "fields": {
+                  "name": "Appartement VDI",
+                  "description": "Logement (appartement)"
+                },
+                "extraState": {
+                  "itemCount": 1
+                },
+                "inputs": {
+                  "hasPart_0": {
+                    "block": {
+                      "type": "dhcb:Level",
+                      "fields": {
+                        "name": "Niveau 0",
+                        "levelNumber": 0,
+                        "elevation_M": 0
+                      },
+                      "extraState": {
+                        "itemCount": 3
+                      },
+                      "inputs": {
+                        "hasPart_0": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Séjour",
+                              "rec:RoomType": "rec:LivingRoom",
+                              "area_M2": 28
+                            },
+                            "extraState": {
+                              "itemCount": 2
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "RJ45 séjour"
+                                  }
+                                }
+                              },
+                              "hasPoint_1": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "TV séjour"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "hasPart_1": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Chambre",
+                              "rec:RoomType": "rec:Bedroom",
+                              "area_M2": 12
+                            },
+                            "extraState": {
+                              "itemCount": 2
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "RJ45 chambre"
+                                  }
+                                }
+                              },
+                              "hasPoint_1": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "TV chambre"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "hasPart_2": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Bureau",
+                              "rec:RoomType": "dhc:HomeOffice",
+                              "area_M2": 9
+                            },
+                            "extraState": {
+                              "itemCount": 1
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "RJ45 bureau"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

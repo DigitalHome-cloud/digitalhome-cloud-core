@@ -1,0 +1,139 @@
+{
+  "_note": "German (Deutsch) locale overrides for the electrical harness. English (electrical-blocks.json) is the base; this file overrides messageN / tooltip / (where labels are translatable) argsN per block type. A messageN override MUST keep the same %N placeholder count as the base. Dropdown option labels stay English/coded — only human message text and the root's medium labels are translated.",
+  "ui": {
+    "brand.title": "Elektroinstallations-Designer",
+    "brand.sub": "Energieverteilungssystem",
+    "tab.All": "Alle",
+    "tab.Sources": "Quellen",
+    "tab.Routing": "Verteilung",
+    "tab.Circuits": "Stromkreise",
+    "tab.Sinks": "Lasten",
+    "tab.Circuit lines": "Leitungen",
+    "btn.clear": "Leeren",
+    "btn.json": "JSON anzeigen",
+    "btn.save": "Speichern",
+    "lbl.renderer": "Renderer",
+    "lbl.lang": "Sprache"
+  },
+  "blocks": {
+    "dhcb:PowerDistributionSystem": {
+      "message0": "⚡ Energieverteilungssystem %1",
+      "message1": "Netzform (Erdungssystem) %1",
+      "message2": "Medium (elektrisches System) %1",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "hasMedium",
+          "options": [
+            [
+              "230 V · 1-phasig · 50 Hz",
+              "s223:AC-230VLN-1Ph-50Hz"
+            ],
+            [
+              "400/230 V · 3-phasig · 50 Hz",
+              "s223:AC-400VLL-230VLN-3Ph-50Hz"
+            ]
+          ]
+        }
+      ],
+      "message3": "① Quellen-Subsystem — Erzeuger %1",
+      "message4": "② Verteilungs-Subsystem — Wechselrichter & Verteiler %1",
+      "message5": "③ Lasten-Subsystem — Verbraucher %1",
+      "tooltip": "Wurzel einer Elektroinstallation (dhc:PowerDistributionSystem ⊑ brick:System). Bündelt drei Subsysteme — Quellen, Verteilung, Lasten — deren Mitglieder bei blockly→abox zu brick:hasPart werden. neutralSystem ist die Netzform; hasMedium (s223:hasMedium) benennt das elektrische System."
+    },
+    "dhcb:EnergyDelivery": {
+      "message0": "🔌 Netzanschluss %1",
+      "message1": "Anbieter %1 · abonniert %2 kVA · %3",
+      "tooltip": "Der Übergabepunkt aus dem Verteilnetz (dhc:EnergyDelivery). Trägt Anbieter, abonnierte Leistung in kVA (dhc:contractedPowerKVA) und Stromart (dhc:currentType). Ein Quellen-Mitglied."
+    },
+    "dhcb:PV_Generation_System": {
+      "message0": "☀ PV-Anlage %1",
+      "message1": "Leistung %1 kWp",
+      "tooltip": "Eine Photovoltaik-Anlage (brick:PV_Generation_System), powerRating in kWp. Ein Quellen-Mitglied."
+    },
+    "dhcb:Battery": {
+      "message0": "🔋 Batterie %1",
+      "message1": "Leistung %1 kW",
+      "tooltip": "Ein elektrischer Speicher (brick:Battery), powerRating in kW. Ein Quellen-Mitglied."
+    },
+    "dhcb:EnergyMeter": {
+      "message0": "▭ Zähler %1",
+      "tooltip": "Der Verrechnungszähler am Übergabepunkt, z. B. Linky (dhc:EnergyMeter). Ein Verteilungs-Mitglied."
+    },
+    "dhcb:EmergencyDisconnect": {
+      "message0": "⛔ Hauptschalter / AGCP %1",
+      "message1": "Bemessung %1 A",
+      "tooltip": "Der Hauptschalter am Ursprung der Installation — AGCP / disjoncteur d'abonné (dhc:EmergencyDisconnect), ratedCurrent in A. Ein Verteilungs-Mitglied."
+    },
+    "dhcb:SurgeProtector": {
+      "message0": "↯ Überspannungsschutz / SPD %1",
+      "tooltip": "Ein Überspannungsschutzgerät / parafoudre (dhc:SurgeProtector), nach NF C 15-100 §443 vorgeschrieben. Ein Verteilungs-Mitglied."
+    },
+    "dhcb:Inverter": {
+      "message0": "⇄ Wechselrichter %1",
+      "message1": "Leistung %1 kW",
+      "tooltip": "Wandelt und verteilt Energie zwischen Quellen und Verteiler (brick:Inverter), powerRating in kW. Ein Verteilungs-Mitglied."
+    },
+    "dhcb:DistributionBoard": {
+      "message0": "▦ Hauptverteiler %1",
+      "tooltip": "Der Hauptverteiler (dhc:DistributionBoard). Ein Verteilungs-Mitglied. Mit dem ⚙ Zahnrad Reihen (DIN-Schienen) verwalten; jede Schiene trägt Stromkreis-Definitionen und Schutzmodule."
+    },
+    "dhcb:Circuit": {
+      "message0": "● Stromkreis %1",
+      "message1": "Leitung %1",
+      "message2": "Typ %1 · %2 A · %3 mm²",
+      "message3": "%1-phasig · Schutz %2",
+      "message4": "Differential %1",
+      "message5": "max. Punkte %1 · dediziert %2",
+      "tooltip": "Eine geschützte Leitung (dhc:Circuit) — die Einheit, die die C-Box prüft. Sitzt auf einer Verteilerschiene. `Leitung` ist das Token, das Lasten über „geschützt durch“ referenzieren. `Differential` referenziert die dhc:RCD, die sie schützt — gemeinsame Referenzierung drückt die Topologie aus: alle Kreise → ein Differential = eines pro Anlage (ältere NF C 15-100); ein Differential pro Schiene = eines pro Schiene (neuere Editionen). Ein FI-LS-Kreis (Schutz = RCBO) ist sein eigenes Differential. Wird bei blockly→abox zu dhc:Circuit + dhc:hasProtection + dhc:hasWiring."
+    },
+    "dhcb:RCD": {
+      "message0": "⧉ FI / Differential %1",
+      "message1": "id %1",
+      "message2": "Typ %1 · %2 mA · Bemessung %3 A",
+      "tooltip": "Ein Differenzstrom-Schutzgerät (dhc:RCD) — hier wird das Differential DEFINIERT (rcdType, sensitivityMA, ratedCurrent). Seine `id` ist das Token, das Kreise über „Differential“ referenzieren. Eines platzieren und von allen Kreisen referenzieren = eines pro Anlage (ältere Norm); eines pro Schiene = eines pro Schiene (neuere Norm). Ein DIN-Schienen-Modul."
+    },
+    "dhcb:Socket": {
+      "message0": "◵ Steckdose %1 ×%2",
+      "message1": "geschützt durch %1",
+      "tooltip": "Eine Steckdose (dhc:Socket). „geschützt durch“ referenziert die speisende Leitung (→ dhc:feedsEquipment). Ein Lasten-Mitglied."
+    },
+    "dhcb:Luminaire": {
+      "message0": "💡 Leuchte %1 ×%2",
+      "message1": "geschützt durch %1",
+      "tooltip": "Eine Leuchte (brick:Luminaire). „geschützt durch“ referenziert ihre Leitung. Ein Lasten-Mitglied."
+    },
+    "dhcb:Electric_Vehicle_Charging_Station": {
+      "message0": "🚗 Ladestation %1",
+      "message1": "geschützt durch %1",
+      "tooltip": "Eine E-Fahrzeug-Ladestation / Wallbox (brick:Electric_Vehicle_Charging_Station), eine IRVE-Last. „geschützt durch“ referenziert ihre Leitung. Ein Lasten-Mitglied."
+    },
+    "dhcb:Appliance": {
+      "message0": "⊡ Gerät %1",
+      "message1": "Typ %1",
+      "message2": "geschützt durch %1",
+      "tooltip": "Ein generischer Verbraucher (dhc:Appliance — geparkt; entspricht brick:Equipment, applianceType nennt die konkrete Brick/223P-Klasse). „geschützt durch“ referenziert seine Leitung. Ein Lasten-Mitglied."
+    },
+    "dhcb:SubDistributionBoard": {
+      "message0": "▥ Unterverteiler %1",
+      "message1": "geschützt durch %1",
+      "tooltip": "Ein Unterverteiler, nachgelagert von einer Leitung gespeist (dhc:SubDistributionBoard). „geschützt durch“ referenziert die speisende Leitung. Mit dem ⚙ Zahnrad Reihen (DIN-Schienen) verwalten."
+    },
+    "dhcb:WiringSegment": {
+      "message0": "〰 Leitungsstück %1",
+      "message1": "Leitung von %1",
+      "message2": "Kabel %1 · %2 mm² · %3 m",
+      "tooltip": "Ein Kabelabschnitt eines Stromkreises (dhc:WiringSegment ⊑ s223:Connection). Trägt Kabeltyp, Querschnitt (dhc:crossSection) und Länge. „Leitung von“ referenziert den zugehörigen Stromkreis → dhc:hasWiring. Ein DIN-Schienen-Modul. (Länge + Kabeltyp sind geparkte Ontologie-Eigenschaften.)"
+    },
+    "dhcb:Point": {
+      "message0": "◦ Punkt %1",
+      "message1": "Art %1",
+      "tooltip": "Ein Automationspunkt (eine brick:Point-Unterklasse je nach Art). Steckt in die ⚙ Punkt-Steckplätze eines smarten Geräts → brick:hasPoint. Arten: Command = manuelle/direkte Betätigung (ein Schalter); Setpoint = ein Sollwert, den der Regler anstrebt; Sensor = ein Messwert; Status = resultierender Zustand; Alarm = Störung; Parameter = Konfigurationswert."
+    },
+    "dhcb:IoTDevice": {
+      "message0": "📟 IoT-Gerät %1",
+      "message1": "%1 · %2 TE (DIN)",
+      "tooltip": "Ein DIN-Schienen-IoT-Modul (Gateway, Energiemonitor, Smart-Relais, Controller). Belegt `TE` Teilungseinheiten auf der Schiene und trägt Automationspunkte über sein ⚙. Auf eine Board-Schiene setzen, um einem reinen Reihen-Board Automations-Haken zu geben. brick:Equipment bei der Übersetzung."
+    }
+  }
+}

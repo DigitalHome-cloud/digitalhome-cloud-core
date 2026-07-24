@@ -1,0 +1,287 @@
+{
+  "variables": [
+    {
+      "name": "ID_Main",
+      "id": "idMain",
+      "type": "Differential"
+    },
+    {
+      "name": "ID_Garage",
+      "id": "idGarage",
+      "type": "Differential"
+    },
+    {
+      "name": "CB_Sockets_LR",
+      "id": "cbSockLR",
+      "type": "Circuit"
+    },
+    {
+      "name": "CB_Lighting_LR",
+      "id": "cbLightLR",
+      "type": "Circuit"
+    },
+    {
+      "name": "CB_Garage_Wallbox",
+      "id": "cbEV",
+      "type": "Circuit"
+    }
+  ],
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "dhcb:PowerDistributionSystem",
+        "x": 48,
+        "y": 40,
+        "fields": {
+          "name": "Villa — Main Installation",
+          "neutralSystem": "TT",
+          "hasMedium": "s223:AC-230VLN-1Ph-50Hz"
+        },
+        "inputs": {
+          "sources": {
+            "block": {
+              "type": "dhcb:EnergyDelivery",
+              "fields": {
+                "name": "Enedis Supply",
+                "energyProviderName": "Enedis",
+                "contractedPowerKVA": "9",
+                "currentType": "SinglePhase"
+              },
+              "next": {
+                "block": {
+                  "type": "dhcb:PV_Generation_System",
+                  "fields": {
+                    "name": "6 kW Rooftop PV",
+                    "powerRating": 6
+                  },
+                  "next": {
+                    "block": {
+                      "type": "dhcb:Battery",
+                      "fields": {
+                        "name": "Home Battery",
+                        "powerRating": 5
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "routes": {
+            "block": {
+              "type": "dhcb:EnergyMeter",
+              "fields": {
+                "name": "Linky"
+              },
+              "next": {
+                "block": {
+                  "type": "dhcb:EmergencyDisconnect",
+                  "fields": {
+                    "name": "AGCP",
+                    "ratedCurrent": "60"
+                  },
+                  "next": {
+                    "block": {
+                      "type": "dhcb:Inverter",
+                      "fields": {
+                        "name": "Deye Hybrid Inverter",
+                        "powerRating": 6
+                      },
+                      "next": {
+                        "block": {
+                          "type": "dhcb:DistributionBoard",
+                          "fields": {
+                            "name": "Resi9 Board"
+                          },
+                          "extraState": {
+                            "itemCount": 2
+                          },
+                          "inputs": {
+                            "row_0": {
+                              "block": {
+                                "type": "dhcb:RCD",
+                                "fields": {
+                                  "name": "Main 30 mA (row head)",
+                                  "RCD_VAR": {
+                                    "id": "idMain"
+                                  },
+                                  "rcdType": "A",
+                                  "sensitivityMA": "30",
+                                  "ratedCurrent": "63"
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "dhcb:Circuit",
+                                    "fields": {
+                                      "name": "Living-room sockets",
+                                      "CIRCUIT_VAR": {
+                                        "id": "cbSockLR"
+                                      },
+                                      "hasCircuitType": "dhc:CircuitType_Socket",
+                                      "ratedCurrent": "16",
+                                      "crossSection": "2.5",
+                                      "phase": "1",
+                                      "protection": "MCB",
+                                      "DIFFERENTIAL": {
+                                        "id": "idMain"
+                                      },
+                                      "maxPoints": 8,
+                                      "dedicated": "FALSE"
+                                    },
+                                    "next": {
+                                      "block": {
+                                        "type": "dhcb:Circuit",
+                                        "fields": {
+                                          "name": "Living-room lighting",
+                                          "CIRCUIT_VAR": {
+                                            "id": "cbLightLR"
+                                          },
+                                          "hasCircuitType": "dhc:CircuitType_Lighting",
+                                          "ratedCurrent": "10",
+                                          "crossSection": "1.5",
+                                          "phase": "1",
+                                          "protection": "MCB",
+                                          "DIFFERENTIAL": {
+                                            "id": "idMain"
+                                          },
+                                          "maxPoints": 6,
+                                          "dedicated": "FALSE"
+                                        },
+                                        "next": {
+                                          "block": {
+                                            "type": "dhcb:WiringSegment",
+                                            "fields": {
+                                              "name": "Sockets cable",
+                                              "WIRING_OF": {
+                                                "id": "cbSockLR"
+                                              },
+                                              "cableType": "U1000R2V",
+                                              "crossSection": "2.5",
+                                              "length": 14
+                                            },
+                                            "next": {
+                                              "block": {
+                                                "type": "dhcb:IoTDevice",
+                                                "fields": {
+                                                  "name": "Board gateway",
+                                                  "deviceType": "EnergyMonitor",
+                                                  "dinSlots": 2
+                                                },
+                                                "extraState": {
+                                                  "itemCount": 1
+                                                },
+                                                "inputs": {
+                                                  "point_0": {
+                                                    "block": {
+                                                      "type": "dhcb:Point",
+                                                      "fields": {
+                                                        "name": "Board temperature",
+                                                        "pointType": "brick:Sensor"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "row_1": {
+                              "block": {
+                                "type": "dhcb:Circuit",
+                                "fields": {
+                                  "name": "Garage wallbox (IRVE)",
+                                  "CIRCUIT_VAR": {
+                                    "id": "cbEV"
+                                  },
+                                  "hasCircuitType": "dhc:CircuitType_IRVE",
+                                  "ratedCurrent": "32",
+                                  "crossSection": "6",
+                                  "phase": "1",
+                                  "protection": "RCBO",
+                                  "DIFFERENTIAL": {
+                                    "id": "idGarage"
+                                  },
+                                  "maxPoints": 1,
+                                  "dedicated": "TRUE"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "extraState": {
+                        "itemCount": 2
+                      },
+                      "inputs": {
+                        "point_0": {
+                          "block": {
+                            "type": "dhcb:Point",
+                            "fields": {
+                              "name": "PV Power",
+                              "pointType": "brick:Sensor"
+                            }
+                          }
+                        },
+                        "point_1": {
+                          "block": {
+                            "type": "dhcb:Point",
+                            "fields": {
+                              "name": "Export limit",
+                              "pointType": "brick:Setpoint"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "sinks": {
+            "block": {
+              "type": "dhcb:Socket",
+              "fields": {
+                "name": "Living-room Sockets",
+                "quantity": 6,
+                "FED_BY": {
+                  "id": "cbSockLR"
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "dhcb:Luminaire",
+                  "fields": {
+                    "name": "Living-room Light",
+                    "quantity": 3,
+                    "FED_BY": {
+                      "id": "cbLightLR"
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "dhcb:Electric_Vehicle_Charging_Station",
+                      "fields": {
+                        "name": "Garage Wallbox",
+                        "FED_BY": {
+                          "id": "cbEV"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

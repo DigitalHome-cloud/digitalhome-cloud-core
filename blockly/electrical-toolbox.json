@@ -1,0 +1,184 @@
+{
+  "kind": "categoryToolbox",
+  "contents": [
+    {
+      "kind": "category",
+      "name": "Start",
+      "colour": "#3b82f6",
+      "contents": [
+        {
+          "kind": "label",
+          "text": "— Installation Root —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:PowerDistributionSystem"
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Sources",
+      "colour": "#3b82f6",
+      "contents": [
+        {
+          "kind": "label",
+          "text": "— Energy Generators —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:EnergyDelivery"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:PV_Generation_System"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Battery"
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Routing",
+      "colour": "#3b82f6",
+      "contents": [
+        {
+          "kind": "label",
+          "text": "— Metering & Protection —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:EnergyMeter"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:EmergencyDisconnect"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:SurgeProtector"
+        },
+        {
+          "kind": "sep",
+          "gap": 12
+        },
+        {
+          "kind": "label",
+          "text": "— Conversion & Boards —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Inverter"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:DistributionBoard"
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Circuits",
+      "colour": "#3b82f6",
+      "contents": [
+        {
+          "kind": "label",
+          "text": "— Rail modules (on a board rail) —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Circuit"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:RCD"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:WiringSegment"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:IoTDevice"
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Sinks",
+      "colour": "#3b82f6",
+      "contents": [
+        {
+          "kind": "label",
+          "text": "— Consumers —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Socket"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Luminaire"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Electric_Vehicle_Charging_Station"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Appliance"
+        },
+        {
+          "kind": "sep",
+          "gap": 12
+        },
+        {
+          "kind": "label",
+          "text": "— Sub-boards (fed downstream) —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:SubDistributionBoard"
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Points",
+      "colour": "#a855f7",
+      "contents": [
+        {
+          "kind": "label",
+          "text": "— Automation hooks (⚙ on a smart device) —"
+        },
+        {
+          "kind": "block",
+          "type": "dhcb:Point"
+        }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Communication",
+      "colour": "#14b8a6",
+      "contents": [
+        { "kind": "label", "text": "— VDI panel (courants faibles) —" },
+        { "kind": "block", "type": "dhcb:CommunicationPanel" },
+        { "kind": "sep", "gap": 12 },
+        { "kind": "label", "text": "— Outlets & arrival —" },
+        { "kind": "block", "type": "dhcb:DTI" },
+        { "kind": "block", "type": "dhcb:InternetBox" },
+        { "kind": "block", "type": "dhcb:RJ45Outlet" },
+        { "kind": "block", "type": "dhcb:TVOutlet" }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Circuit lines",
+      "colour": "#5b6b8c",
+      "custom": "CIRCUIT_LINES"
+    }
+  ]
+}

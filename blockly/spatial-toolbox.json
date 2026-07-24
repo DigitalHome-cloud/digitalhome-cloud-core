@@ -1,0 +1,56 @@
+{
+  "kind": "categoryToolbox",
+  "contents": [
+    {
+      "kind": "category",
+      "name": "Spatial",
+      "colour": "#22c55e",
+      "contents": [
+        { "kind": "label", "text": "— Site Root —" },
+        { "kind": "block", "type": "dhcb:DigitalHome" },
+        { "kind": "sep", "gap": 12 },
+        { "kind": "label", "text": "— Buildings —" },
+        { "kind": "block", "type": "dhcb:DetachedHouse" },
+        { "kind": "block", "type": "dhcb:RowHouse" },
+        { "kind": "block", "type": "dhcb:SemiDetachedHouse" },
+        { "kind": "block", "type": "dhcb:VirtualBuilding" },
+        { "kind": "sep", "gap": 12 },
+        { "kind": "label", "text": "— Outdoor Areas —" },
+        { "kind": "block", "type": "dhcb:Garden" },
+        { "kind": "block", "type": "dhcb:Parking" },
+        { "kind": "block", "type": "dhcb:PoolArea" }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Building",
+      "colour": "#f59e0b",
+      "contents": [
+        { "kind": "label", "text": "— Structure —" },
+        { "kind": "block", "type": "dhcb:Level" },
+        { "kind": "sep", "gap": 12 },
+        { "kind": "label", "text": "— Spaces —" },
+        { "kind": "block", "type": "dhcb:Room" }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Points",
+      "colour": "#ec4899",
+      "contents": [
+        { "kind": "label", "text": "— brick:Point types —" },
+        { "kind": "block", "type": "dhcb:Sensor" },
+        { "kind": "sep", "gap": 8 },
+        { "kind": "block", "type": "dhcb:Alarm" },
+        { "kind": "sep", "gap": 8 },
+        { "kind": "block", "type": "dhcb:Setpoint" }
+      ]
+    },
+    {
+      "kind": "category",
+      "name": "Placements",
+      "colour": "#3b82f6",
+      "custom": "PLACEMENTS"
+    }
+  ]
+}

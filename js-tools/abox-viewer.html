@@ -24,6 +24,8 @@
     #inspector .curie { font: 11px ui-monospace, Menlo, Consolas, monospace; color: #94a3b8; word-break: break-all; }
     #inspector .sect { margin-top: 12px; }
     #inspector .sect-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin-bottom: 4px; }
+    #inspector .panel-btn { font: 12px system-ui, sans-serif; background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-right: 6px; }
+    #inspector .panel-btn:hover { background: #334155; }
     #inspector table { width: 100%; border-collapse: collapse; }
     #inspector td { padding: 2px 0; vertical-align: top; font: 11px ui-monospace, Menlo, Consolas, monospace; }
     #inspector td.k { color: #94a3b8; padding-right: 8px; white-space: nowrap; }
@@ -55,6 +57,28 @@
     #log .info { color: #94a3b8; }
     #log .ok   { color: #6ee7b7; }
     #log .warn { color: #fcd34d; }
+
+    /* Modelling: the vocabulary catalog + property descriptions in the inspector. */
+    #inspector .desc { color: #cbd5e1; margin: 2px 0 0; font-size: 11px; line-height: 1.5; }
+    #inspector .cat-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin: 12px 0 4px; }
+    #inspector .term { padding: 3px 4px; margin: 0 -4px; border-radius: 3px; cursor: pointer; }
+    #inspector .term:hover { background: #1e293b; }
+    #inspector .term .tc { font: 11px ui-monospace, Menlo, Consolas, monospace; color: #e2e8f0; }
+    #inspector .term .td { color: #94a3b8; font-size: 10px; display: block; }
+    #inspector .prop-desc { color: #64748b; font-size: 10px; display: block; }
+
+    /* Designing: the norms & good-practices modal. */
+    #modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.55); z-index: 20; display: none; }
+    #norms-modal { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 21; display: none;
+                   width: 460px; max-height: 70vh; overflow: auto; background: #0f172a; border: 1px solid #334155;
+                   border-radius: 8px; padding: 16px 18px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+    #norms-modal h2 { font-size: 14px; margin: 0 0 4px; }
+    #norms-modal p.sub { font-size: 11px; color: #94a3b8; margin: 0 0 12px; }
+    #norms-modal .norm-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin: 12px 0 4px; }
+    #norms-modal label.ed { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; cursor: pointer; }
+    #norms-modal label.ed .inforce { color: #6ee7b7; font-size: 10px; }
+    #norms-modal .actions { margin-top: 14px; display: flex; gap: 8px; justify-content: flex-end; }
+    #norms-modal .empty { color: #64748b; font-style: italic; font-size: 11px; }
   </style>
   <!-- 3d-force-graph 1.79.1 — vendored UMD, three.js inlined. No network at
        runtime, by design: the Blockly harnesses this is modelled on load their
@@ -80,13 +104,26 @@
     <label>model
       <select id="source-select"></select>
     </label>
-    <label>colour
-      <select id="colour-mode">
-        <option value="view">design view</option>
-        <option value="compliance">compliance</option>
-        <option value="ns">standard (rdf:type ns)</option>
+    <label>mode
+      <select id="mode-select">
+        <option value="modelling">modelling</option>
+        <option value="designing">designing</option>
       </select>
     </label>
+    <label>colour
+      <select id="colour-mode"></select>
+    </label>
+    <label>group
+      <select id="group-select" title="Draw translucent hulls around zones / circuits / assemblies; click a group in the legend to collapse it">
+        <option value="none">none</option>
+        <option value="zone">zone</option>
+        <option value="circuit">circuit</option>
+        <option value="composition">composition</option>
+      </select>
+    </label>
+    <button id="norms" title="Choose which norms/editions to analyse against" style="display:none">Norms…</button>
+    <button id="consumers" title="List the leaf loads by zone; pick one to trace its supply back to the grid">Consumers</button>
+    <button id="symbols" title="Toggle 3-D primitives ↔ flat symbols">symbols: 3-D</button>
     <button id="fit">Fit</button>
     <button id="reset-filter" title="Show all">All</button>
     <span id="status" class="status">loading…</span>
@@ -96,6 +133,8 @@
   <div id="legend"></div>
   <aside id="inspector"><p class="empty">Click a node to inspect it.</p></aside>
   <div id="log"></div>
+  <div id="modal-backdrop"></div>
+  <div id="norms-modal"></div>
 
   <script type="module">
     import * as THREE from './vendor/three.module.min.js';
@@ -172,6 +211,151 @@
     const particleObject = (l) =>
       l.kind === 'control' ? new THREE.Mesh(CTRL_GEOM, CTRL_MAT) : new THREE.Mesh(FLOW_GEOM, FLOW_MAT);
 
+    // ── glyph rendering ──────────────────────────────────────────────────────
+    // Per-class symbol shapes. n.glyph is computed in build-abox.mjs from the
+    // subclass hierarchy (bulb for a luminaire, a DIN module for a breaker, …).
+    // Two hard constraints shape this code:
+    //   1. Offline — every shape is a three primitive or a <canvas> drawing; no
+    //      SVG, GLTF or network. Only the ESM three (this import) exposes the
+    //      geometry constructors; the UMD bundle exports only ForceGraph3D.
+    //   2. Perf — the old nodeObject allocated a fresh geometry AND material per
+    //      node (soda_brick = 1695 of each). Here geometry is built ONCE per
+    //      glyph and shared; the per-node size bump is a mesh.scale, not a new
+    //      geometry; materials come from a ~20-entry cache keyed colour|opacity.
+    const R = 3.2;   // base radius; violation nodes scale up via mesh.scale
+    const box  = (x, y, z) => new THREE.BoxGeometry(x, y, z);
+    const cyl  = (rt, rb, h, s = 10) => new THREE.CylinderGeometry(rt, rb, h, s);
+    // One geometry (or a Group template for composites) per glyph, built lazily.
+    const GLYPH_GEOM = {
+      bulb:       () => new THREE.SphereGeometry(R * 0.95, 10, 8),
+      socket:     () => cyl(R, R, R * 0.4, 14),
+      breaker:    () => box(R * 0.7, R * 1.9, R * 0.7),
+      panel:      () => box(R * 2.2, R * 1.7, R * 0.6),
+      meter:      () => cyl(R * 0.85, R * 0.85, R * 1.1, 12),
+      inverter:   () => box(R * 1.4, R * 1.3, R * 0.8),
+      battery:    () => cyl(R * 0.7, R * 0.7, R * 1.7, 12),
+      pv:         () => box(R * 1.9, R * 0.22, R * 1.2),
+      charger:    () => cyl(R * 0.7, R * 0.9, R * 1.9, 6),
+      delivery:   () => new THREE.OctahedronGeometry(R * 1.15),   // "double cone" grid source
+      busbar:     () => box(R * 2.6, R * 0.4, R * 0.4),
+      circuit:    () => new THREE.TorusGeometry(R * 0.9, R * 0.34, 8, 16),
+      wire:       () => cyl(R * 0.22, R * 0.22, R * 2, 6),
+      port:       () => new THREE.TetrahedronGeometry(R * 0.95),
+      controller: () => new THREE.OctahedronGeometry(R * 0.95),
+      sensor:     () => new THREE.SphereGeometry(R * 0.6, 8, 6),
+      room:       () => box(R * 2, R * 0.3, R * 2),               // floor plate
+      appliance:  () => box(R * 1.3, R * 1.3, R * 1.3),
+      box:        () => box(R * 1.7, R * 1.7, R * 1.7),           // legacy equipment box
+      sphere:     () => new THREE.SphereGeometry(R, 12, 8),       // fallback
+      // Composite: a house = body + prism roof. Returns a Group TEMPLATE whose
+      // children's materials are replaced on clone.
+      building: () => {
+        const g = new THREE.Group();
+        const body = new THREE.Mesh(box(R * 1.6, R * 1.1, R * 1.6), null);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(R * 1.25, R * 0.9, 4), null);
+        roof.position.y = R * 1.0; roof.rotation.y = Math.PI / 4;
+        g.add(body, roof); g.userData.template = true;
+        return g;
+      },
+    };
+    const glyphCache = new Map();
+    const geomFor = (glyph) => {
+      if (!glyphCache.has(glyph)) glyphCache.set(glyph, (GLYPH_GEOM[glyph] ?? GLYPH_GEOM.sphere)());
+      return glyphCache.get(glyph);
+    };
+
+    // Material cache — ~20 combinations at most. bulb is emissive so it reads as
+    // a light source; that variant is keyed separately.
+    const matCache = new Map();
+    const material = (hex, opacity, emissive) => {
+      const key = `${hex}|${opacity}|${emissive ? 1 : 0}`;
+      if (!matCache.has(key)) {
+        matCache.set(key, new THREE.MeshLambertMaterial({
+          color: hex, transparent: true, opacity,
+          ...(emissive ? { emissive: hex, emissiveIntensity: 0.6 } : {}),
+        }));
+      }
+      return matCache.get(key);
+    };
+
+    // Flat-symbol mode: each glyph drawn once on a <canvas> in white (so it can
+    // be tinted per node via SpriteMaterial.color), cached as a CanvasTexture.
+    const symbolTexCache = new Map();
+    const drawSymbol = (glyph) => {
+      const c = document.createElement('canvas'); c.width = c.height = 64;
+      const x = c.getContext('2d');
+      x.strokeStyle = x.fillStyle = '#fff'; x.lineWidth = 4; x.lineCap = 'round';
+      const C = 32, r = 20;
+      const circle = (rr = r) => { x.beginPath(); x.arc(C, C, rr, 0, 7); x.stroke(); };
+      const rect = (w, h) => x.strokeRect(C - w / 2, C - h / 2, w, h);
+      const line = (x1, y1, x2, y2) => { x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y2); x.stroke(); };
+      switch (glyph) {
+        case 'bulb': circle(); line(20, 20, 44, 44); line(44, 20, 20, 44); break;      // ⊗ lamp (IEC)
+        case 'socket': circle(); x.beginPath(); x.arc(24, 32, 3, 0, 7); x.arc(40, 32, 3, 0, 7); x.fill(); break;
+        case 'breaker': rect(20, 40); line(22, 42, 42, 22); break;                     // switch in a module
+        case 'panel': rect(44, 34); line(C, 15, C, 49); break;
+        case 'meter': circle(); line(C, C, 46, 20); break;                             // dial + needle
+        case 'inverter': rect(40, 40); line(14, 46, 30, 22); line(34, 42, 50, 18); break; // ~/=
+        case 'battery': line(20, 22, 20, 42); line(28, 16, 28, 48); line(38, 22, 38, 42); line(46, 16, 46, 48); break;
+        case 'pv': rect(44, 30); line(24, 17, 24, 47); line(40, 17, 40, 47); break;    // panel grid
+        case 'charger': rect(24, 40); line(40, 24, 48, 24); line(40, 32, 50, 32); break;
+        case 'delivery': line(C, 10, C, 34); line(20, 22, C, 34); line(44, 22, C, 34); circle(8); break;
+        case 'busbar': line(10, C, 54, C); line(20, 24, 20, 40); line(44, 24, 44, 40); break;
+        case 'circuit': circle(18); break;
+        case 'wire': line(12, 44, 52, 20); break;
+        case 'port': x.beginPath(); x.moveTo(C, 14); x.lineTo(48, 46); x.lineTo(16, 46); x.closePath(); x.stroke(); break;
+        case 'controller': x.beginPath(); x.moveTo(C, 12); x.lineTo(52, 32); x.lineTo(C, 52); x.lineTo(12, 32); x.closePath(); x.stroke(); break;
+        case 'sensor': circle(10); break;
+        case 'building': line(14, 50, 14, 30); line(50, 50, 50, 30); line(14, 30, C, 14); line(50, 30, C, 14); line(14, 50, 50, 50); break;
+        case 'room': rect(40, 40); break;
+        default: circle(14);
+      }
+      return new THREE.CanvasTexture(c);
+    };
+    const symbolTex = (glyph) => {
+      if (!symbolTexCache.has(glyph)) symbolTexCache.set(glyph, drawSymbol(glyph));
+      return symbolTexCache.get(glyph);
+    };
+    const spriteMatCache = new Map();
+    const spriteMaterial = (glyph, hex, opacity) => {
+      const key = `${glyph}|${hex}|${opacity}`;
+      if (!spriteMatCache.has(key)) {
+        spriteMatCache.set(key, new THREE.SpriteMaterial({
+          map: symbolTex(glyph), color: hex, transparent: true, opacity, depthWrite: false,
+        }));
+      }
+      return spriteMatCache.get(key);
+    };
+
+    // 'solid' (3-D primitives) | 'sprite' (flat symbols). ?symbols=flat is linkable.
+    let glyphMode = ['flat', 'sprite'].includes(new URLSearchParams(location.search).get('symbols')) ? 'sprite' : 'solid';
+
+    // The node's own object. Shares geometry + material; the per-node size bump
+    // for a violation is a mesh scale, never a new geometry.
+    const nodeObject = (n) => {
+      const ghost = colourMode === 'compliance' && ghostedOf(n);
+      const opacity = ghost ? (complianceOf(n) === 'unchecked' ? 0.1 : 0.35) : 0.95;
+      const colour = nodeColour(n);
+      const glyph = n.glyph ?? (n.shape === 'box' ? 'appliance' : 'sphere');
+      let obj;
+      if (glyphMode === 'sprite') {
+        obj = new THREE.Sprite(spriteMaterial(glyph, colour, opacity));
+        obj.scale.setScalar(n.violations?.length ? 12 : 9);
+        return obj;
+      }
+      const g = geomFor(glyph);
+      const mat = material(colour, opacity, glyph === 'bulb');
+      if (g.userData?.template) {                 // composite Group (building)
+        obj = g.clone();
+        obj.traverse((o) => { if (o.isMesh) o.material = mat; });
+      } else {
+        obj = new THREE.Mesh(g, mat);
+      }
+      if (n.violations?.length) obj.scale.setScalar(1.55);
+      if (n.isSuper) obj.scale.multiplyScalar(1.9);   // a collapsed group reads bigger
+      return obj;
+    };
+
     const logEl = document.getElementById('log');
     const statusEl = document.getElementById('status');
     const log = (msg, cls = 'info') => {
@@ -192,62 +376,224 @@
     // ?colour=compliance&model=<slug> — so a particular view is linkable, and
     // so an automated check can open the mode it wants to assert on.
     const params = new URLSearchParams(location.search);
-    let graph = null, report = null, Graph = null;
-    let colourMode = ['view', 'compliance', 'ns'].includes(params.get('colour')) ? params.get('colour') : 'view';
+    let graph = null, report = null, vocab = null, Graph = null;
+    // Two audiences, two modes. MODELLING is for reading the model — classes,
+    // properties, descriptions, the vocabulary — and never shows compliance.
+    // DESIGNING is for analysing against a chosen set of norm editions; that is
+    // the ONLY place non-compliance appears. Colour options differ per mode.
+    let mode = params.get('mode') === 'designing' ? 'designing' : 'modelling';
+    const COLOUR_OPTS = {
+      modelling: [['view', 'design view'], ['ns', 'standard (rdf:type ns)']],
+      designing: [['compliance', 'compliance'], ['view', 'design view']],
+    };
+    const paramColour = params.get('colour');
+    let colourMode = COLOUR_OPTS[mode].some(([v]) => v === paramColour) ? paramColour : COLOUR_OPTS[mode][0][0];
     let hidden = new Set();        // node legend buckets toggled off
     let hiddenKinds = new Set();   // edge kinds toggled off
+
+    // Editions the Designing picker analyses against. Defaults to all editions
+    // that have shapes; a subset recomputes each node's displayed compliance.
+    let selectedEditions = new Set();
+    let editionOrder = [];          // oldest→newest, from report.editions (runs order)
+    let inForceByNorm = new Map();  // norm curie → its edition-in-force curie
+
+    // Displayed compliance. In modelling it is never shown. In designing with the
+    // full edition set it reproduces the build's verdict exactly; with a subset it
+    // is recomputed CLIENT-SIDE for display only — the built verdict is never
+    // rewritten. Same logic as build-abox.mjs: fails the oldest selected edition
+    // that targets it ⇒ danger; passes that, fails the newest ⇒ gap (grandfathered
+    // against the chosen norms); none selected target it ⇒ unchecked.
+    const recompute = (n) => {
+      const targeted = (n.targetedEditions ?? []).filter((e) => selectedEditions.has(e));
+      if (!targeted.length) return { compliance: 'unchecked', ghosted: true };
+      targeted.sort((a, b) => editionOrder.indexOf(a) - editionOrder.indexOf(b));
+      const viol = new Set(n.violatedEditions ?? []);
+      const oldest = targeted[0], newest = targeted[targeted.length - 1];
+      const compliance = viol.has(oldest) ? 'danger' : viol.has(newest) ? 'gap' : 'ok';
+      // On the full set, carry the build's ghosting (it encodes "in-force edition
+      // has no shapes", which the node arrays can't see). On a subset, only the
+      // unchecked case ghosts.
+      const ghosted = selectedEditions.size === editionOrder.length ? !!n.ghosted : false;
+      return { compliance, ghosted };
+    };
+    const complianceOf = (n) => (mode === 'designing' ? recompute(n).compliance : n.compliance);
+    const ghostedOf    = (n) => (mode === 'designing' ? recompute(n).ghosted    : n.ghosted);
 
     // Which legend bucket a node falls in, for the active colour mode.
     const keyOf = (n) =>
       colourMode === 'ns'           ? ((n.types[0] ?? '').split(':')[0] || 'other')
-      : colourMode === 'compliance' ? n.compliance
+      : colourMode === 'compliance' ? complianceOf(n)
       : (n.designView ?? 'shared');
 
-    const paletteFor = (mode) =>
-      mode === 'ns' ? NS_COLOURS : mode === 'compliance' ? COMPLIANCE_COLOURS : { ...VIEW_COLOURS, shared: SHARED };
+    const paletteFor = (m) =>
+      m === 'ns' ? NS_COLOURS : m === 'compliance' ? COMPLIANCE_COLOURS : { ...VIEW_COLOURS, shared: SHARED };
 
     const nodeColour = (n) => {
-      // In compliance mode the violation IS the signal, so don't override it.
-      if (colourMode !== 'compliance' && n.violations?.length) return VIOLATION;
+      // Violations are a compliance signal — they only tint a node in DESIGNING's
+      // compliance colouring, never in modelling (where compliance is suppressed).
+      if (mode === 'designing' && colourMode !== 'compliance' && n.violations?.length) return VIOLATION;
       return paletteFor(colourMode)[keyOf(n)] ?? SHARED;
     };
 
     const visible = (n) => !hidden.has(keyOf(n));
 
-    // The node's own 3-D object, rather than the library's default sphere.
-    // Two things ride on this:
-    //   shape   — box for equipment, sphere otherwise. Read from the ontology
-    //             in build-abox.mjs (brick:Equipment ∪ s223:Equipment closure),
-    //             never hand-listed here.
-    //   opacity — the second compliance channel. A ghosted node is one we
-    //             cannot speak to the CURRENT edition about: either no shape
-    //             targets it at all, or the edition in force for its norm has
-    //             no shapes. It exists and is still there to click; a solid
-    //             colour would claim a verdict we do not have. Note this is
-    //             NOT the same as the colour: a node can be ghosted AND green
-    //             (NF C 14-100 nodes pass the 2008 rules we hold, while 2021 is
-    //             in force and unimplemented) — "passes what we checked" and
-    //             "we checked the right thing" are separate facts.
-    const nodeObject = (n) => {
-      const r = n.violations?.length ? 5 : 3.2;
-      const ghost = colourMode === 'compliance' && n.ghosted;
-      const geom = n.shape === 'box'
-        ? new THREE.BoxGeometry(r * 1.7, r * 1.7, r * 1.7)
-        : new THREE.SphereGeometry(r, 12, 8);
-      return new THREE.Mesh(geom, new THREE.MeshLambertMaterial({
-        color: nodeColour(n),
-        transparent: true,
-        opacity: ghost ? (n.compliance === 'unchecked' ? 0.1 : 0.35) : 0.95,
-      }));
+    // ── Groups ────────────────────────────────────────────────────────────
+    // Membership comes from the edges. Each definition maps a predicate to the
+    // (container, member) pair — direction matters, so a `locatedIn` and an
+    // `isLocationOf` both point the same way. A group is a container plus every
+    // node it contains; groups of one are dropped (nothing to draw or collapse).
+    let groupBy = ['zone', 'circuit', 'composition'].includes(params.get('group')) ? params.get('group') : 'none';
+    let groups = new Map();        // container id → { container, members:Set, tint }
+    let collapsed = new Set();     // container ids currently collapsed to a super-node
+    let hullMeshes = new Map();    // container id → translucent hull Mesh in the scene
+    let traceSet = null;           // when set, only these node ids show (upstream trace)
+    const GROUP_TINTS = ['#38bdf8', '#a78bfa', '#f472b6', '#34d399', '#fbbf24', '#fb7185', '#60a5fa', '#c084fc'];
+    const idOf = (x) => x?.id ?? x;
+    const GROUP_DEFS = {
+      zone: {
+        'rec:locatedIn':    (l) => [idOf(l.target), idOf(l.source)],
+        'brick:hasLocation':(l) => [idOf(l.target), idOf(l.source)],
+        'rec:isLocationOf': (l) => [idOf(l.source), idOf(l.target)],
+      },
+      circuit: {
+        's223:hasMember':   (l) => [idOf(l.source), idOf(l.target)],
+      },
+      composition: {
+        'brick:hasPart':    (l) => [idOf(l.source), idOf(l.target)],
+        's223:contains':    (l) => [idOf(l.source), idOf(l.target)],
+        'rec:includes':     (l) => [idOf(l.source), idOf(l.target)],
+        'rec:hasPart':      (l) => [idOf(l.source), idOf(l.target)],
+        'brick:isPartOf':   (l) => [idOf(l.target), idOf(l.source)],
+      },
     };
 
-    function applyFilter() {
-      const nodes = graph.nodes.filter(visible);
+    function computeGroups() {
+      groups = new Map();
+      if (groupBy === 'none' || !graph) return;
+      const def = GROUP_DEFS[groupBy];
+      for (const l of graph.links) {
+        const dir = def[l.property];
+        if (!dir) continue;
+        const [container, member] = dir(l);
+        if (!container || !member || container === member) continue;
+        let grp = groups.get(container);
+        if (!grp) { grp = { container, members: new Set([container]) }; groups.set(container, grp); }
+        grp.members.add(member);
+      }
+      let i = 0;
+      for (const [cid, grp] of [...groups]) {
+        if (grp.members.size < 2) { groups.delete(cid); continue; }
+        grp.tint = GROUP_TINTS[i++ % GROUP_TINTS.length];
+      }
+    }
+
+    const nodeById = (id) => graph.nodes.find((n) => n.id === id);
+
+    // A collapsed group becomes one node. Its edition arrays are the UNION of its
+    // members' — so the group is 'ok' only if every member is, and worst-wins
+    // falls out of the same recompute() the individual nodes use.
+    function makeSuper(cid, grp) {
+      const c = nodeById(cid) ?? { curie: cid, label: cid, types: [], typeIris: [], designView: 'shared' };
+      const members = [...grp.members].map(nodeById).filter(Boolean);
+      const targeted = new Set(), violated = new Set();
+      let anyGhost = false;
+      for (const m of members) {
+        (m.targetedEditions ?? []).forEach((e) => targeted.add(e));
+        (m.violatedEditions ?? []).forEach((e) => violated.add(e));
+        anyGhost = anyGhost || !!m.ghosted;
+      }
+      return {
+        id: 'grp:' + cid, curie: c.curie, label: `${c.label} +${grp.members.size - 1}`,
+        types: c.types, typeIris: c.typeIris, designView: c.designView,
+        literals: [], violations: [], glyph: 'panel', shape: 'box',
+        isSuper: true, memberCount: grp.members.size, compliance: 'unchecked',
+        ghosted: anyGhost, targetedEditions: [...targeted], violatedEditions: [...violated],
+      };
+    }
+
+    // The graph actually fed to the renderer: visibility filter + hidden edge
+    // kinds + collapse of any collapsed groups (members folded into a super-node,
+    // internal links dropped, external links re-pointed and de-duplicated).
+    function displayGraph() {
+      // An active upstream trace overrides grouping: show only the traced chain.
+      if (traceSet) {
+        const nodes = graph.nodes.filter((n) => traceSet.has(n.id) && visible(n));
+        const ids = new Set(nodes.map((n) => n.id));
+        const links = graph.links.filter((l) =>
+          !hiddenKinds.has(l.kind) && ids.has(idOf(l.source)) && ids.has(idOf(l.target)));
+        return { nodes, links };
+      }
+      const active = new Set([...collapsed].filter((c) => groups.has(c)));
+      const toSuper = new Map();
+      const superNodes = [];
+      for (const cid of active) {
+        const grp = groups.get(cid);
+        for (const m of grp.members) toSuper.set(m, 'grp:' + cid);
+        superNodes.push(makeSuper(cid, grp));
+      }
+      const baseNodes = graph.nodes.filter((n) => visible(n) && !toSuper.has(n.id));
+      const nodes = [...baseNodes, ...superNodes];
       const ids = new Set(nodes.map((n) => n.id));
-      const links = graph.links.filter((l) =>
-        !hiddenKinds.has(l.kind) && ids.has(l.source.id ?? l.source) && ids.has(l.target.id ?? l.target));
+      const seen = new Set();
+      const links = [];
+      for (const l of graph.links) {
+        if (hiddenKinds.has(l.kind)) continue;
+        const s = toSuper.get(idOf(l.source)) ?? idOf(l.source);
+        const t = toSuper.get(idOf(l.target)) ?? idOf(l.target);
+        if (s === t || !ids.has(s) || !ids.has(t)) continue;
+        const key = `${s}|${t}|${l.property}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        links.push({ ...l, source: s, target: t });
+      }
+      return { nodes, links };
+    }
+
+    function applyFilter() {
+      const { nodes, links } = displayGraph();
       Graph.graphData({ nodes: nodes.map((n) => ({ ...n })), links: links.map((l) => ({ ...l })) });
       log(`filter → ${nodes.length}/${graph.nodes.length} nodes, ${links.length}/${graph.links.length} links`);
+      rebuildHulls();
+    }
+
+    // A hull per NON-collapsed group: a translucent sphere the renderer never
+    // raycasts (so it can't steal a node click), repositioned every engine tick
+    // from the live member coordinates. Collapsed groups have no hull — they are
+    // a node instead.
+    function rebuildHulls() {
+      if (!Graph?.scene) return;
+      for (const m of hullMeshes.values()) Graph.scene().remove(m);
+      hullMeshes.clear();
+      if (groupBy === 'none' || traceSet) return;   // no hulls while tracing
+      const geom = new THREE.SphereGeometry(1, 12, 8);
+      for (const [cid, grp] of groups) {
+        if (collapsed.has(cid)) continue;
+        const mat = new THREE.MeshBasicMaterial({
+          color: grp.tint, transparent: true, opacity: 0.1, depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.raycast = () => {};
+        Graph.scene().add(mesh);
+        hullMeshes.set(cid, mesh);
+      }
+      positionHulls();
+    }
+
+    function positionHulls() {
+      if (!hullMeshes.size) return;
+      const pos = new Map((Graph.graphData().nodes).map((n) => [n.id, n]));
+      for (const [cid, mesh] of hullMeshes) {
+        const pts = [...groups.get(cid).members].map((id) => pos.get(id)).filter((n) => n && Number.isFinite(n.x));
+        if (pts.length < 2) { mesh.visible = false; continue; }
+        mesh.visible = true;
+        let cx = 0, cy = 0, cz = 0;
+        for (const p of pts) { cx += p.x; cy += p.y; cz += p.z; }
+        cx /= pts.length; cy /= pts.length; cz /= pts.length;
+        let r = 0;
+        for (const p of pts) r = Math.max(r, Math.hypot(p.x - cx, p.y - cy, p.z - cz));
+        mesh.position.set(cx, cy, cz);
+        mesh.scale.setScalar(r + 6);   // pad past the outermost member
+      }
     }
 
     function renderLegend() {
@@ -262,7 +608,7 @@
       const shapeOf = (k) => graph.nodes.filter((n) => keyOf(n) === k)
         .filter((n) => n.shape === 'box').length * 2 >= counts[k] ? 'box' : 'sphere';
 
-      const ghostCount = graph.nodes.filter((n) => n.ghosted).length;
+      const ghostCount = graph.nodes.filter((n) => ghostedOf(n)).length;
       const nodeRows = Object.entries(pal).filter(([k]) => present.has(k)).map(([k, c]) => `
         <div class="row ${hidden.has(k) ? 'off' : ''}" data-key="${k}" title="${esc(COMPLIANCE_HELP[k] ?? 'click to show/hide')}">
           <span class="glyph ${shapeOf(k) === 'sphere' ? 'sphere' : ''} ${colourMode === 'compliance' && k === 'unchecked' ? 'hollow' : ''}"
@@ -282,9 +628,27 @@
           <span class="edge" style="border-top:${Math.max(1, Math.round(EDGE_STYLE[k].width * 1.6))}px ${k === 'spatial' ? 'dashed' : 'solid'} ${EDGE_STYLE[k].colour}"></span>${k}<span class="n">${kinds[k]}</span>
         </div>`).join('');
 
+      // Groups section — one row per group; the row IS the collapse control
+      // (clicking a translucent hull in the scene would mean our own raycaster,
+      // and this is unambiguous). "off" styling marks a collapsed group.
+      let groupRows = '';
+      if (groupBy !== 'none') {
+        const rows = [...groups.values()].map((g) => {
+          const c = graph.nodes.find((n) => n.id === g.container);
+          const col = collapsed.has(g.container);
+          return `<div class="row grp-row ${col ? 'off' : ''}" data-grp="${esc(g.container)}"
+                       title="click to ${col ? 'expand' : 'collapse'} this ${groupBy}">
+            <span class="glyph" style="background:${g.tint}"></span>${esc(c?.label ?? g.container)}<span class="n">${g.members.size}</span>
+          </div>`;
+        }).join('');
+        groupRows = `<div class="grp">groups — ${groupBy}</div>`
+          + (rows || `<div class="hint">no ${groupBy} groups in this model</div>`);
+      }
+
       el.innerHTML = `<div class="grp">nodes — ${colourMode}</div>${nodeRows}`
                    + `<div class="grp">edges</div>${edgeRows}`
-                   + `<div class="hint">click any row to filter</div>`;
+                   + groupRows
+                   + `<div class="hint">click any row to filter${groupBy !== 'none' ? '; a group row collapses it' : ''}</div>`;
 
       el.querySelectorAll('.row[data-key]').forEach((r) => r.addEventListener('click', () => {
         const k = r.dataset.key;
@@ -296,48 +660,277 @@
         hiddenKinds.has(k) ? hiddenKinds.delete(k) : hiddenKinds.add(k);
         renderLegend(); applyFilter();
       }));
+      el.querySelectorAll('.row[data-grp]').forEach((r) => r.addEventListener('click', () => {
+        const c = r.dataset.grp;
+        collapsed.has(c) ? collapsed.delete(c) : collapsed.add(c);
+        renderLegend(); applyFilter();
+      }));
     }
+
+    // Vocabulary lookup — {label, comment, kind, designView} per curie, from
+    // data/vocab.json (built from dhc-core + the annotation overlay).
+    const vterm = (curie) => vocab?.get(curie) ?? null;
+    const descOf = (curie) => vterm(curie)?.comment ?? '';
+    const labelOf = (curie) => vterm(curie)?.label ?? '';
 
     function inspect(n) {
       const el = document.getElementById('inspector');
-      if (!n) { el.innerHTML = '<p class="empty">Click a node to inspect it.</p>'; return; }
-      const lits = Object.entries(n.literals || {});
-      el.innerHTML = `
-        <h2><span class="dot" style="background:${nodeColour(n)}"></span>${esc(n.label)}</h2>
-        <div class="curie">${esc(n.curie)}</div>
+      if (!n) { renderCatalog(); return; }
+
+      // Predicates this node uses: data properties (literal keys) + object
+      // properties (its outgoing links). Shown with their vocabulary description.
+      const litProps = Object.keys(n.literals || {});
+      const objProps = [...new Set(graph.links
+        .filter((l) => (l.source.id ?? l.source) === n.id)
+        .map((l) => l.property))];
+      const propRow = (p, val) => `
+        <tr><td class="k">${esc(p)}</td><td class="v">${esc(val)}
+          ${labelOf(p) ? `<span class="prop-desc">${esc(labelOf(p))}${descOf(p) ? ' — ' + esc(descOf(p)) : ''}</span>` : ''}
+        </td></tr>`;
+
+      const compliance = mode === 'designing' ? `
+        <div class="sect">
+          <div class="sect-h">compliance${selectedEditions.size !== editionOrder.length ? ' (selected norms)' : ''}</div>
+          <div class="curie">
+            <span class="glyph" style="background:${COMPLIANCE_COLOURS[complianceOf(n)]}"></span>${esc(complianceOf(n))}
+            — ${esc(COMPLIANCE_HELP[complianceOf(n)])}
+          </div>
+          ${selectedEditions.size === editionOrder.length && n.complianceWhy ? `<div class="curie" style="margin-top:4px;color:#cbd5e1">${esc(n.complianceWhy)}</div>` : ''}
+          ${ghostedOf(n) && complianceOf(n) !== 'unchecked' ? `<div class="curie" style="margin-top:4px;color:#94a3b8">ghosted — ${esc(GHOST_HELP)}</div>` : ''}
+        </div>
         ${n.violations?.length ? `<div class="sect">
           <div class="sect-h">C-Box violations — by edition</div>
           ${n.violations.map((v) => `<div class="viol">
             <div class="shape">${esc(v.edition ?? v.profile)} · ${esc(v.shape || v.path || '(unnamed shape)')}</div>
             ${v.message ? `<div>${esc(v.message)}</div>` : ''}
           </div>`).join('')}
-        </div>` : ''}
+        </div>` : ''}` : '';
+
+      el.innerHTML = `
+        <h2><span class="dot" style="background:${nodeColour(n)}"></span>${esc(n.label)}</h2>
+        <div class="curie">${esc(n.curie)}</div>
         <div class="sect">
-          <div class="sect-h">rdf:type</div>
-          <table>${n.types.map((t) => `<tr><td class="v">${esc(t)}</td></tr>`).join('')}</table>
+          <div class="sect-h">class${n.types.length > 1 ? 'es' : ''}</div>
+          ${n.types.map((t) => `<div class="term" style="cursor:default">
+            <span class="tc">${esc(t)}</span>
+            ${descOf(t) ? `<p class="desc">${esc(descOf(t))}</p>` : (labelOf(t) ? `<span class="td">${esc(labelOf(t))}</span>` : '')}
+          </div>`).join('')}
         </div>
         <div class="sect">
           <div class="sect-h">design view</div>
           <div class="curie">${esc(n.designView ?? '(none — shared)')}</div>
         </div>
-        <div class="sect">
-          <div class="sect-h">compliance</div>
-          <div class="curie">
-            <span class="glyph ${n.shape === 'box' ? '' : 'sphere'}" style="background:${COMPLIANCE_COLOURS[n.compliance]}"></span>${esc(n.compliance)}
-            — ${esc(COMPLIANCE_HELP[n.compliance])}
-          </div>
-          ${n.complianceWhy ? `<div class="curie" style="margin-top:4px;color:#cbd5e1">${esc(n.complianceWhy)}</div>` : ''}
-          ${n.ghosted && n.compliance !== 'unchecked' ? `<div class="curie" style="margin-top:4px;color:#94a3b8">ghosted — ${esc(GHOST_HELP)}</div>` : ''}
-        </div>
-        <div class="sect">
-          <div class="sect-h">rendered as</div>
-          <div class="curie">${n.shape === 'box' ? 'box — equipment (⊑ brick:Equipment / s223:Equipment)' : 'sphere — not equipment'}</div>
-        </div>
-        ${lits.length ? `<div class="sect">
+        ${compliance}
+        ${(litProps.length || objProps.length) ? `<div class="sect">
           <div class="sect-h">properties</div>
-          <table>${lits.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}</table>
+          <table>
+            ${objProps.map((p) => propRow(p, '→ ' + graph.links.filter((l) => (l.source.id ?? l.source) === n.id && l.property === p).map((l) => (typeof l.target === 'object' ? l.target.curie ?? l.target.id : l.target)).join(', '))).join('')}
+            ${Object.entries(n.literals || {}).map(([k, v]) => propRow(k, v)).join('')}
+          </table>
         </div>` : ''}
+        ${['electrical', 'automation'].includes(n.designView) && !n.isSuper ? `<div class="sect">
+          <button id="trace-btn" class="panel-btn">Trace supply upstream ↑</button>
+          ${traceSet ? '<button id="trace-clear" class="panel-btn">Clear trace</button>' : ''}
+        </div>` : ''}
+        ${mode === 'modelling' ? `<div class="sect"><div class="sect-h">rendered as</div><div class="curie">glyph: ${esc(n.glyph ?? n.shape)}</div></div>` : ''}
       `;
+      const tb = document.getElementById('trace-btn');
+      if (tb) tb.addEventListener('click', () => startTrace(n.id));
+      const tc = document.getElementById('trace-clear');
+      if (tc) tc.addEventListener('click', clearTrace);
+    }
+
+    function clearTrace() {
+      traceSet = null;
+      applyFilter();
+      inspect(currentNode);
+      log('trace cleared — showing the full model');
+    }
+
+    // Modelling's vocabulary catalog — the classes / object props / data props
+    // ACTUALLY USED by the loaded model, each with its description. Click a term
+    // to filter the graph to what it touches. Shown in the inspector when no node
+    // is selected (and only in modelling mode).
+    function renderCatalog() {
+      const el = document.getElementById('inspector');
+      if (mode !== 'modelling' || !graph) {
+        el.innerHTML = '<p class="empty">Click a node to inspect it.</p>'; return;
+      }
+      const usedClasses = new Set(graph.nodes.flatMap((n) => n.types));
+      const usedObjProps = new Set(graph.links.map((l) => l.property));
+      const usedDataProps = new Set(graph.nodes.flatMap((n) => Object.keys(n.literals || {})));
+      const section = (title, curies, act) => {
+        const rows = [...curies].sort().map((c) => `
+          <div class="term" data-term="${esc(c)}" data-act="${act}">
+            <span class="tc">${esc(c)}</span>
+            ${labelOf(c) ? `<span class="td">${esc(labelOf(c))}${descOf(c) ? ' — ' + esc(descOf(c)) : ''}</span>` : ''}
+          </div>`).join('');
+        return `<div class="cat-h">${title} (${curies.size})</div>${rows || '<div class="empty">(none)</div>'}`;
+      };
+      el.innerHTML = `<h2>Vocabulary</h2>
+        <div class="curie">terms used in this model — click to isolate</div>
+        ${section('classes', usedClasses, 'class')}
+        ${section('object properties', usedObjProps, 'objprop')}
+        ${section('data properties', usedDataProps, 'dataprop')}`;
+      el.querySelectorAll('.term[data-term]').forEach((r) => r.addEventListener('click', () => {
+        isolateTerm(r.dataset.term, r.dataset.act);
+      }));
+    }
+
+    // Filter the graph to what a vocabulary term touches: a class → its nodes and
+    // their links; an object property → its edges and endpoints; a data property
+    // → the nodes carrying it. `All` resets.
+    function isolateTerm(term, act) {
+      let nodes, links;
+      if (act === 'objprop') {
+        links = graph.links.filter((l) => l.property === term);
+        const ids = new Set(links.flatMap((l) => [l.source.id ?? l.source, l.target.id ?? l.target]));
+        nodes = graph.nodes.filter((n) => ids.has(n.id));
+      } else if (act === 'dataprop') {
+        nodes = graph.nodes.filter((n) => term in (n.literals || {}));
+        const ids = new Set(nodes.map((n) => n.id));
+        links = graph.links.filter((l) => ids.has(l.source.id ?? l.source) && ids.has(l.target.id ?? l.target));
+      } else {
+        nodes = graph.nodes.filter((n) => n.types.includes(term));
+        const ids = new Set(nodes.map((n) => n.id));
+        links = graph.links.filter((l) => ids.has(l.source.id ?? l.source) && ids.has(l.target.id ?? l.target));
+      }
+      Graph.graphData({ nodes: nodes.map((n) => ({ ...n })), links: links.map((l) => ({ ...l })) });
+      log(`isolate ${term} → ${nodes.length} node(s), ${links.length} link(s) — All resets`);
+    }
+
+    // ── Upstream trace ────────────────────────────────────────────────────
+    // A leaf load is a socket / lamp / charger / appliance — the glyph priority
+    // already resolves these precisely. A plain sink test (incoming flow, no
+    // outgoing) can't be used: s223:connectsThrough is a flow edge whose target
+    // is the conductor, so every wire would read as a sink.
+    const CONSUMER_GLYPHS = new Set(['socket', 'bulb', 'charger', 'appliance']);
+    const isConsumer = (n) => CONSUMER_GLYPHS.has(n.glyph);
+
+    // The zone (room / space) a node sits in, for grouping the consumer list.
+    const ZONE_EDGE = { 'brick:hasLocation': 't', 'rec:locatedIn': 't', 'rec:isLocationOf': 's' };
+    function zoneOf(id) {
+      for (const l of graph.links) {
+        const dir = ZONE_EDGE[l.property];
+        if (!dir) continue;
+        if (dir === 't' && idOf(l.source) === id) return idOf(l.target);
+        if (dir === 's' && idOf(l.target) === id) return idOf(l.source);
+      }
+      return null;
+    }
+
+    // Reverse-traverse the supply: from a consumer, follow flow (feeds/connects)
+    // and control edges BACKWARD to every source, then keep only the electrical /
+    // automation nodes (rooms and the building drop out). The chosen consumer is
+    // always kept. Demo: ex:socket-lr-1 → breaker → board → inverter → AGCP →
+    // meter → ex:delivery (+ the PV array and battery that also feed the inverter).
+    const UPSTREAM_PREDS = new Set(['brick:feeds', 's223:connectsThrough', 's223:connectsTo', 'brick:controls']);
+    function traceUpstream(startId) {
+      const rev = new Map();   // node → nodes immediately upstream of it
+      for (const l of graph.links) {
+        if (!UPSTREAM_PREDS.has(l.property)) continue;
+        const s = idOf(l.source), t = idOf(l.target);
+        (rev.get(t) ?? rev.set(t, []).get(t)).push(s);
+      }
+      const seen = new Set([startId]);
+      const q = [startId];
+      while (q.length) {
+        const c = q.shift();
+        for (const u of rev.get(c) ?? []) if (!seen.has(u)) { seen.add(u); q.push(u); }
+      }
+      const keep = new Set([...seen].filter((id) => {
+        const n = nodeById(id);
+        return n && ['electrical', 'automation'].includes(n.designView);
+      }));
+      keep.add(startId);
+      return keep;
+    }
+
+    function startTrace(nodeId) {
+      const n = nodeById(nodeId);
+      traceSet = traceUpstream(nodeId);
+      applyFilter();
+      currentNode = n; inspect(n);
+      log(`trace ↑ ${n?.curie ?? nodeId} → ${traceSet.size} node(s) on the supply path (electrical/automation only) — All resets`);
+      Graph.zoomToFit(600, 60);
+    }
+
+    // Consumers panel — leaf loads grouped by zone; pick one to trace its supply.
+    function renderConsumers() {
+      const el = document.getElementById('inspector');
+      if (!graph) { el.innerHTML = '<p class="empty">No model loaded.</p>'; return; }
+      const consumers = graph.nodes.filter(isConsumer);
+      const byZone = new Map();
+      for (const c of consumers) {
+        const z = zoneOf(c.id);
+        const label = z ? (nodeById(z)?.label ?? z) : '(no zone)';
+        (byZone.get(label) ?? byZone.set(label, []).get(label)).push(c);
+      }
+      const groupsHtml = [...byZone.entries()].sort().map(([zone, cs]) => `
+        <div class="cat-h">${esc(zone)} (${cs.length})</div>
+        ${cs.map((c) => `<div class="term" data-trace="${esc(c.id)}" title="trace this load's supply to the grid">
+          <span class="tc">${esc(c.label)}</span>
+          <span class="td">${esc(c.glyph ?? '')}${c.curie ? ' · ' + esc(c.curie) : ''}</span>
+        </div>`).join('')}`).join('');
+      el.innerHTML = `<h2>Consumers</h2>
+        <div class="curie">${consumers.length} leaf load(s) — click one to trace its supply upstream to the grid source</div>
+        ${groupsHtml || '<div class="empty">(no leaf loads found)</div>'}`;
+      el.querySelectorAll('.term[data-trace]').forEach((r) =>
+        r.addEventListener('click', () => startTrace(r.dataset.trace)));
+    }
+
+    let currentNode = null;   // for re-inspect after a norm-selection change
+
+    // Populate the colour dropdown for the active mode, show/hide the Norms
+    // button, and keep colourMode valid (modelling never offers compliance).
+    function syncModeUI() {
+      const cm = document.getElementById('colour-mode');
+      cm.innerHTML = COLOUR_OPTS[mode].map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+      if (!COLOUR_OPTS[mode].some(([v]) => v === colourMode)) colourMode = COLOUR_OPTS[mode][0][0];
+      cm.value = colourMode;
+      document.getElementById('norms').style.display = mode === 'designing' ? '' : 'none';
+      document.getElementById('mode-select').value = mode;
+    }
+
+    const closeNorms = () => {
+      document.getElementById('norms-modal').style.display = 'none';
+      document.getElementById('modal-backdrop').style.display = 'none';
+    };
+    // The Designing picker: choose which norm editions the analysis runs against.
+    // Non-compliance is only ever shown here (designing mode).
+    function openNorms() {
+      if (!report) return;
+      const byNorm = {};
+      for (const e of report.editions ?? []) (byNorm[e.norm] ??= []).push(e);
+      const m = document.getElementById('norms-modal');
+      m.innerHTML = `<h2>Norms &amp; good practices</h2>
+        <p class="sub">Analyse the model against the selected editions. Deselecting a norm/edition
+        drops it from the verdict — a node checked only by an excluded edition becomes unchecked,
+        and a failure only under an excluded edition disappears.</p>
+        ${Object.entries(byNorm).map(([norm, eds]) => `
+          <div class="norm-h">${esc(norm)}</div>
+          ${eds.map((e) => `<label class="ed">
+            <input type="checkbox" data-ed="${esc(e.edition)}" ${selectedEditions.has(e.edition) ? 'checked' : ''}>
+            ${esc(e.edition)} ${e.isLatest ? '<span class="inforce">(in force)</span>' : '<span class="td">(superseded)</span>'}
+          </label>`).join('')}`).join('')}
+        <div class="norm-h">good practices</div>
+        <div class="empty">(none published yet — no norm carries dhc:normCategory "BestPractice")</div>
+        <div class="actions">
+          <button id="norms-all">Select all</button>
+          <button id="norms-apply">Apply</button>
+        </div>`;
+      document.getElementById('modal-backdrop').style.display = 'block';
+      m.style.display = 'block';
+      m.querySelector('#norms-all').onclick = () => m.querySelectorAll('input[data-ed]').forEach((c) => { c.checked = true; });
+      m.querySelector('#norms-apply').onclick = () => {
+        selectedEditions = new Set([...m.querySelectorAll('input[data-ed]:checked')].map((c) => c.dataset.ed));
+        closeNorms();
+        hidden = new Set();
+        renderLegend(); applyFilter();
+        if (currentNode) inspect(currentNode);
+        const full = selectedEditions.size === editionOrder.length;
+        log(`analysing against ${full ? 'all editions' : [...selectedEditions].join(', ') || '(none — nothing checked)'}`);
+      };
     }
 
     async function loadSource(slug) {
@@ -349,6 +942,13 @@
       ]);
       graph = g; report = r;
       logEl.innerHTML = '';
+
+      // Edition state for the Designing picker. editionOrder is oldest→newest
+      // (report.editions is built in the runs order, which is depth-sorted).
+      editionOrder = (r.editions ?? []).map((e) => e.edition);
+      selectedEditions = new Set(editionOrder);          // default: analyse against all
+      inForceByNorm = new Map();
+      for (const e of r.editions ?? []) if (e.isLatest) inForceByNorm.set(e.norm, e.edition);
 
       log(`✓ ${g.source}`, 'ok');
       log(`✓ ${g.nodes.length} nodes, ${g.links.length} links (built ${g.generatedAt})`, 'ok');
@@ -401,8 +1001,12 @@
         setStatus(`${g.tally.danger} fail · ${gapCount} grandfathered`, 'warn');
       }
 
-      Graph.graphData({ nodes: g.nodes.map((n) => ({ ...n })), links: g.links.map((l) => ({ ...l })) });
+      collapsed = new Set();   // group membership is per-model
+      traceSet = null;         // a trace does not survive a model switch
+      computeGroups();
+      applyFilter();           // group-aware: sets graphData + (re)builds hulls
       renderLegend();
+      currentNode = null; inspect(null);   // modelling → vocab catalog; designing → prompt
       let fitted = false;
       const fit = () => { if (!fitted) { fitted = true; Graph.zoomToFit(600, 60); } };
       Graph.onEngineStop(fit);
@@ -413,6 +1017,9 @@
       try {
         log('Fetching generated artifacts…');
         const index = await fetchJson('./data/index.json');
+        // vocab.json is one global file (dhc-core + overlay). Best-effort: the
+        // catalog/descriptions degrade gracefully if it is absent.
+        vocab = new Map((await fetchJson('./data/vocab.json').catch(() => ({ terms: [] }))).terms.map((t) => [t.curie, t]));
 
         // The graph instance is created once; switching source only swaps data.
         Graph = ForceGraph3D()(document.getElementById('graph-host'))
@@ -432,7 +1039,8 @@
           .linkDirectionalParticles((l) => styleOf(l).particles)
           .linkDirectionalParticleSpeed((l) => (l.kind === 'flow' ? 0.006 : 0.003))
           .linkDirectionalParticleThreeObject(particleObject)
-          .onNodeClick((n) => inspect(n));
+          .onNodeClick((n) => { currentNode = n; inspect(n); })
+          .onEngineTick(positionHulls);   // group hulls follow the live layout
 
         // Source picker — every A-Box in schema/abox/ is prebuilt, so switching
         // is a fetch, not a revalidation. Our own models sit at the top; the
@@ -448,10 +1056,21 @@
               `<optgroup label="${g} — reference, not validated">${ss.map(opt).join('')}</optgroup>`).join('');
         const wanted = params.get('model');
         sel.value = index.sources.some((s) => s.slug === wanted) ? wanted : index.first;
-        document.getElementById('colour-mode').value = colourMode;
+        syncModeUI();
+        document.getElementById('symbols').textContent = `symbols: ${glyphMode === 'sprite' ? 'flat' : '3-D'}`;
+        document.getElementById('group-select').value = groupBy;
         sel.addEventListener('change', async (e) => {
-          inspect(null);
+          currentNode = null; inspect(null);
           await loadSource(e.target.value);
+        });
+
+        document.getElementById('mode-select').addEventListener('change', (e) => {
+          mode = e.target.value;
+          hidden = new Set();
+          syncModeUI();
+          renderLegend(); applyFilter();
+          inspect(currentNode);   // catalog when nothing selected, node otherwise
+          log(`mode → ${mode}${mode === 'modelling' ? ' (compliance hidden)' : ''}`);
         });
 
         document.getElementById('colour-mode').addEventListener('change', (e) => {
@@ -463,14 +1082,45 @@
           applyFilter();
           log(`colour → ${colourMode}`);
         });
+
+        document.getElementById('group-select').addEventListener('change', (e) => {
+          groupBy = e.target.value;
+          collapsed = new Set();   // a fresh grouping starts fully expanded
+          computeGroups();
+          renderLegend();
+          applyFilter();           // rebuilds hulls; folds any collapsed groups
+          log(`group → ${groupBy}${groupBy === 'none' ? '' : ` · ${groups.size} group(s)`}`);
+        });
+
+        document.getElementById('consumers').addEventListener('click', () => {
+          currentNode = null; renderConsumers();
+        });
+
+        document.getElementById('norms').addEventListener('click', openNorms);
+        document.getElementById('modal-backdrop').addEventListener('click', closeNorms);
+        document.getElementById('symbols').addEventListener('click', (e) => {
+          glyphMode = glyphMode === 'solid' ? 'sprite' : 'solid';
+          e.target.textContent = `symbols: ${glyphMode === 'sprite' ? 'flat' : '3-D'}`;
+          applyFilter();   // re-sets graphData → rebuilds every node object
+          log(`symbols → ${glyphMode === 'sprite' ? 'flat billboarded' : '3-D primitives'}`);
+        });
         document.getElementById('fit').addEventListener('click', () => Graph.zoomToFit(600, 60));
         document.getElementById('reset-filter').addEventListener('click', () => {
-          hidden = new Set(); hiddenKinds = new Set(); renderLegend(); applyFilter();
+          hidden = new Set(); hiddenKinds = new Set(); collapsed = new Set(); traceSet = null;
+          renderLegend(); applyFilter();
         });
 
         await loadSource(sel.value);
         log(`${index.sources.length} model(s) available — switch with the "model" picker`);
         log('click a legend colour to filter');
+
+        // ?trace=<curie|id-suffix> — a linkable, headless-testable upstream trace.
+        const wantTrace = params.get('trace');
+        if (wantTrace) {
+          const n = graph.nodes.find((x) => x.curie === wantTrace || x.id === wantTrace || x.id.endsWith('/' + wantTrace));
+          if (n) startTrace(n.id);
+          else log(`?trace=${wantTrace}: no matching node`, 'warn');
+        }
       } catch (e) {
         log(String(e), 'err');
         setStatus('error', 'error');
