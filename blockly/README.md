@@ -222,6 +222,104 @@ expressed in static `defineBlocksWithJsonArray` options.
   durable format — that is still an exported file (and, ultimately, the A-Box; see
   `doc/parking-lot.md § 4`).
 
+## Wire diagram (schéma unifilaire) — Diagram tab
+
+A third top tab, **Diagram**, renders the single-line electrical diagram (NF C
+15-100 *schéma unifilaire*) **straight from the electrical Blockly file — no A-Box
+round-trip**. `Export DXF` (header) downloads it as an AC1009 DXF for LibreCAD /
+QCAD / AutoCAD; `?view=diagram` deep-links to it (`&legend=1` also opens the legend).
+
+- **Localized** (EN / DE / FR, follows the Language switch): the diagram title, the
+  cartouche cell labels, the "type" word, and the legend/toolbar chrome. The engine's
+  hardcoded French is now parameterized via `input.i18n` (`diagram.js` supplies the
+  active-language pack; default stays French).
+- **Zoom** — `−` / `Fit` / `＋` buttons and Ctrl+wheel over the canvas.
+- **Symbol legend** (`Legend` button) — every IEC 60617 symbol as a rendered glyph
+  with a localized description and its block name, grouped by category, with a
+  **"used in this diagram"** filter and a ✓ badge on the symbols the active diagram
+  actually draws. Each glyph is a self-contained `<svg>` (own `<defs>` + `<use>`)
+  parsed once from the engine's block set.
+
+The pipeline reuses the Designer's self-contained DXF/SVG engine, **vendored** into
+`blockly/dxf/` (canonical copy stays in `repos/designer/src/export/dxf/`; the vendored
+copy adds `.js` to relative imports and ships `manifest.js` so it loads build-free as
+native ESM). The **neutral input model** is the render pivot:
+
+```
+dhcb: electrical JSON ─► blocklyToUnifilaireInput ─► { delivery, boards:[{ rcds, circuits }] }
+   (blockly/dhcb-to-neutral.mjs)                        ─► renderUnifilaireSvg  (preview)
+                                                         ─► renderUnifilaire     (DXF)
+```
+
+`dhcb-to-neutral.mjs` reads the board's rails and the **variable links**: each
+`dhcb:Circuit`'s `DIFFERENTIAL` variable matches an `dhcb:RCD`'s `RCD_VAR`, which
+groups circuits under their differential (RCBO / unmatched circuits fall under a
+catch-all DDR so nothing is dropped). It also picks each circuit's **terminal
+consumer symbol** — from the sink it feeds (`dhcb:Socket`→`SOCKET_16/20/32A`,
+`dhcb:Luminaire`→`LIGHT_CEILING`, `dhcb:Appliance` `Oven`→`OVEN`, … ) or, if no
+sink, from the circuit type — using the IEC 60617 symbols in
+`blockly/dxf/library/symbolsNfc15100.js`. `unifilaire` draws `circuit.symbol` at the
+circuit end (falling back to the generic `CIRCUIT_END`). `blockly/diagram.js` is the ES-module glue that
+publishes `window.DHC_DIAGRAM` for the classic-script page. `tests/blockly/diagram.test.js`
+guards the pipeline over every demo.
+
+> The same neutral model will later be fed by an **A-Box** source (`fromAbox.js`, also
+> vendored) and by the bidirectional `dhcb:↔A-Box` translator — so diagrams come from
+> either the Blockly file or the A-Box. Phase 1 (this) is Blockly-only. See
+> `doc/parking-lot.md § 4`.
+
+## Floor-plan sketch — Floor plan tab
+
+A fourth top tab, **Floor plan**, is a sketch view of the *spatial* structure:
+each **room** of the active building level is drawn as a **draggable, resizable
+rectangle** with dotted "sketch" walls, and each of the room's **points** (its
+`dhcb:Sensor` / `Alarm` / `Setpoint` children and `dhcb:Placement`s) is a marker
+**clamped inside the room it is linked to** — a point can only be placed in its
+own room. A floor switcher pages through the levels; `−` / `Fit` / `＋` and wheel
+zoom navigate the canvas; `?view=floorplan` deep-links to it.
+
+**Blockly is the master.** Which buildings, levels, rooms and points *exist* is
+read from the Spatial workspace **every time the tab opens** — adding or removing
+them stays in the Spatial tab, and re-entering Floor plan picks up the change.
+The two structural dimensions both surface: the floor switcher lists one entry
+per **building × level** (`Main House · Ground floor`). Buildings/levels/rooms
+hang off `hasPart_*` *statement* inputs, so a sibling counts whether it sits in
+its own mutator slot **or is stacked on the previous one via a next-connection**
+(the natural drag-snap) — `blockly/floorplan/spatial-parse.mjs` flattens both.
+This view owns only **geometry**, stored in a `floorplan` layer of the combined
+Save file:
+
+```
+{ version:'dhc-blockly-designer/1', electrical, spatial,
+  floorplan: { rooms: { <key>: {x,y,w,h} }, points: { <key>: {x,y} } } }
+```
+
+A room with no saved rect gets an **auto-layout** rectangle (row-packed, scaled
+by `area_M2`); saved rects are preserved, so a room added later in Spatial shows
+up with a default rect while the others keep their positions. The layer is
+additive — older files without it still load. Standard walls, doors/windows and
+furniture on top are **Phase 2** (`doc/parking-lot.md § 6`).
+
+**Implementation — a lazy React island.** `blockly/floorplan/floorplan-app.jsx`
+is a self-contained React 18 component, **compiled in the browser by
+Babel-standalone** and loaded only on first activation of the tab (so the
+Electrical / Spatial / Diagram startup is untouched). React, ReactDOM and Babel
+come from the same CDN posture as Blockly (unpkg; offline vendoring parked). The
+pure logic is factored into ESM modules **shared** by the island (browser dynamic
+import → `window.DHC_FLOORPLAN_*`) and the vitest guards, so each invariant is
+written once: `geometry.mjs` (auto-layout, corner-resize, point-in-room clamp →
+`tests/blockly/floorplan.test.js`) and `spatial-parse.mjs` (the dhcb: Spatial
+serialization → floors, incl. stacked levels/buildings →
+`tests/blockly/spatial-parse.test.js`). A `window.DHC_FLOORPLAN_HOST` bridge passes
+`states.spatial` in and takes geometry edits back into `states.floorplan`, so
+**Save + autosave** persist the sketch.
+
+> **License:** the view is derived from `experimental/floor-planner/` — the whole
+> `experimental/` tree is **MIT** (DigitalHome.cloud), the canvas is our own SVG
+> (no Arcada/Konva/Fabric code, only Arcada's *data shape* informed the parser),
+> and the only third-party deps are **React (MIT, Meta)** and **Babel (MIT, OpenJS
+> Foundation)** — no copyleft.
+
 ## Localization
 
 English (`electrical-blocks.json`) is the base. Each other locale is a

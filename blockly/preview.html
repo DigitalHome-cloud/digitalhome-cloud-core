@@ -19,6 +19,7 @@
 
       --col-electrical: #3b82f6;
       --col-spatial:    #22c55e;
+      --col-diagram:    #f59e0b;
     }
 
     html, body { height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg-deep); color: var(--text-primary); -webkit-font-smoothing: antialiased; overflow: hidden; }
@@ -109,6 +110,53 @@
     /* ── Layout ──────────────────────────────────────────────────────── */
     #layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 72px); }
     #blockly-host { flex: 1; position: relative; overflow: hidden; }
+    #diagram-host { flex: 1; display: none; flex-direction: column; position: relative; background: #0d1929; overflow: hidden; }
+    #diagram-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    #diagram-bar .bar-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+    #diagram-scroll { flex: 1; overflow: auto; padding: 16px; }
+    #diagram-canvas svg { background: #fff; display: block; height: auto; margin: 0 auto; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+    #diagram-canvas .diagram-msg { color: var(--text-muted); font-size: 12px; padding: 24px; }
+    #diagram-canvas .diagram-msg.err { color: #f87171; }
+    /* Legend panel (right overlay) */
+    #legend-panel { position: absolute; top: 33px; right: 0; bottom: 0; width: 320px; background: var(--bg-panel);
+      border-left: 1px solid var(--border-mid); display: none; flex-direction: column; z-index: 10; box-shadow: -8px 0 24px rgba(0,0,0,0.4); }
+    #legend-panel.show { display: flex; }
+    #legend-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    #legend-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-subtle); margin-right: auto; }
+    #legend-filter { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    #legend-defs { width: 0; height: 0; overflow: hidden; }
+    #legend-grid { flex: 1; overflow-y: auto; padding: 6px; }
+    .lg-cathead { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-subtle); padding: 8px 4px 3px; }
+    .lg-cell { display: flex; align-items: center; gap: 8px; padding: 4px 4px; border-radius: 4px; }
+    .lg-cell:hover { background: rgba(148,163,184,0.06); }
+    .lg-cell[data-used="0"] { opacity: 0.45; }
+    .lg-glyph { width: 34px; height: 30px; flex-shrink: 0; background: #fff; border-radius: 3px; }
+    .lg-glyph svg { width: 100%; height: 100%; display: block; }
+    .lg-txt { min-width: 0; }
+    .lg-name { font-size: 11px; color: var(--text-primary); line-height: 1.2; }
+    .lg-meta { font-size: 9px; color: var(--text-subtle); font-family: ui-monospace, Menlo, monospace; }
+    .lg-used { color: #4ade80; }
+    /* ── Floor-plan sketch (React island) — scoped under #floorplan-host ────── */
+    #floorplan-host { flex: 1; display: none; flex-direction: column; background: #0d1929; overflow: hidden; }
+    #floorplan-root { flex: 1; display: flex; }
+    #floorplan-host .fp-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    #floorplan-host .fp-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    #floorplan-host .fp-select { font: 10px system-ui; background: var(--bg-raised); color: var(--text-primary); border: 1px solid var(--border-mid); border-radius: 4px; padding: 2px 6px; outline: none; }
+    #floorplan-host .fp-btn { padding: 3px 9px; font-size: 10px; border-radius: 99px; cursor: pointer; border: 1px solid var(--border-mid); background: transparent; color: var(--text-muted); }
+    #floorplan-host .fp-btn:hover { background: var(--bg-raised); color: var(--text-primary); }
+    #floorplan-host .fp-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+    #floorplan-host .fp-hint { font-size: 10px; color: var(--text-subtle); margin-left: 8px; }
+    #floorplan-host .fp-body { flex: 1; display: flex; min-height: 0; }
+    #floorplan-host .fp-canvas { flex: 1; min-width: 0; }
+    #floorplan-host .fp-canvas svg { width: 100%; height: 100%; touch-action: none; }
+    #floorplan-host .fp-props { width: 230px; border-left: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column; flex-shrink: 0; }
+    #floorplan-host .fp-props-h { padding: 8px 10px 6px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-subtle); border-bottom: 1px solid var(--border); }
+    #floorplan-host .fp-props-b { padding: 8px 10px; font-size: 11px; color: var(--text-primary); }
+    #floorplan-host .fp-prow { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
+    #floorplan-host .fp-prow span { color: var(--text-subtle); }
+    #floorplan-host .fp-note { margin-top: 10px; font-size: 10px; line-height: 1.5; color: var(--text-muted); }
+    #floorplan-host .fp-muted { color: var(--text-subtle); }
+    #floorplan-host .fp-empty { margin: auto; padding: 24px; color: var(--text-muted); font-size: 12px; text-align: center; max-width: 420px; }
 
     /* ── Right panel ─────────────────────────────────────────────────── */
     #right-panel {
@@ -166,6 +214,10 @@
 
   <!-- Blockly v11 — CDN (this harness is NOT offline; see blockly/README.md) -->
   <script src="https://unpkg.com/blockly@11.2.2/blockly.min.js"></script>
+  <!-- Wire-diagram (schéma unifilaire) engine — ES module, publishes window.DHC_DIAGRAM.
+       Cache-busted so a diagram.js edit is always picked up fresh (like the no-store
+       fetches); the stable vendored dxf/ modules it imports are cached normally. -->
+  <script type="module">import('./diagram.js?v=' + Date.now()).catch((e) => console.error('diagram.js load failed', e));</script>
   <!-- DHC mutators — must load AFTER Blockly, BEFORE block defs. Both harnesses'
        plugins are loaded up front; mutator names + dhcb: types are all distinct. -->
   <script src="./registerPlugins-electrical.js"></script>
@@ -202,6 +254,7 @@
       <button class="hbtn" id="btn-new" title="Start a new design — blank Electrical + Spatial (both workspaces)">New</button>
       <button class="hbtn" id="btn-json"  title="View the active workspace JSON">View JSON</button>
       <button class="hbtn" id="btn-load"  title="Load a saved designer file (combined or single workspace)">Load</button>
+      <button class="hbtn" id="btn-dxf"  title="Export the single-line diagram (schéma unifilaire) as DXF">Export DXF</button>
       <button class="hbtn primary" id="btn-save" title="Download both workspaces (combined JSON)">Save</button>
       <input type="file" id="file-input" accept="application/json,.json" style="display:none">
       <div class="divider"></div>
@@ -213,11 +266,33 @@
   <div id="tabs">
     <button class="tab active" data-ws="electrical"><span class="dot" style="background: var(--col-electrical)"></span><span class="tab-label">Electrical</span></button>
     <button class="tab" data-ws="spatial"><span class="dot" style="background: var(--col-spatial)"></span><span class="tab-label">Spatial</span></button>
+    <button class="tab" data-view="diagram"><span class="dot" style="background: var(--col-diagram)"></span><span class="tab-label">Diagram</span></button>
+    <button class="tab" data-view="floorplan"><span class="dot" style="background: var(--col-spatial)"></span><span class="tab-label">Floor plan</span></button>
   </div>
 
   <!-- ── Main layout ──────────────────────────────────────────────────── -->
   <div id="layout">
     <div id="blockly-host"></div>
+    <div id="diagram-host">
+      <div id="diagram-bar">
+        <button class="hbtn" id="dz-out"  title="Zoom out">−</button>
+        <button class="hbtn" id="dz-fit"  title="Fit width">Fit</button>
+        <button class="hbtn" id="dz-in"   title="Zoom in">＋</button>
+        <span class="bar-sep"></span>
+        <button class="hbtn" id="dg-legend" title="Symbol legend">Legend</button>
+      </div>
+      <div id="diagram-scroll"><div id="diagram-canvas"></div></div>
+      <aside id="legend-panel">
+        <div id="legend-head">
+          <span id="legend-title">Symbols</span>
+          <label id="legend-filter"><input type="checkbox" id="legend-used"> <span id="legend-filter-lbl">only in this diagram</span></label>
+          <button class="hbtn" id="legend-close" title="Close">✕</button>
+        </div>
+        <div id="legend-defs" aria-hidden="true"></div>
+        <div id="legend-grid"></div>
+      </aside>
+    </div>
+    <div id="floorplan-host"><div id="floorplan-root"></div></div>
 
     <aside id="right-panel">
       <div class="panel-title">Event Log</div>
@@ -353,7 +428,7 @@
     let injecting = false;
     const baseDefs = { electrical: null, spatial: null };
     const toolboxes = { electrical: null, spatial: null };
-    const states = { electrical: null, spatial: null };   // last serialization per workspace
+    const states = { electrical: null, spatial: null, floorplan: null };   // workspaces + the floor-plan geometry layer
 
     // "Dirty" = the current design differs from the last New / Save / Load. We
     // decide this by COMPARING serializations at click time — not by catching a
@@ -371,7 +446,7 @@
     function persist() {
       try {
         localStorage.setItem(STATE_KEY, JSON.stringify({
-          version: 'dhc-blockly-designer/1', electrical: states.electrical, spatial: states.spatial, activeWs,
+          version: 'dhc-blockly-designer/1', electrical: states.electrical, spatial: states.spatial, floorplan: states.floorplan, activeWs,
         }));
       } catch (e) { /* storage full / disabled — autosave is best-effort */ }
     }
@@ -582,11 +657,22 @@
     }
 
     /* ── Tab switch = workspace switch ─────────────────────────────────── */
+    let inDiagram = false, inFloorplan = false;   // non-workspace overlay views
+    function activeView() { return inDiagram ? 'diagram' : inFloorplan ? 'floorplan' : activeWs; }
+    function showHost(which) {   // 'blockly' | 'diagram' | 'floorplan'
+      document.getElementById('blockly-host').style.display   = which === 'blockly'   ? ''     : 'none';
+      document.getElementById('diagram-host').style.display   = which === 'diagram'   ? 'flex' : 'none';
+      document.getElementById('floorplan-host').style.display = which === 'floorplan' ? 'flex' : 'none';
+    }
+    const VIEW_COLOR = { diagram: 'var(--col-diagram)', floorplan: 'var(--col-spatial)' };
     function styleTabs() {
+      const av = activeView();
       document.querySelectorAll('.tab').forEach((btn) => {
-        const on = btn.dataset.ws === activeWs;
+        const key = btn.dataset.view || btn.dataset.ws;
+        const on = key === av;
         btn.classList.toggle('active', on);
-        btn.style.borderBottomColor = on ? WORKSPACES[activeWs].color : 'transparent';
+        const color = VIEW_COLOR[key] || (WORKSPACES[key] ? WORKSPACES[key].color : 'transparent');
+        btn.style.borderBottomColor = on ? color : 'transparent';
       });
     }
     function setActiveWs(ws) {
@@ -599,7 +685,144 @@
       persist();
       log('workspace → ' + ws, 'info');
     }
-    document.querySelectorAll('.tab').forEach((btn) => btn.addEventListener('click', () => setActiveWs(btn.dataset.ws)));
+
+    /* ── Diagram (schéma unifilaire) — localized SVG from the electrical Blockly
+     * file via blockly/dxf/ (diagram.js). Zoom + symbol legend. No A-Box. */
+    let diagramZoom = 1, baseFitW = 0;
+    const DIAGRAM_UI = {
+      en: { legend: 'Legend', symbols: 'Symbols', onlyUsed: 'only in this diagram', fit: 'Fit', dxf: 'Export DXF', tab: 'Diagram' },
+      fr: { legend: 'Légende', symbols: 'Symboles', onlyUsed: 'seulement dans ce schéma', fit: 'Ajuster', dxf: 'Exporter DXF', tab: 'Schéma' },
+      de: { legend: 'Legende', symbols: 'Symbole', onlyUsed: 'nur in diesem Plan', fit: 'Anpassen', dxf: 'DXF-Export', tab: 'Schaltplan' },
+    };
+    function escHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+    function currentSid() {
+      return states.spatial?.blocks?.blocks?.[0]?.fields?.smartHomeId
+          || states.electrical?.blocks?.blocks?.[0]?.fields?.name || 'DHC';
+    }
+    function applyDiagramUi() {
+      const u = DIAGRAM_UI[activeLang] || DIAGRAM_UI.en;
+      document.getElementById('dg-legend').textContent = u.legend;
+      document.getElementById('legend-title').textContent = u.symbols;
+      document.getElementById('legend-filter-lbl').textContent = u.onlyUsed;
+      document.getElementById('dz-fit').textContent = u.fit;
+      document.getElementById('btn-dxf').textContent = u.dxf;
+      const dt = document.querySelector('.tab[data-view="diagram"] .tab-label'); if (dt) dt.textContent = u.tab;
+    }
+    function applyZoom() {
+      const svg = document.querySelector('#diagram-canvas svg');
+      if (svg && baseFitW) { svg.style.width = Math.round(baseFitW * diagramZoom) + 'px'; svg.style.height = 'auto'; }
+    }
+    function setZoom(z) { diagramZoom = Math.max(0.25, Math.min(6, z)); applyZoom(); }
+    function renderDiagram() {
+      const canvas = document.getElementById('diagram-canvas');
+      const api = window.DHC_DIAGRAM;
+      if (!api) { canvas.innerHTML = '<div class="diagram-msg">Diagram engine loading…</div>'; setTimeout(renderDiagram, 150); return; }
+      try {
+        api.renderSvgInto(canvas, states.electrical, currentSid(), activeLang);
+        baseFitW = Math.min(1400, (document.getElementById('diagram-scroll').clientWidth - 32) || 1000);
+        applyZoom();
+        if (document.getElementById('legend-panel').classList.contains('show')) buildLegend();
+      } catch (e) {
+        canvas.innerHTML = '<div class="diagram-msg err">Diagram error: ' + e.message + '</div>'; log('diagram: ' + e.message, 'err');
+      }
+    }
+    function buildLegend() {
+      const api = window.DHC_DIAGRAM; if (!api) return;
+      const { items } = api.legend(activeLang, states.electrical, currentSid());
+      const usedOnly = document.getElementById('legend-used').checked;
+      const shown = items.filter((it) => !usedOnly || it.used);
+      let html = '', cat = null;
+      for (const it of shown) {
+        if (it.category !== cat) { cat = it.category; html += '<div class="lg-cathead">' + escHtml(cat) + '</div>'; }
+        html += '<div class="lg-cell" data-used="' + (it.used ? 1 : 0) + '">'
+          + '<div class="lg-glyph">' + it.glyph + '</div>'
+          + '<div class="lg-txt"><div class="lg-name">' + escHtml(it.description) + '</div>'
+          + '<div class="lg-meta">' + escHtml(it.name) + (it.used ? ' <span class="lg-used">✓</span>' : '') + '</div></div></div>';
+      }
+      document.getElementById('legend-grid').innerHTML = html || '<div class="diagram-msg">—</div>';
+    }
+    function toggleLegend(show) {
+      const p = document.getElementById('legend-panel');
+      const on = show === undefined ? !p.classList.contains('show') : show;
+      p.classList.toggle('show', on);
+      if (on) buildLegend();
+    }
+    document.getElementById('dz-in').addEventListener('click', () => setZoom(diagramZoom * 1.25));
+    document.getElementById('dz-out').addEventListener('click', () => setZoom(diagramZoom / 1.25));
+    document.getElementById('dz-fit').addEventListener('click', () => setZoom(1));
+    document.getElementById('dg-legend').addEventListener('click', () => toggleLegend());
+    document.getElementById('legend-close').addEventListener('click', () => toggleLegend(false));
+    document.getElementById('legend-used').addEventListener('change', buildLegend);
+    document.getElementById('diagram-scroll').addEventListener('wheel', (e) => {
+      if (!e.ctrlKey) return; e.preventDefault(); setZoom(diagramZoom * (e.deltaY < 0 ? 1.1 : 0.9));
+    }, { passive: false });
+
+    function flushActive() { if (workspace && !injecting) states[activeWs] = Blockly.serialization.workspaces.save(workspace); }
+    function enterDiagram() {
+      flushActive();
+      inDiagram = true; inFloorplan = false;
+      showHost('diagram'); styleTabs();
+      diagramZoom = 1; renderDiagram();
+      log('view → diagram', 'info');
+    }
+    function exitDiagram() {
+      if (!inDiagram) return;
+      inDiagram = false; showHost('blockly'); styleTabs();
+    }
+
+    /* ── Floor plan (React island, lazy-loaded) — Blockly Spatial is the master;
+     * this view stores geometry in a `floorplan` layer via DHC_FLOORPLAN_HOST. */
+    window.DHC_FLOORPLAN_HOST = {
+      getSpatial: () => states.spatial,
+      getFloorplan: () => states.floorplan || {},
+      setFloorplan: (fp) => { states.floorplan = fp; persist(); },
+    };
+    let fpReady = false, fpLoading = false;
+    function loadScript(src) {
+      return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(s); });
+    }
+    function ensureFloorplan(cb) {
+      if (fpReady) return cb();
+      if (fpLoading) return void setTimeout(() => ensureFloorplan(cb), 120);
+      fpLoading = true;
+      log('loading floor-plan engine (React)…', 'info');
+      loadScript('https://unpkg.com/react@18.3.1/umd/react.production.min.js')
+        .then(() => loadScript('https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js'))
+        .then(() => loadScript('https://unpkg.com/@babel/standalone@7.29.0/babel.min.js'))
+        .then(() => import('./floorplan/geometry.mjs?v=' + Date.now()).then((m) => { window.DHC_FLOORPLAN_GEOM = m; }))
+        .then(() => import('./floorplan/spatial-parse.mjs?v=' + Date.now()).then((m) => { window.DHC_FLOORPLAN_PARSE = m; }))
+        .then(() => fetch('./floorplan/floorplan-app.jsx', { cache: 'no-store' }).then((r) => r.text()))
+        .then((code) => { (0, eval)(Babel.transform(code, { presets: ['env', 'react'] }).code); fpReady = true; fpLoading = false; log('✓ floor-plan engine ready', 'ok'); cb(); })
+        .catch((e) => { fpLoading = false; log('✗ floor-plan load: ' + e.message, 'err'); });
+    }
+    function enterFloorplan() {
+      flushActive();
+      inFloorplan = true; inDiagram = false;
+      showHost('floorplan'); styleTabs();
+      ensureFloorplan(() => { try { window.DHC_mountFloorplan(document.getElementById('floorplan-root')); } catch (e) { log('floor-plan: ' + e.message, 'err'); } });
+      log('view → floor plan', 'info');
+    }
+    function exitFloorplan() {
+      if (!inFloorplan) return;
+      inFloorplan = false; showHost('blockly'); styleTabs();
+    }
+    document.querySelectorAll('.tab').forEach((btn) => btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      if (view === 'diagram') { exitFloorplan(); enterDiagram(); }
+      else if (view === 'floorplan') { exitDiagram(); enterFloorplan(); }
+      else { exitDiagram(); exitFloorplan(); setActiveWs(btn.dataset.ws); }
+    }));
+
+    document.getElementById('btn-dxf').addEventListener('click', () => {
+      if (workspace && !inDiagram) states[activeWs] = Blockly.serialization.workspaces.save(workspace);
+      const api = window.DHC_DIAGRAM;
+      if (!api) { log('✗ DXF engine not ready', 'err'); return; }
+      try {
+        const fname = 'schema-unifilaire-' + new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19) + '.dxf';
+        api.exportDxf(states.electrical, currentSid(), fname, activeLang);
+        log('↓ exported ' + fname, 'ok');
+      } catch (e) { log('✗ DXF export: ' + e.message, 'err'); }
+    });
 
     /* ── Header buttons ────────────────────────────────────────────────── */
     function currentJson() { return JSON.stringify(Blockly.serialization.workspaces.save(workspace), null, 2); }
@@ -615,7 +838,7 @@
     // survive. Exporting marks the design "clean" (nothing unexported to lose).
     function doExport() {
       if (workspace) states[activeWs] = Blockly.serialization.workspaces.save(workspace);
-      const combined = { version: 'dhc-blockly-designer/1', electrical: states.electrical, spatial: states.spatial };
+      const combined = { version: 'dhc-blockly-designer/1', electrical: states.electrical, spatial: states.spatial, floorplan: states.floorplan };
       const text = JSON.stringify(combined, null, 2);
       const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const fname = 'dhc-designer-' + stamp + '.json';
@@ -659,6 +882,7 @@
       if (state && (state.electrical || state.spatial)) {
         if (state.electrical) states.electrical = state.electrical;
         if (state.spatial) states.spatial = state.spatial;
+        if (state.floorplan) states.floorplan = state.floorplan;
         injectWs(activeWs, states[activeWs]);
         applyChrome(); updateStats();
         log('↑ loaded ' + srcName + ' (combined) — electrical+spatial restored', 'ok');
@@ -708,11 +932,14 @@
         if (workspace) states.electrical = Blockly.serialization.workspaces.save(workspace);
         injectWs('electrical', states.electrical);
       }
+      applyDiagramUi();
+      if (inDiagram) renderDiagram();   // re-localize the open diagram + legend
       log('language → ' + lang, 'ok');
     }
     const langSelect = document.getElementById('lang-select');
     langSelect.value = activeLang;
     langSelect.addEventListener('change', (e) => setLang(e.target.value));
+    applyDiagramUi();   // initial diagram-tab label + button texts in the active language
 
     /* ── Bootstrap ─────────────────────────────────────────────────────── */
     async function load() {
@@ -735,6 +962,7 @@
         if (restored) {
           if (restored.electrical) states.electrical = restored.electrical;
           if (restored.spatial) states.spatial = restored.spatial;
+          if (restored.floorplan) states.floorplan = restored.floorplan;
         }
 
         // Register both block sets (electrical merged with the active locale).
@@ -768,6 +996,11 @@
           try { applyLoaded(await fetchJson(wantLoad), wantLoad); }
           catch (le) { log('✗ load ' + wantLoad + ': ' + le.message, 'err'); }
         }
+        // ?view=diagram|floorplan — open a view tab directly (deep-link); &legend=1 opens the legend
+        const wantView = new URLSearchParams(location.search).get('view');
+        if (wantView === 'diagram') enterDiagram();
+        else if (wantView === 'floorplan') enterFloorplan();
+        if (new URLSearchParams(location.search).get('legend') === '1') { enterDiagram(); toggleLegend(true); }
       } catch (e) {
         log(String(e), 'err'); setStatus('error', 'error'); console.error(e);
       }

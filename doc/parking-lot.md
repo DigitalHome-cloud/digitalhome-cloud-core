@@ -474,3 +474,78 @@ here rather than promoted now.
   `blockly.min.js` (12.5.1 is already on disk in the Designer/Modeler
   `node_modules`, but the harness targets the Blockly-11 API, so a compat pass is
   part of the job) is the fix when the harness needs to run air-gapped.
+
+## 5. Wire diagram (schéma unifilaire) / DXF — from Blockly now, from the A-Box next
+
+**Phase 1 shipped:** the harness's **Diagram** tab renders a **localized** (EN/DE/FR)
+single-line diagram + **DXF export** straight from the electrical Blockly file — **no
+A-Box** — reusing the Designer's DXF/SVG engine **vendored** into `blockly/dxf/`, via
+a `dhcb:→neutral` adapter (`blockly/dhcb-to-neutral.mjs`), with zoom and a symbol
+legend (`blockly/diagram.js`). The **neutral input model** is the render pivot.
+Remaining:
+
+- **Phase 2 — diagram from the A-Box.** The vendored `dxf/fromAbox.js` already maps a
+  Designer A-Box `{nodes,links}` → neutral; wire a "load A-Box" path so the Diagram
+  tab renders from an A-Box too. Both sources feed the one `neutral → unifilaire`
+  renderer.
+- **Phase 3 — bidirectional `dhcb:↔A-Box` translator** (the § 4 translator, seen from
+  the diagram side). Forward `dhcb:→A-Box` + the new backward `A-Box→dhcb:`; then the
+  A-Box is the source of truth, Blockly a regenerated view, and diagrams come from
+  either. The neutral model stays the render contract across all three phases.
+- **Engine lives in two places — unify + upstream.** Vendored `blockly/dxf/` vs
+  canonical `repos/designer/src/export/dxf/`. Upstream the local enhancements made to
+  the vendored copy: (a) `unifilaire.js` draws `circuit.symbol` (the per-circuit
+  terminal consumer symbol) with a `CIRCUIT_END` fallback; (b) `unifilaire.js` +
+  `frames.js` accept `input.i18n` for localization; (c) `symbolsNfc15100.js` now
+  **registers `BOX_HEATING` + `BOX_IRVE`** (declared in `manifest.json` but previously
+  undrawn). The Designer's `fromAbox`/`aboxSerializer` could set `circuit.symbol` too,
+  and `manifest.json` should gain **`label.de`** — a DE symbol map currently lives in
+  `diagram.js` as an interim (double maintenance).
+- **Diagram coverage gaps** (what the unifilaire does not yet show): only **one
+  board** (no `SubDistributionBoard` / multi-board), and none of the non-circuit
+  devices — **contactor, fil-pilote manager, RE2020 indicator, SPD, the DB's own
+  differential, the VDI/communication panel**. These track the block-level gaps in
+  § 4; the neutral model + renderer must be extended per device.
+- **Symbol approximations** (pending a proper NF C 15-100 symbol review): heat pump →
+  `MOTOR`, dryer → `WASHING_MACHINE`, garage door → `ROLLER_SHUTTER`, gas/electric
+  heating → `BOX_HEATING` (generic), EV → `BOX_IRVE`. Add dedicated symbols (dryer,
+  heat pump, gas boiler) as the library grows. The breaker **curve** always renders
+  `C` — `dhcb:` has no curve field (see § 4).
+- **Legend glyph sizing.** Each legend glyph uses a fixed `viewBox` (−12…24) because
+  the writer tracks only INSERT points, not block geometry, so very large symbols
+  could clip. A per-symbol bounds pass in the engine would size each glyph exactly.
+- **Stale module cache (dev caveat).** `diagram.js` is imported **cache-busted** so
+  glue edits are always fresh; the stable vendored `dxf/` modules are cached normally,
+  so editing them needs a hard refresh (the harness has no build step). The dxf engine
+  is fully local — the only remaining CDN dependency is Blockly (offline-vendoring
+  item above).
+
+## 6. Floor-plan sketch (Floor plan tab) — rooms + points now, walls/furniture next
+
+**Phase 1 shipped:** the harness's **Floor plan** tab (a lazy React island,
+`blockly/floorplan/floorplan-app.jsx`, compiled in-browser by Babel-standalone)
+sketches the *spatial* structure — each room of the active level as a draggable /
+resizable dotted rectangle, each point clamped inside its linked room. Structure is
+mastered by the Spatial Blockly; geometry persists to a `floorplan` layer of the
+combined Save file. Pure geometry is shared with the test in
+`blockly/floorplan/geometry.mjs`. Remaining:
+
+- **Phase 2 — standard walls, doors, windows, furniture.** Promote the dotted
+  sketch edges to real **standard walls** (thickness, from the Designer), place
+  **doors / windows** on a wall, and add the **furniture library** (the prototype's
+  `furniture-glyphs`) on top — cosmetic overlays that don't feed the ontology yet.
+  The prototype's Arcada wall/furniture model is the reference; port only what's
+  needed and keep the SVG canvas.
+- **Point-label overlap.** When a room holds several points their labels overlap at
+  the default grid positions (cosmetic — dragging separates them). Needs simple
+  label anti-collision (leader lines or a spiral/force nudge) at render time.
+- **Durable geometry keys (shared with § 4).** `floorplan` rows are keyed by the
+  block `id` when present, else a `building/level/room` **path** — so renaming a room
+  in Spatial orphans its saved rect. The NanoID stable-identity fix parked in § 4
+  fixes this too; until then, renames reset that room's layout.
+- **Offline vendoring (shared with § 4 / § 5).** React + ReactDOM + Babel load from
+  unpkg on first tab activation, same posture as Blockly. Vendor them locally when the
+  Blockly offline-vendoring item is done, so the whole harness runs without a CDN.
+- **No auto-fit / no wall snapping.** Auto-layout row-packs by area but never fits the
+  view to content on load (only the manual `Fit` button), and rooms don't snap to a
+  grid or to each other while dragging. Both are quality-of-life, deferred.
