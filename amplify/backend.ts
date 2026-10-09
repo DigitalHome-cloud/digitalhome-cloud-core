@@ -40,6 +40,7 @@ import { edgeTelemetry } from "./functions/edgeTelemetry/resource";
 import { edgeTokenRotate } from "./functions/edgeTokenRotate/resource";
 import { edgeDeviceApproval } from "./functions/edgeDeviceApproval/resource";
 import { adminDebug } from "./functions/adminDebug/resource";
+import { adminMfaGate } from "./functions/adminMfaGate/resource";
 
 const backend = defineBackend({
   auth,
@@ -54,6 +55,7 @@ const backend = defineBackend({
   edgeTokenRotate,
   edgeDeviceApproval,
   adminDebug,
+  adminMfaGate,
 });
 
 // ─── dhcDesignStorageProxy IAM + env wiring (DH-SPEC-203, audit C-2 v2) ─────
@@ -149,6 +151,19 @@ backend.postConfirmation.resources.lambda.addToRolePolicy(
       "cognito-idp:GetGroup",
       "cognito-idp:CreateGroup",
     ],
+    resources: [userPoolWildcardArn],
+  })
+);
+
+// ─── adminMfaGate IAM (pre-token-generation trigger) ────────────────────────
+// Reads the user's MFA settings (AdminGetUser) to decide whether dhc-admins
+// goes into the token. Same wildcard-userpool pattern as postConfirmation, for
+// the same reason: the auth stack references this trigger, so pointing the
+// role at the pool's ARN would close a CloudFormation cycle.
+backend.adminMfaGate.resources.lambda.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["cognito-idp:AdminGetUser"],
     resources: [userPoolWildcardArn],
   })
 );
