@@ -1,5 +1,6 @@
 import { defineAuth } from "@aws-amplify/backend";
 import { postConfirmation } from "../functions/postConfirmation/resource";
+import { adminMfaGate } from "../functions/adminMfaGate/resource";
 
 /**
  * Cognito User Pool + Identity Pool with email/password auth and 5 groups
@@ -36,7 +37,13 @@ export const auth = defineAuth({
     "dhc-standard",
     "dhc-welcome",
   ],
+  // Two-step sign-in with an authenticator app (TOTP). OPTIONAL: ordinary
+  // users are never asked; admins must set it up, or adminMfaGate withholds
+  // the admin group from their tokens (shared with PermTek-5, whose tenant
+  // admins need it too).
+  multifactor: { mode: "OPTIONAL", totp: true },
   triggers: {
     postConfirmation,
+    preTokenGeneration: adminMfaGate,
   },
 });
