@@ -40,7 +40,8 @@ import { edgeToken } from "./functions/edgeToken/resource";
 import { edgeTelemetry } from "./functions/edgeTelemetry/resource";
 import { edgeTokenRotate } from "./functions/edgeTokenRotate/resource";
 import { edgeHomes } from "./functions/edgeHomes/resource";
-import { edgeCatalogue } from "./functions/edgeCatalogue/resource";
+import { edgeMarket } from "./functions/edgeMarket/resource";
+import { market } from "./functions/market/resource";
 import { edgeDeviceApproval } from "./functions/edgeDeviceApproval/resource";
 import { adminDebug } from "./functions/adminDebug/resource";
 import { adminMfaGate } from "./functions/adminMfaGate/resource";
@@ -57,7 +58,8 @@ const backend = defineBackend({
   edgeTelemetry,
   edgeTokenRotate,
   edgeHomes,
-  edgeCatalogue,
+  edgeMarket,
+  market,
   edgeDeviceApproval,
   adminDebug,
   adminMfaGate,
@@ -301,7 +303,7 @@ const edgeTokenFn = backend.edgeToken.resources.lambda;
 const edgeTelemetryFn = backend.edgeTelemetry.resources.lambda;
 const edgeRotateFn = backend.edgeTokenRotate.resources.lambda;
 const edgeHomesFn = backend.edgeHomes.resources.lambda;
-const edgeCatalogueFn = backend.edgeCatalogue.resources.lambda;
+const edgeMarketFn = backend.edgeMarket.resources.lambda;
 const edgeApprovalFn = backend.edgeDeviceApproval.resources.lambda;
 
 for (const fn of [
@@ -310,7 +312,7 @@ for (const fn of [
   backend.edgeTelemetry,
   backend.edgeTokenRotate,
   backend.edgeHomes,
-  backend.edgeCatalogue,
+  backend.edgeMarket,
 ]) {
   fn.addEnvironment("DEVICE_CODES_TABLE_NAME", deviceCodesTable.tableName);
   fn.addEnvironment("EDGE_REGISTRY_TABLE_NAME", edgeRegistryTable.tableName);
@@ -391,35 +393,89 @@ edgeHomesFn.addToRolePolicy(
 );
 backend.edgeHomes.addEnvironment("DIGITALHOME_TABLE_NAME", digitalHomeTable.tableName);
 
-// edgeCatalogue: verifies the token (GetItem on EdgeRegistry), reads the
-// DeviceModel table page by page (Scan) and writes one model (UpdateItem).
-// A write asks Cognito, on every call, whether the person who linked the edge
-// is a catalogue admin (dhc-admins with TOTP): ListUsers by sub, their groups
-// and MFA settings. Wildcard pool ARN as for the other Cognito callers.
+// ─── The marketplace (market for the Portal, edgeMarket for edges) ─────────
+// One row per seller in MarketSeller (its catalogue's version and S3 key);
+// the Turtle under market/graphs/ (Lambdas only), staging under
+// market/staging/, images and datasheets under public/market/ (world-readable,
+// written only through hash-bound presigned PUTs). The table lives in the
+// DATA stack beside the market Lambda; edgeMarket (edge stack) reads it, which
+// is the edge → data direction that is allowed (see edgeTablesParam below).
+const marketFn = backend.market.resources.lambda;
+const marketSellerTable = new Table(Stack.of(marketFn), "MarketSeller", {
+  partitionKey: { name: "id", type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+  pointInTimeRecovery: true,
+  encryption: TableEncryption.AWS_MANAGED,
+});
+for (const [fn, fnRes, write] of [
+  [marketFn, backend.market, ["dynamodb:PutItem"]],
+  [edgeMarketFn, backend.edgeMarket, []],
+] as const) {
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:UpdateItem", ...write],
+    resources: [marketSellerTable.tableArn],
+  }));
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+    resources: [`${bucket.bucketArn}/market/*`],
+  }));
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["s3:GetObject", "s3:PutObject"],
+    resources: [`${bucket.bucketArn}/public/market/*`],
+  }));
+  // HeadObject answers 404 (not 403) for a missing file only with ListBucket.
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["s3:ListBucket"],
+    resources: [bucket.bucketArn],
+    conditions: { StringLike: { "s3:prefix": ["public/market/*"] } },
+  }));
+  fnRes.addEnvironment("MARKET_SELLER_TABLE_NAME", marketSellerTable.tableName);
+  fnRes.addEnvironment("STORAGE_BUCKET_NAME", bucket.bucketName);
+  fnRes.addEnvironment("USER_POOL_ID", backend.auth.resources.userPool.userPoolId);
+}
+// edgeMarket: verify the token; ask Cognito about the linker on writes.
+edgeMarketFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["dynamodb:GetItem"],
+  resources: [edgeRegistryTable.tableArn],
+}));
+edgeMarketFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["cognito-idp:ListUsers", "cognito-idp:AdminListGroupsForUser", "cognito-idp:AdminGetUser"],
+  resources: [userPoolWildcardArn],
+}));
+// market: the one-time import reads the old DeviceModel table and its files.
 const deviceModelTable = backend.data.resources.tables.DeviceModel;
-edgeCatalogueFn.addToRolePolicy(
-  new PolicyStatement({
-    effect: Effect.ALLOW,
-    actions: ["dynamodb:GetItem"],
-    resources: [edgeRegistryTable.tableArn],
-  })
-);
-edgeCatalogueFn.addToRolePolicy(
-  new PolicyStatement({
-    effect: Effect.ALLOW,
-    actions: ["dynamodb:Scan", "dynamodb:UpdateItem"],
-    resources: [deviceModelTable.tableArn],
-  })
-);
-edgeCatalogueFn.addToRolePolicy(
-  new PolicyStatement({
-    effect: Effect.ALLOW,
-    actions: ["cognito-idp:ListUsers", "cognito-idp:AdminListGroupsForUser", "cognito-idp:AdminGetUser"],
-    resources: [userPoolWildcardArn],
-  })
-);
-backend.edgeCatalogue.addEnvironment("DEVICEMODEL_TABLE_NAME", deviceModelTable.tableName);
-backend.edgeCatalogue.addEnvironment("USER_POOL_ID", backend.auth.resources.userPool.userPoolId);
+marketFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["dynamodb:Scan"],
+  resources: [deviceModelTable.tableArn],
+}));
+marketFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["s3:GetObject"],
+  resources: [`${bucket.bucketArn}/public/catalogue/*`],
+}));
+marketFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["s3:ListBucket"],
+  resources: [bucket.bucketArn],
+  conditions: { StringLike: { "s3:prefix": ["public/catalogue/devices/*"] } },
+}));
+backend.market.addEnvironment("DEVICEMODEL_TABLE_NAME", deviceModelTable.tableName);
+// market: dhc-admins create sellers (a Cognito group each) and their editors.
+marketFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: [
+    "cognito-idp:CreateGroup", "cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminRemoveUserFromGroup",
+    "cognito-idp:ListUsers", "cognito-idp:ListUsersInGroup",
+  ],
+  resources: [userPoolWildcardArn],
+}));
 
 // edgeDeviceApproval (AppSync): queries the KEYS_ONLY user_code GSI, re-reads
 // the base row (GetItem) for device_info, updates DeviceCodes, reads DigitalHome
@@ -427,7 +483,7 @@ backend.edgeCatalogue.addEnvironment("USER_POOL_ID", backend.auth.resources.user
 // and (re)assign the caller's edges.
 //
 // It lives in the "data" stack and the edge tables in the "edge" stack, while
-// edge Lambdas (edgeHomes, edgeCatalogue) read data tables. Naming the edge
+// edge Lambdas (edgeHomes, edgeMarket) read data tables. Naming the edge
 // tables here would make data → edge as well as edge → data: a CloudFormation
 // cycle (stage job 17). So the edge stack publishes the two table names as
 // SSM parameters, this Lambda reads them at run time, and its IAM names the
@@ -502,8 +558,10 @@ const routes: Array<[string, typeof edgeAuthzFn]> = [
   ["/edge/v1/telemetry", edgeTelemetryFn],
   ["/edge/v1/token/rotate", edgeRotateFn],
   ["/edge/v1/homes", edgeHomesFn],
-  ["/edge/v1/catalogue", edgeCatalogueFn],
-  ["/edge/v1/catalogue/put", edgeCatalogueFn],
+  ["/edge/v1/market/sellers", edgeMarketFn],
+  ["/edge/v1/market/graphs/get", edgeMarketFn],
+  ["/edge/v1/market/graphs/put", edgeMarketFn],
+  ["/edge/v1/market/uploads", edgeMarketFn],
 ];
 for (const [path, fn] of routes) {
   edgeApi.addRoutes({

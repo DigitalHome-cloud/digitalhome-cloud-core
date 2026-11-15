@@ -28,3 +28,14 @@ describe("adminMfaGate", () => {
     expect(parseProtected(" dhc-admins , dhc-devops-engineers ")).toEqual(["dhc-admins", "dhc-devops-engineers"]);
   });
 });
+
+describe("adminMfaGate: marketplace editors (market-*)", () => {
+  const PM = ["dhc-admins", "market-*"];
+  it("withholds a seller's editor group without TOTP, keeps it with TOTP", () => {
+    expect(groupsForToken(["market-hager", "dhc-welcome"], PM, [])).toEqual(["dhc-welcome"]);
+    expect(groupsForToken(["market-hager", "dhc-welcome"], PM, [TOTP])).toBeNull();
+  });
+  it("does not treat other groups as market groups", () => {
+    expect(groupsForToken(["marketing", "dhc-welcome"], PM, [])).toBeNull();
+  });
+});

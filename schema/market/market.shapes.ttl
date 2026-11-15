@@ -1,0 +1,43 @@
+# What a seller's catalogue graph may say (market.ttl). Closed: a property not
+# listed here — a price above all — is refused. Checked on every save, from
+# the Portal or from an edge (amplify/functions/market-shared/validate.ts).
+
+@prefix dhp:  <https://digitalhome.cloud/pro#> .
+@prefix dhm:  <https://digitalhome.cloud/shapes/market#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+dhm:ArticleShape a sh:NodeShape ;
+    sh:targetClass dhp:Article ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property
+        [ sh:path dhp:reference ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ;
+          sh:pattern "^[^\\u0000-\\u001f]{1,80}$" ; sh:message "an article has one reference, 1 to 80 characters" ] ,
+        [ sh:path dhp:partner ; sh:datatype xsd:string ; sh:maxCount 1 ; sh:message "one seller id" ] ,
+        [ sh:path rdfs:label ; sh:nodeKind sh:Literal ; sh:maxLength 1000 ; sh:uniqueLang true ;
+          sh:message "a label is text up to 1000 characters, one per language" ] ,
+        [ sh:path dhp:ean ; sh:datatype xsd:string ; sh:maxCount 1 ; sh:pattern "^[0-9]{8,14}$" ; sh:message "a GTIN has 8 to 14 digits" ] ,
+        [ sh:path dhp:etimClass ; sh:datatype xsd:string ; sh:maxCount 1 ; sh:pattern "^EC[0-9]{6}$" ; sh:message "an ETIM class looks like EC000123" ] ,
+        [ sh:path dhp:brand ; sh:datatype xsd:string ; sh:maxCount 1 ; sh:maxLength 80 ; sh:message "one brand, up to 80 characters" ] ,
+        [ sh:path dhp:deviceType ; sh:datatype xsd:string ; sh:maxCount 1 ; sh:maxLength 80 ; sh:message "one device type, up to 80 characters" ] ,
+        [ sh:path dhp:category ; sh:maxCount 1 ;
+          sh:in ( "COMPUTING_IT" "CONTROLLERS_AUTOMATION" "FACILITIES_APPLIANCES" "MEDIA_COMMUNICATION" "SECURITY_MONITORING" ) ;
+          sh:message "category: COMPUTING_IT, CONTROLLERS_AUTOMATION, FACILITIES_APPLIANCES, MEDIA_COMMUNICATION or SECURITY_MONITORING" ] ,
+        [ sh:path dhp:powerSource ; sh:maxCount 1 ; sh:in ( "FIXED" "SOCKET" "BATTERY" "ACCU" ) ;
+          sh:message "power source: FIXED, SOCKET, BATTERY or ACCU" ] ,
+        [ sh:path dhp:voltageV ; sh:maxCount 1 ; sh:minInclusive 0 ; sh:maxInclusive 1000000 ; sh:message "one voltage, a number ≥ 0" ] ,
+        [ sh:path dhp:currentA ; sh:maxCount 1 ; sh:minInclusive 0 ; sh:maxInclusive 1000000 ; sh:message "one current, a number ≥ 0" ] ,
+        [ sh:path dhp:powerW ; sh:maxCount 1 ; sh:minInclusive 0 ; sh:maxInclusive 1000000 ; sh:message "one power, a number ≥ 0" ] ,
+        [ sh:path dhp:capability ; sh:in ( "actor" "sensor" "controller" "iot" ) ; sh:message "capability: actor, sensor, controller or iot" ] ,
+        [ sh:path dhp:compatibleClass ; sh:datatype xsd:string ; sh:maxCount 20 ; sh:maxLength 120 ; sh:message "up to 20 compatible classes" ] ,
+        [ sh:path dhp:usableIn ; sh:datatype xsd:string ; sh:pattern "^(EU|[A-Z]{2})$" ; sh:message "a market is a country code (FR, DE …) or EU" ] ,
+        [ sh:path dhp:approvedFor ; sh:nodeKind sh:IRI ; sh:pattern "^https://digitalhome\\.cloud/ontology#Norm_" ;
+          sh:message "approved for: a norm of the T-Box (dhc:Norm_…)" ] ,
+        [ sh:path dhp:conformsTo ; sh:datatype xsd:string ; sh:maxCount 20 ; sh:maxLength 80 ; sh:message "up to 20 standards, each up to 80 characters" ] ,
+        [ sh:path dhp:image ; sh:datatype xsd:string ; sh:maxCount 10 ; sh:pattern "^[0-9a-f]{64}\\.(jpg|jpeg|png|webp)$" ;
+          sh:message "an image is <sha256>.<jpg|png|webp> of an uploaded file" ] ,
+        [ sh:path dhp:datasheet ; sh:datatype xsd:string ; sh:maxCount 10 ; sh:pattern "^[0-9a-f]{64}\\.(pdf)$" ;
+          sh:message "a datasheet is <sha256>.pdf of an uploaded file" ] .

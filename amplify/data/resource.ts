@@ -3,6 +3,7 @@ import { dhcDesignStorageProxy } from "../functions/dhcDesignStorageProxy/resour
 import { createDigitalHome } from "../functions/createDigitalHome/resource";
 import { edgeDeviceApproval } from "../functions/edgeDeviceApproval/resource";
 import { adminDebug } from "../functions/adminDebug/resource";
+import { market } from "../functions/market/resource";
 
 /**
  * AppSync data layer. Models + custom mutations.
@@ -460,6 +461,109 @@ const schema = a.schema({
     .returns(a.ref("DesignStorageUrl"))
     .handler(a.handler.function(dhcDesignStorageProxy))
     .authorization((allow) => [allow.authenticated()]),
+
+  // ─── the marketplace (backed by the market Lambda) ──────────────
+  // One catalogue graph per seller (Turtle in S3, a version in MarketSeller),
+  // read by every signed-in user, written by the seller's editors (group
+  // market-<id>) through a two-step save, administered by dhc-admins. The
+  // Lambda enforces who may do what; the rules here only require sign-in.
+  // Edges use /edge/v1/market/* (edgeMarket) with the same store.
+  MarketSeller: a.customType({
+    id: a.string().required(),
+    name: a.string().required(),
+    kind: a.string().required(),
+    version: a.integer().required(),
+    articles: a.integer(),
+    updatedAt: a.string(),
+    mayEdit: a.boolean(),
+  }),
+  MarketGraph: a.customType({
+    seller: a.string().required(),
+    version: a.integer().required(),
+    url: a.string(),
+  }),
+  MarketSave: a.customType({
+    status: a.string().required(),          // ready | ok | conflict | invalid
+    key: a.string(),
+    url: a.string(),
+    version: a.integer(),
+    articles: a.integer(),
+    currentVersion: a.integer(),
+    currentUrl: a.string(),
+    problems: a.string().array(),
+  }),
+
+  listSellers: a
+    .query()
+    .returns(a.ref("MarketSeller").array())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  marketGraph: a
+    .query()
+    .arguments({ seller: a.string().required() })
+    .returns(a.ref("MarketGraph"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestMarketSave: a
+    .mutation()
+    .arguments({ seller: a.string().required(), baseVersion: a.integer().required() })
+    .returns(a.ref("MarketSave"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  commitMarketSave: a
+    .mutation()
+    .arguments({ seller: a.string().required(), key: a.string().required(), baseVersion: a.integer().required() })
+    .returns(a.ref("MarketSave"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // files: [{ sha256, ext, size }] → [{ name, key, exists, url?, headers? }]
+  marketUploads: a
+    .mutation()
+    .arguments({ seller: a.string().required(), files: a.json().required() })
+    .returns(a.json())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  createSeller: a
+    .mutation()
+    .arguments({ id: a.string().required(), name: a.string().required(), kind: a.string().required() })
+    .returns(a.ref("MarketSeller"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  sellerEditors: a
+    .query()
+    .arguments({ seller: a.string().required() })
+    .returns(a.string().array())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  addSellerEditor: a
+    .mutation()
+    .arguments({ seller: a.string().required(), email: a.string().required() })
+    .returns(a.boolean())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  removeSellerEditor: a
+    .mutation()
+    .arguments({ seller: a.string().required(), email: a.string().required() })
+    .returns(a.boolean())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  // Once per environment: the DeviceModel table (the old Catalog) and its
+  // files become the catalogue of seller digitalhome-cloud. Re-runnable:
+  // articles already there are kept. → { status, version, added, files, notes }
+  importDeviceCatalogue: a
+    .mutation()
+    .returns(a.json())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

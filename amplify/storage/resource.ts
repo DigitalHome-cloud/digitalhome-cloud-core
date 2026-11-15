@@ -34,6 +34,15 @@ export const storage = defineStorage({
       allow.authenticated.to(["read"]),
       allow.groups(["dhc-admins"]).to(["read", "write", "delete"]),
     ],
+    // Marketplace images and datasheets, by content:
+    // public/market/{seller}/sha256/{hash}.{ext}. World-readable; nobody
+    // writes here through Cognito — only through the hash-bound presigned
+    // PUTs the market / edgeMarket Lambdas hand to a seller's editors.
+    // (The catalogues themselves are under market/graphs/, Lambda-only.)
+    "public/market/*": [
+      allow.guest.to(["read"]),
+      allow.authenticated.to(["read"]),
+    ],
     // Area weather + air-quality Delta Lake — world-readable (operator app /
     // analytics), admin-write only so the shared dataset can't be clobbered by
     // arbitrary authenticated users. The ingest pipeline writes via a direct

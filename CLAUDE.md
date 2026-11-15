@@ -90,6 +90,10 @@ schema/
       nfc15100-2024.shapes.ttl  ← NF C 15-100:2024 — DELTA over 2015; ⚠ illustrative rules
   abox/
     electrical-installation-house.ttl   ← Prototype / POC / example models (see below)
+  market/
+    market.ttl                ← Marketplace vocabulary (dhp: articles of a seller's catalogue; no prices)
+    market.shapes.ttl         ← Closed SHACL shapes every saved seller catalogue must pass
+                                (copied into the Lambdas by scripts/sync-market-shapes.mjs)
 py-tools/
   ontology_explorer.py        ← The ONLY sanctioned writer for tbox/dhc-*.ttl
 tests/
