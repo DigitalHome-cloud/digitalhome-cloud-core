@@ -1,5 +1,6 @@
 import { defineBackend } from "@aws-amplify/backend";
-import { CfnOutput, Stack } from "aws-cdk-lib";
+import { Aws, CfnOutput, Stack } from "aws-cdk-lib";
+import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import {
   AttributeType,
@@ -424,14 +425,41 @@ backend.edgeCatalogue.addEnvironment("USER_POOL_ID", backend.auth.resources.user
 // the base row (GetItem) for device_info, updates DeviceCodes, reads DigitalHome
 // to verify home ownership, and (two-step) reads/updates EdgeRegistry to list
 // and (re)assign the caller's edges.
+//
+// It lives in the "data" stack and the edge tables in the "edge" stack, while
+// edge Lambdas (edgeHomes, edgeCatalogue) read data tables. Naming the edge
+// tables here would make data → edge as well as edge → data: a CloudFormation
+// cycle (stage job 17). So the edge stack publishes the two table names as
+// SSM parameters, this Lambda reads them at run time, and its IAM names the
+// tables by pattern: this app, this branch, the edge stack's tables.
+const edgeTablesParam = `/dhc/${process.env.AWS_APP_ID || "sandbox"}/${deployBranch || `sandbox-${process.env.USER || "dev"}`}/edge-tables`;
+new StringParameter(edgeStack, "DeviceCodesTableName", {
+  parameterName: `${edgeTablesParam}/DeviceCodes`,
+  stringValue: deviceCodesTable.tableName,
+});
+new StringParameter(edgeStack, "EdgeRegistryTableName", {
+  parameterName: `${edgeTablesParam}/EdgeRegistry`,
+  stringValue: edgeRegistryTable.tableName,
+});
+const approvalStack = Stack.of(edgeApprovalFn);
+const edgeTableArn = (logical: string) =>
+  `arn:${Aws.PARTITION}:dynamodb:${approvalStack.region}:${approvalStack.account}:table/amplify-` +
+  (process.env.AWS_APP_ID && deployBranch ? `${process.env.AWS_APP_ID}-${deployBranch}-branch-` : "") +
+  `*-edge*-${logical}*`;
+edgeApprovalFn.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["ssm:GetParameters"],
+    resources: [
+      `arn:${Aws.PARTITION}:ssm:${approvalStack.region}:${approvalStack.account}:parameter${edgeTablesParam}/*`,
+    ],
+  })
+);
 edgeApprovalFn.addToRolePolicy(
   new PolicyStatement({
     effect: Effect.ALLOW,
     actions: ["dynamodb:Query", "dynamodb:GetItem", "dynamodb:UpdateItem"],
-    resources: [
-      deviceCodesTable.tableArn,
-      `${deviceCodesTable.tableArn}/index/*`,
-    ],
+    resources: [edgeTableArn("DeviceCodes"), `${edgeTableArn("DeviceCodes")}/index/*`],
   })
 );
 edgeApprovalFn.addToRolePolicy(
@@ -445,23 +473,13 @@ edgeApprovalFn.addToRolePolicy(
   new PolicyStatement({
     effect: Effect.ALLOW,
     actions: ["dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:Query"],
-    resources: [
-      edgeRegistryTable.tableArn,
-      `${edgeRegistryTable.tableArn}/index/*`,
-    ],
+    resources: [edgeTableArn("EdgeRegistry"), `${edgeTableArn("EdgeRegistry")}/index/*`],
   })
 );
-backend.edgeDeviceApproval.addEnvironment(
-  "DEVICE_CODES_TABLE_NAME",
-  deviceCodesTable.tableName
-);
+backend.edgeDeviceApproval.addEnvironment("EDGE_TABLES_PARAM", edgeTablesParam);
 backend.edgeDeviceApproval.addEnvironment(
   "DIGITALHOME_TABLE_NAME",
   digitalHomeTable.tableName
-);
-backend.edgeDeviceApproval.addEnvironment(
-  "EDGE_REGISTRY_TABLE_NAME",
-  edgeRegistryTable.tableName
 );
 
 // HTTP API — POST routes under /edge/v1/*. The edge appends fixed paths to its
