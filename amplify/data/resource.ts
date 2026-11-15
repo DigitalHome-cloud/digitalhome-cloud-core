@@ -213,6 +213,10 @@ const schema = a.schema({
       smartHomeId: a.string().required(),
       owners: a.string().array(),
       modelNumber: a.string().required(),
+      // The marketplace article this device is (its IRI,
+      // https://digitalhome.cloud/id/market/<seller>/<reference>); modelNumber
+      // stays the reference, for display and older rows.
+      article: a.string(),
       serialNumber: a.string().required(),
       deviceType: a.string().required(),
       purchaseDate: a.date(),
@@ -503,6 +507,29 @@ const schema = a.schema({
     .query()
     .arguments({ seller: a.string().required() })
     .returns(a.ref("MarketGraph"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // { versions: {seller: n}, articles: [{ seller, reference, label, brand, … }], more }
+  marketArticles: a
+    .query()
+    .arguments({ seller: a.string(), query: a.string(), limit: a.integer() })
+    .returns(a.json())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // One article, as it was read (before; null = new) and as it should be
+  // (after; null = remove). Merged into the CURRENT catalogue, so others'
+  // changes to other facts survive. → { status: ok | conflict | invalid, … }
+  editMarketArticle: a
+    .mutation()
+    .arguments({
+      seller: a.string().required(),
+      reference: a.string().required(),
+      before: a.json(),
+      after: a.json(),
+    })
+    .returns(a.json())
     .handler(a.handler.function(market))
     .authorization((allow) => [allow.authenticated()]),
 

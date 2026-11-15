@@ -8,6 +8,9 @@
 //   createSeller(id, name, kind)                  dhc-admins
 //   sellerEditors(seller)                         dhc-admins: the editors' e-mail addresses
 //   addSellerEditor / removeSellerEditor(seller, email)   dhc-admins
+//   marketArticles(seller?, query?)               every signed-in user: articles as JSON
+//   editMarketArticle(seller, reference, before, after)
+//                                                 editors: one article, merged into the current catalogue
 //   importDeviceCatalogue                         dhc-admins, once per environment: the old
 //                                                 DeviceModel table → seller digitalhome-cloud
 //
@@ -26,7 +29,10 @@ import {
 import type { AppSyncIdentityCognito, AppSyncResolverEvent } from "aws-lambda";
 import { ADMIN_GROUP, BadRequest, cleanFiles, groupOf, mayEdit, sellerId } from "../market-shared/rules";
 import { importDeviceModels } from "./importDeviceModels";
-import { commit, createSeller, getSeller, graphUrl, listSellers, stageUpload, uploads, type Seller } from "../market-shared/store";
+import { applyEdit, articles, parse, write, type Article } from "../market-shared/articles";
+import {
+  commit, createSeller, getSeller, graphUrl, listSellers, readGraph, stageUpload, uploads, writeGraph, type Seller,
+} from "../market-shared/store";
 
 const cognito = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = () => process.env.USER_POOL_ID!;
@@ -34,6 +40,18 @@ const EMAIL = /^[^\s@"]{1,64}@[^\s@"]{1,190}$/;
 
 type Args = Record<string, any>;
 const PLATFORM = "digitalhome-cloud";
+const json = (v: unknown) => (typeof v === "string" ? JSON.parse(v) : v ?? null);
+
+// Parsed catalogues, by the S3 key of their version (a key is never reused).
+const parsed = new Map<string, Article[]>();
+async function articlesOf(s: Seller): Promise<Article[]> {
+  if (!s.s3Key) return [];
+  if (!parsed.has(s.s3Key)) {
+    if (parsed.size > 50) parsed.clear();
+    parsed.set(s.s3Key, articles(parse(await readGraph(s))));
+  }
+  return parsed.get(s.s3Key)!;
+}
 
 /** A seller row and its editor group (market-<id>). */
 async function newSeller(id: string, name: string, kind: string, who: string): Promise<Seller> {
@@ -84,6 +102,36 @@ export const handler = async (event: AppSyncResolverEvent<Args>) => {
       case "marketGraph": {
         const s = await seller();
         return { seller: s.id, version: s.version, url: await graphUrl(s) };
+      }
+      case "marketArticles": {
+        const all = args.seller ? [await seller()] : await listSellers();
+        const q = String(args.query ?? "").trim().toLowerCase();
+        const limit = Math.max(1, Math.min(Number(args.limit) || 500, 2000));
+        const out: Array<Article & { seller: string }> = [];
+        for (const s of all) {
+          for (const a of await articlesOf(s)) {
+            const text = [a.reference, a.label, a.brand, a.deviceType].join(" ").toLowerCase();
+            if (!q || text.includes(q)) out.push({ seller: s.id, ...a });
+          }
+        }
+        return JSON.stringify({
+          versions: Object.fromEntries(all.map((s) => [s.id, s.version])),
+          articles: out.slice(0, limit), more: out.length > limit,
+        });
+      }
+      case "editMarketArticle": {
+        const before = json(args.before) as Article | null;
+        const after = json(args.after) as Article | null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const s = await asEditor();
+          const edit = applyEdit(s.id, parse(await readGraph(s)), String(args.reference ?? ""), before, after);
+          if (edit.status === "conflict") return JSON.stringify(edit);
+          const r = await writeGraph(s, await write(edit.quads), who);
+          if (r.status === "invalid") return JSON.stringify({ status: "invalid", problems: r.problems });
+          if (r.status === "ok") return JSON.stringify({ status: "ok", version: r.version, article: edit.article });
+          // someone saved between our read and our write: read again and re-apply
+        }
+        return JSON.stringify({ status: "conflict", conflicts: [], message: "the catalogue keeps changing; try again" });
       }
       case "requestMarketSave": {
         const s = await asEditor();

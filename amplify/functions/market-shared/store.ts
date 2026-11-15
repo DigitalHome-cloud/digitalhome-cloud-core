@@ -99,6 +99,20 @@ export async function graphUrl(seller: Seller): Promise<string | null> {
   return getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET(), Key: seller.s3Key }), { expiresIn: URL_TTL_S });
 }
 
+/** The seller's current catalogue as Turtle ("" before its first save). */
+export async function readGraph(seller: Seller): Promise<string> {
+  if (!seller.version || !seller.s3Key) return "";
+  const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET(), Key: seller.s3Key }));
+  return obj.Body!.transformToString("utf-8");
+}
+
+/** A server-side save of a whole catalogue on top of the version `seller` holds. */
+export async function writeGraph(seller: Seller, ttl: string, by: string): Promise<SaveResult> {
+  const key = stagingKeyFor(seller.id);
+  await s3.send(new PutObjectCommand({ Bucket: BUCKET(), Key: key, Body: ttl, ContentType: "text/turtle" }));
+  return commit(seller, key, seller.version, by);
+}
+
 /** A fresh staging key for a seller (a save's step 1, or a server-side write). */
 export const stagingKeyFor = (seller: string) => stagingKey(seller, token());
 

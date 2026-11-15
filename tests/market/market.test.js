@@ -116,3 +116,45 @@ describe("marketplace: the old DeviceModel rows as articles", async () => {
     expect(notes).toEqual(["X1: category TOASTERS left out", "X1: power source SOLAR left out", "X1: region “WORLDWIDE” left out"]);
   });
 });
+
+describe("marketplace: editing one article from the Portal", async () => {
+  const { applyEdit, articles, parse, write } = await import("../../amplify/functions/market-shared/articles.ts");
+  const seller = "maker-a";
+  const base = parse(HEAD + RCD);
+  const read = () => articles(base)[0];
+
+  it("reads an article as JSON", () => {
+    const a = read();
+    expect(a).toMatchObject({ reference: "TEST-RCD-40", brand: "Maker", voltageV: 230, usableIn: ["EU", "FR"],
+      approvedFor: ["Norm_NFC15100"], capability: ["actor"] });
+    expect(a.label).toBe(undefined);                            // only language-tagged labels in the fixture
+  });
+
+  it("applies a change to the current catalogue, keeping what others changed meanwhile", async () => {
+    const before = read();
+    const theirs = applyEdit(seller, base, "TEST-RCD-40", before, { ...before, conformsTo: [...before.conformsTo, "EN 61543"] });
+    const mine = applyEdit(seller, theirs.quads, "TEST-RCD-40", before, { ...before, brand: "Maker Pro", usableIn: ["FR"] });
+    expect(mine.status).toBe("ok");
+    expect(mine.article).toMatchObject({ brand: "Maker Pro", usableIn: ["FR"], conformsTo: ["EN 61008-1", "EN 61543"] });
+    const ttl = await write(mine.quads);
+    expect(ttl).toContain("Interrupteur différentiel");          // the French label was kept
+    expect((await validateListing(ttl, seller)).problems).toEqual([]);
+  });
+
+  it("calls two values for one fact a conflict", () => {
+    const before = read();
+    const theirs = applyEdit(seller, base, "TEST-RCD-40", before, { ...before, brand: "Maker Inc" });
+    const mine = applyEdit(seller, theirs.quads, "TEST-RCD-40", before, { ...before, brand: "Maker Pro" });
+    expect(mine).toEqual({ status: "conflict", conflicts: [{ property: "brand", mine: ["Maker Pro"], theirs: ["Maker Inc"] }] });
+  });
+
+  it("creates, refuses a duplicate, and removes", () => {
+    const made = applyEdit(seller, base, "NEW 1", null, { reference: "NEW 1", brand: "B", deviceType: "T" });
+    expect(made.status).toBe("ok");
+    expect(articles(made.quads).map((a) => a.reference)).toContain("NEW 1");
+    expect(applyEdit(seller, made.quads, "NEW 1", null, { reference: "NEW 1" }).message).toMatch(/already/);
+    const gone = applyEdit(seller, made.quads, "NEW 1", articles(made.quads).find((a) => a.reference === "NEW 1"), null);
+    expect(articles(gone.quads).map((a) => a.reference)).toEqual(["TEST-RCD-40"]);
+    expect(applyEdit(seller, gone.quads, "NEW 1", { reference: "NEW 1" }, { reference: "NEW 1" }).message).toMatch(/removed meanwhile/);
+  });
+});
