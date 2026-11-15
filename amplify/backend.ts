@@ -38,6 +38,7 @@ import { edgeDeviceAuthz } from "./functions/edgeDeviceAuthz/resource";
 import { edgeToken } from "./functions/edgeToken/resource";
 import { edgeTelemetry } from "./functions/edgeTelemetry/resource";
 import { edgeTokenRotate } from "./functions/edgeTokenRotate/resource";
+import { edgeHomes } from "./functions/edgeHomes/resource";
 import { edgeDeviceApproval } from "./functions/edgeDeviceApproval/resource";
 import { adminDebug } from "./functions/adminDebug/resource";
 import { adminMfaGate } from "./functions/adminMfaGate/resource";
@@ -53,6 +54,7 @@ const backend = defineBackend({
   edgeToken,
   edgeTelemetry,
   edgeTokenRotate,
+  edgeHomes,
   edgeDeviceApproval,
   adminDebug,
   adminMfaGate,
@@ -295,6 +297,7 @@ const edgeAuthzFn = backend.edgeDeviceAuthz.resources.lambda;
 const edgeTokenFn = backend.edgeToken.resources.lambda;
 const edgeTelemetryFn = backend.edgeTelemetry.resources.lambda;
 const edgeRotateFn = backend.edgeTokenRotate.resources.lambda;
+const edgeHomesFn = backend.edgeHomes.resources.lambda;
 const edgeApprovalFn = backend.edgeDeviceApproval.resources.lambda;
 
 for (const fn of [
@@ -302,6 +305,7 @@ for (const fn of [
   backend.edgeToken,
   backend.edgeTelemetry,
   backend.edgeTokenRotate,
+  backend.edgeHomes,
 ]) {
   fn.addEnvironment("DEVICE_CODES_TABLE_NAME", deviceCodesTable.tableName);
   fn.addEnvironment("EDGE_REGISTRY_TABLE_NAME", edgeRegistryTable.tableName);
@@ -363,6 +367,24 @@ for (const fn of [edgeTelemetryFn, edgeRotateFn]) {
     })
   );
 }
+
+// edgeHomes: verifies the token (GetItem on EdgeRegistry), then reads the
+// DigitalHome table (Scan filtered by owner, GetItem for the linked home).
+edgeHomesFn.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem"],
+    resources: [edgeRegistryTable.tableArn],
+  })
+);
+edgeHomesFn.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:Scan", "dynamodb:GetItem"],
+    resources: [digitalHomeTable.tableArn],
+  })
+);
+backend.edgeHomes.addEnvironment("DIGITALHOME_TABLE_NAME", digitalHomeTable.tableName);
 
 // edgeDeviceApproval (AppSync): queries the KEYS_ONLY user_code GSI, re-reads
 // the base row (GetItem) for device_info, updates DeviceCodes, reads DigitalHome
@@ -427,6 +449,7 @@ const routes: Array<[string, typeof edgeAuthzFn]> = [
   ["/edge/v1/token", edgeTokenFn],
   ["/edge/v1/telemetry", edgeTelemetryFn],
   ["/edge/v1/token/rotate", edgeRotateFn],
+  ["/edge/v1/homes", edgeHomesFn],
 ];
 for (const [path, fn] of routes) {
   edgeApi.addRoutes({
