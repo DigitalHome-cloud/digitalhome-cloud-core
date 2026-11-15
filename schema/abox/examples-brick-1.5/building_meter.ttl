@@ -1,0 +1,69 @@
+@prefix bldg: <http://example.com#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rec: <https://w3id.org/rec#> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+
+bldg:building_energy_sensor a brick:Energy_Sensor ;
+    brick:hasUnit unit:KiloW-HR ;
+    brick:isPointOf bldg:main-meter ;
+    brick:timeseries [ brick:hasTimeseriesId "a7523b08-7bc7-4a9d-8e88-8c0cd8084be0" ] .
+
+bldg:building_peak_demand a brick:Peak_Demand_Sensor ;
+    brick:aggregate [ brick:aggregationFunction "max" ;
+            brick:aggregationInterval "RP1D" ] ;
+    brick:hasUnit unit:KiloW ;
+    brick:isPointOf bldg:main-meter ;
+    brick:timeseries [ brick:hasTimeseriesId "bcf9a85d-696c-446a-a2ac-97207ecfbc56" ] .
+
+bldg:building_power_sensor a brick:Electric_Power_Sensor ;
+    brick:hasUnit unit:KiloW ;
+    brick:isPointOf bldg:main-meter ;
+    brick:timeseries [ brick:hasTimeseriesId "fd64fbc8-0742-4e1e-8f88-e2cd8a3d78af" ] .
+
+bldg:mysite a rec:Site ;
+    rec:hasPart bldg:mybldg .
+
+bldg:ontology a owl:Ontology ;
+    owl:imports <https://brickschema.org/schema/1.5/Brick> .
+
+bldg:submeter-submeter-floor1-power a brick:Electric_Power_Sensor ;
+    brick:hasUnit unit:KiloW ;
+    brick:isPointOf bldg:submeter-floor1 ;
+    brick:timeseries [ brick:hasTimeseriesId "647654d4-56ee-11ec-bf02-3dcb0419df3b" ] .
+
+bldg:submeter-submeter-floor2-power a brick:Electric_Power_Sensor ;
+    brick:hasUnit unit:KiloW ;
+    brick:isPointOf bldg:submeter-floor2 ;
+    brick:timeseries [ brick:hasTimeseriesId "7a5e3870-56ee-11ec-bf02-3dcb0419df3b" ] .
+
+bldg:submeter-submeter-floor3-power a brick:Electric_Power_Sensor ;
+    brick:hasUnit unit:KiloW ;
+    brick:isPointOf bldg:submeter-floor3 ;
+    brick:timeseries [ brick:hasTimeseriesId "82332722-56ee-11ec-bf02-3dcb0419df3b" ] .
+
+bldg:floor1 a rec:Level ;
+    rec:isPartOf bldg:mybldg .
+
+bldg:floor2 a rec:Level ;
+    rec:isPartOf bldg:mybldg .
+
+bldg:floor3 a rec:Level ;
+    rec:isPartOf bldg:mybldg .
+
+bldg:submeter-floor1 a brick:Electrical_Meter ;
+    brick:isSubMeterOf bldg:main-meter ;
+    brick:meters bldg:floor1 .
+
+bldg:submeter-floor2 a brick:Electrical_Meter ;
+    brick:isSubMeterOf bldg:main-meter ;
+    brick:meters bldg:floor2 .
+
+bldg:submeter-floor3 a brick:Electrical_Meter ;
+    brick:isSubMeterOf bldg:main-meter ;
+    brick:meters bldg:floor3 .
+
+bldg:mybldg a rec:Building ;
+    brick:isMeteredBy bldg:main-meter .
+
+bldg:main-meter a brick:Building_Electrical_Meter .

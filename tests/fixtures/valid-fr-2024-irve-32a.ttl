@@ -1,0 +1,33 @@
+@prefix dhc:   <https://digitalhome.cloud/ontology#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:    <http://example.org/> .
+
+# Conforms to the NF C 15-100:2024 DELTA (⚠ illustrative rules — see
+# schema/cbox/electrical/nfc15100-2024.shapes.ttl).
+#
+# 32 A single-phase IRVE wired in 16 mm². Note this is ALSO valid under 2015
+# (which asks for ≥ 10), and that asymmetry is the point: an edition tightens,
+# so conforming to the newer one implies conforming to the older. The reverse
+# does not hold — see invalid-fr-2024-irve-32a-undersized.ttl, which is a
+# perfectly legal 2015 installation.
+ex:fr-irve-2024-ok a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_IRVE ;
+  dhc:governedBy     dhc:Norm_NFC15100 ;
+  dhc:maxPoints      "1"^^xsd:integer ;
+  dhc:ratedCurrent   "32"^^xsd:decimal ;
+  dhc:crossSection   "16.0"^^xsd:decimal ;
+  dhc:phase          "1"^^xsd:integer ;
+  dhc:dedicated      true ;
+  dhc:hasProtection  ex:fr-irve-2024-ok-rcd .
+
+ex:fr-irve-2024-ok-rcd a dhc:RCBO ;
+  dhc:sensitivityMA "30"^^xsd:decimal ;
+  dhc:rcdType       "A" ;
+  dhc:ratedCurrent  "32"^^xsd:decimal .
+
+# Storage is in scope under 2024 (nfc15100-2024:ESSGovernanceShape) and out of
+# scope under 2015, where no shape targets a battery at all. Declaring
+# governance is what satisfies the new rule.
+ex:fr-ess-2024-ok a brick:Battery ;
+  dhc:governedBy dhc:Norm_NFC15100 .

@@ -1,0 +1,22 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+# An RCBO — not an RCD — with a 300 mA sensitivity where NF C 15-100 demands
+# ≤ 30 mA. Rejected by nfc15100:RCDSensitivityShape, whose sh:targetClass is
+# dhc:RCD, because dhc:RCBO ⊑ dhc:RCD and SHACL selects focus nodes by SUBCLASS
+# CLOSURE over the data graph.
+#
+# That inheritance is the whole point of the fixture. The skill tells authors an
+# RCBO "satisfies all three [RCD rules] for free", so RCBOs will appear in real
+# models — and any code that decides "did a shape look at this node?" by
+# string-matching rdf:type against sh:targetClass answers NO here, about a node
+# the validator just rejected. build-abox.mjs did exactly that and drew such a
+# node near-transparent, captioned "nothing looked at it".
+#
+# Kept as its own fixture rather than folded into invalid-fr-rcd-oversensitive
+# so that the subclass hop is what is being tested, not the sensitivity rule.
+ex:fr-rcbo-oversensitive a dhc:RCBO ;
+  dhc:sensitivityMA "300"^^xsd:decimal ;
+  dhc:rcdType       "A" ;
+  dhc:ratedCurrent  "32"^^xsd:decimal .

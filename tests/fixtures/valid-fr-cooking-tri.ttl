@@ -8,4 +8,12 @@ ex:fr-cooking-tri a dhc:Circuit ;
   dhc:phase          "3"^^xsd:integer ;
   dhc:maxPoints      "1"^^xsd:integer ;
   dhc:ratedCurrent   "20"^^xsd:decimal ;
-  dhc:crossSection   "2.5"^^xsd:decimal .
+  dhc:crossSection   "2.5"^^xsd:decimal ;
+  dhc:hasProtection  ex:fr-cooking-tri-rcd .
+
+# NF C 15-100 mandates 30 mA differential protection on final circuits. This
+# fixture originally omitted it — it was named "valid" but was not compliant;
+# nothing checked until nfc15100:CircuitRCDProtectionShape existed.
+ex:fr-cooking-tri-rcd a dhc:RCD ;
+  dhc:sensitivityMA "30"^^xsd:decimal ;
+  dhc:rcdType       "A" .

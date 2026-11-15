@@ -1,0 +1,9 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+# 300 mA RCD — fire protection only, not the 30 mA personal protection
+# NF C 15-100 requires on final circuits. Must fail RCDSensitivityShape.
+ex:fr-rcd-bad a dhc:RCD ;
+  dhc:sensitivityMA "300"^^xsd:decimal ;
+  dhc:rcdType       "AC" .

@@ -1,0 +1,31 @@
+@prefix bldg: <http://example.com#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix ref: <https://brickschema.org/schema/Brick/ref#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+<http://example.com> a owl:Ontology ;
+    owl:imports <https://brickschema.org/schema/1.5/Brick> .
+
+bldg:ifc_project a ref:ifcProject ;
+    ref:ifcProjectID "abc" ;
+    ref:ifcFileLocation "file://./building.ifc" ;
+.
+
+bldg:space a brick:Space ;
+    ref:hasExternalReference [
+        a ref:IFCReference ; # can be inferred
+        ref:hasIfcProjectReference bldg:ifc_project ;
+        ref:ifcGlobalID "123" ;
+        ref:ifcName "Example Space" ;
+    ] .
+
+bldg:space2 a brick:Space ;
+    ref:hasExternalReference [
+        a ref:IFCReference ; # can be inferred
+        ref:hasIfcProjectReference bldg:ifc_project ;
+        ref:ifcGlobalID "124" ;
+        ref:ifcName "Example Space" ;
+    ] .
+
+# link.py in this folder programatically adds the IFC reference to this entity
+bldg:space3 a brick:Space .

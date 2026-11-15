@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readTtl, parseToStore, namedNode } from '../_helpers/loadGraph.js';
 
-describe('T-Box — dhc-roles.ttl', () => {
-  const ttl = readTtl('schema/tbox/dhc-roles.ttl');
+describe('T-Box — role catalog (dhc-core.ttl)', () => {
+  const ttl = readTtl('schema/tbox/dhc-core.ttl');
   const store = parseToStore(ttl);
 
   it('parses cleanly', () => {

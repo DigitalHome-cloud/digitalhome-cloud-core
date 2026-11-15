@@ -1,0 +1,16 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+# Circuit with an MCB but no residual current device at all.
+# Must fail CircuitRCDProtectionShape.
+ex:fr-circuit-no-rcd a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Lighting ;
+  dhc:governedBy     dhc:Norm_NFC15100 ;
+  dhc:maxPoints      "6"^^xsd:integer ;
+  dhc:ratedCurrent   "10"^^xsd:decimal ;
+  dhc:crossSection   "1.5"^^xsd:decimal ;
+  dhc:hasProtection  ex:fr-no-rcd-mcb .
+
+ex:fr-no-rcd-mcb a dhc:ProtectionDevice ;
+  dhc:ratedCurrent "10"^^xsd:decimal .

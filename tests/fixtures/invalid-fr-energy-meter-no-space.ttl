@@ -2,6 +2,6 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:  <http://example.org/> .
 
-# EnergyMeter missing required dhc:locatedIn → ElectricalTechnicalSpace.
+# EnergyMeter missing required rec:locatedIn → ElectricalTechnicalSpace.
 ex:fr-meter-bad a dhc:EnergyMeter ;
   dhc:governedBy dhc:Norm_NFC14100 .

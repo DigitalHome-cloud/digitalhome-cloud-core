@@ -1,0 +1,16 @@
+@prefix dhc:   <https://digitalhome.cloud/ontology#> .
+@prefix brick: <https://brickschema.org/schema/Brick#> .
+@prefix ex:    <http://example.org/> .
+
+# A battery declaring no dhc:governedBy.
+#
+# Rejected by nfc15100-2024:ESSGovernanceShape (⚠ illustrative rule: 2024
+# brings energy storage into the scope of NF C 15-100).
+#
+# Under 2015 this same file conforms — not because it is fine, but because NO
+# SHAPE TARGETS A BATTERY at all. That is the coverage-vs-compliance trap this
+# repo keeps paying for: SHACL reports only failures, so "out of scope" and
+# "checked and clean" are the same silence. The viewer draws the difference as
+# transparency; here the test asserts it directly, so the 2015 pass is recorded
+# as an absence of rules rather than mistaken for approval.
+ex:fr-ess-ungoverned a brick:Battery .

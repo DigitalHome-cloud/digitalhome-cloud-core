@@ -8,4 +8,12 @@ ex:fr-socket-16 a dhc:Circuit ;
   dhc:dedicated      false ;
   dhc:maxPoints      "8"^^xsd:integer ;
   dhc:ratedCurrent   "16"^^xsd:decimal ;
-  dhc:crossSection   "1.5"^^xsd:decimal .
+  dhc:crossSection   "1.5"^^xsd:decimal ;
+  dhc:hasProtection  ex:fr-socket-16-rcd .
+
+# NF C 15-100 mandates 30 mA differential protection on final circuits. This
+# fixture originally omitted it — it was named "valid" but was not compliant;
+# nothing checked until nfc15100:CircuitRCDProtectionShape existed.
+ex:fr-socket-16-rcd a dhc:RCD ;
+  dhc:sensitivityMA "30"^^xsd:decimal ;
+  dhc:rcdType       "AC" .

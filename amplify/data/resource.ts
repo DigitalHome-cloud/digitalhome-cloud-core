@@ -1,0 +1,472 @@
+import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { dhcDesignStorageProxy } from "../functions/dhcDesignStorageProxy/resource";
+import { createDigitalHome } from "../functions/createDigitalHome/resource";
+import { edgeDeviceApproval } from "../functions/edgeDeviceApproval/resource";
+import { adminDebug } from "../functions/adminDebug/resource";
+
+/**
+ * AppSync data layer. Models + custom mutations.
+ *
+ * Authorization rules ported from the Gen 1 schema (post-C-1 + C-5 closure):
+ *   - UserProfile:     owner-only + admin read   (audit C-5)
+ *   - LibraryItem:     admin write, any signed-in user read
+ *   - DigitalHome:     multi-owner + admin       (audit C-1; replaces SmartHome model)
+ *   - SmartHomeDesign: multi-owner + admin       (audit C-1; design-lock state — keyed
+ *                      by smartHomeId so it joins back to DigitalHome.smartHomeId)
+ *   - requestDesignReadUrl / requestDesignWriteUrl: signed-URL mutations
+ *     backed by dhcDesignStorageProxy Lambda    (audit C-2 v2)
+ *   - createDigitalHome: structured-address create flow that produces the full
+ *     "shell" (DDB row + Cognito group + S3 abox.ttl/graph.jsonld/data folder)
+ *     per repos/core/experimental/abox/abox.md (Step 1).
+ *   - DeviceModel:    admin write, any signed-in user read (device-product
+ *                     catalogue — Brand/ModelNumber/DeviceType + S3 doc/img/specs)
+ *   - DeviceInstance: multi-owner + admin (per-SmartHome device inventory,
+ *                     keyed/indexed by smartHomeId — same pattern as
+ *                     SmartHomeDesign so the Designer can list a home's devices)
+ *   - requestDeviceFileReadUrl / requestDeviceFileWriteUrl: signed-URL mutations
+ *     (dhcDesignStorageProxy) for per-device spec/doc files under
+ *     {Private|Public}/DigitalHomes/{id}/devices/{type}/{serial}/{fileName}
+ *   - requestDeviceInboxReadUrl / requestDeviceInboxWriteUrl: signed-URL
+ *     mutations for the CSV mass-import inbox at
+ *     {Private|Public}/DigitalHomes/{id}/devices/inbox.json
+ */
+
+const schema = a.schema({
+  // ─── enums ────────────────────────────────────────────────────────
+  Locale: a.enum(["EN", "FR", "DE"]),
+
+  // Top-level device taxonomy (organizational, app-level — NOT the T-Box).
+  // Sub-types live in the frontend constant; Brick `compatibleClasses` stays
+  // the optional semantic anchor.
+  DeviceCategory: a.enum([
+    "COMPUTING_IT",
+    "CONTROLLERS_AUTOMATION",
+    "FACILITIES_APPLIANCES",
+    "MEDIA_COMMUNICATION",
+    "SECURITY_MONITORING",
+  ]),
+
+  // DeviceInstance lifecycle state (replaces the v1 free-string `status`).
+  DeviceLifecycle: a.enum([
+    "NEW",
+    "ACTIVE",
+    "END_OF_LIFE",
+    "DECOMMISSIONED",
+  ]),
+
+  // How a DeviceModel is powered. Voltage/current/power are numeric ratings
+  // (their typical values depend on this — e.g. SOCKET/FIXED ≈ 220 V mains,
+  // BATTERY/ACCU ≈ 12/6/3.7 V).
+  PowerSource: a.enum([
+    "FIXED",   // hard-wired to mains
+    "SOCKET",  // mains plug
+    "BATTERY", // non-rechargeable
+    "ACCU",    // rechargeable accumulator
+  ]),
+
+  // ─── models ───────────────────────────────────────────────────────
+  UserProfile: a
+    .model({
+      displayName: a.string(),
+      email: a.email(),
+      locale: a.ref("Locale"),
+      marketingOptIn: a.boolean(),
+      // Persisted active-home selection. Written by whichever app the user
+      // switches homes in (Portal Manager / Designer selector) and read on
+      // load by the others, so the elected SmartHome follows the user across
+      // apps instead of being trapped in per-subdomain localStorage.
+      activeSmartHomeId: a.string(),
+    })
+    .authorization((allow) => [
+      allow.owner(),
+      allow.group("dhc-admins").to(["read"]),
+    ]),
+
+  LibraryItem: a
+    .model({
+      title: a.string().required(),
+      compatibleClasses: a.string().array().required(),
+      region: a.string(),
+      standards: a.string().array(),
+      version: a.string().required(),
+      description: a.string(),
+      hasActorCapability: a.boolean(),
+      hasSensorCapability: a.boolean(),
+      hasControllerCapability: a.boolean(),
+    })
+    .authorization((allow) => [
+      allow.group("dhc-admins").to(["create", "update", "delete"]),
+      allow.authenticated().to(["read"]),
+    ]),
+
+  // DigitalHome — primary key is smartHomeId (the {country}-{postalCode}-{streetCode}
+  // {houseNumber}-{suffix} string is unique by construction). The createDigitalHome
+  // custom mutation does the actual write — this model definition exists so AppSync
+  // exposes list/get/update/delete operations against the same DDB table.
+  DigitalHome: a
+    .model({
+      smartHomeId: a.id().required(),
+      owners: a.string().array(),
+      country: a.string().required(),
+      postalCode: a.string().required(),
+      streetCode: a.string().required(),
+      houseNumber: a.string().required(),
+      suffix: a.string().required(),
+      city: a.string().required(),
+      addressLine1: a.string().required(),
+      addressLine2: a.string(),
+      isDemo: a.boolean().required(),
+      createdBy: a.string().required(),
+    })
+    .identifier(["smartHomeId"])
+    .authorization((allow) => [
+      allow.ownersDefinedIn("owners"),
+      allow.group("dhc-admins"),
+    ]),
+
+  // Area — geographic area keyed by {country}-{postalCode} (e.g. "DE-39576").
+  // Weather + air-quality data (in the Delta Lake) are keyed by AREA, not by
+  // SmartHome: many homes share one area's climate. A DigitalHome belongs to
+  // Area `${country}-${postalCode}`. lastIngestedAt is stamped by the weather
+  // pipeline. Shared reference data: admins write, all authenticated users read.
+  Area: a
+    .model({
+      areaId: a.id().required(),
+      country: a.string().required(),
+      postalCode: a.string().required(),
+      name: a.string().required(),
+      latitude: a.float().required(),
+      longitude: a.float().required(),
+      timezone: a.string(),
+      lastIngestedAt: a.datetime(),
+      createdBy: a.string(),
+    })
+    .identifier(["areaId"])
+    .authorization((allow) => [
+      allow.group("dhc-admins").to(["create", "update", "delete"]),
+      allow.authenticated().to(["read"]),
+    ]),
+
+  SmartHomeDesign: a
+    .model({
+      smartHomeId: a.string().required(),
+      owners: a.string().array(),
+      version: a.integer().required(),
+      lastModified: a.datetime().required(),
+      lockedBy: a.string(),
+      lockedAt: a.datetime(),
+      ontologyVersion: a.string(),
+    })
+    .authorization((allow) => [
+      allow.ownersDefinedIn("owners"),
+      allow.group("dhc-admins"),
+    ])
+    // Index on smartHomeId so the Lambda's owner-check Query is O(items per
+    // SmartHome) instead of a full Scan (scales as the table grows).
+    .secondaryIndexes((index) => [index("smartHomeId")]),
+
+  // DeviceModel — global device-product catalogue. PK is modelNumber (unique
+  // by construction). Admin-curated, any signed-in user reads (mirrors
+  // LibraryItem). S3 paths are stored as strings; assets live under
+  // public/catalogue/devices/{deviceType}/{modelNumber}/{docs,img,specs}.
+  DeviceModel: a
+    .model({
+      modelNumber: a.id().required(),
+      brand: a.string().required(),
+      deviceType: a.string().required(),
+      category: a.ref("DeviceCategory"),
+      description: a.string(),
+      region: a.string(),
+      standards: a.string().array(),
+      compatibleClasses: a.string().array(),
+      hasActorCapability: a.boolean(),
+      hasSensorCapability: a.boolean(),
+      hasControllerCapability: a.boolean(),
+      hasIOTCapability: a.boolean(),
+      // Power: source + numeric input ratings (volts / amps / watts).
+      powerSource: a.ref("PowerSource"),
+      voltageV: a.float(),
+      currentA: a.float(),
+      powerW: a.float(),
+      s3DocPath: a.string(),
+      s3ImgPath: a.string(),
+      s3SpecsPath: a.string(),
+      // Tiny (~few KB) data-URL preview generated client-side from the
+      // uploaded image — inlined so list views render thumbnails without a
+      // per-row S3 fetch. The full image stays in S3 (s3ImgPath).
+      thumbnail: a.string(),
+    })
+    .identifier(["modelNumber"])
+    .authorization((allow) => [
+      allow.group("dhc-admins").to(["create", "update", "delete"]),
+      allow.authenticated().to(["read"]),
+    ]),
+
+  // DeviceInstance — a physical device deployed in one SmartHome. Keyed by the
+  // default Amplify id; indexed by smartHomeId so the Designer can list a
+  // home's devices cheaply (same rationale as SmartHomeDesign). Per-device
+  // spec/doc files live under
+  // {Private|Public}/DigitalHomes/{smartHomeId}/devices/{deviceType}/{serialNumber}/.
+  DeviceInstance: a
+    .model({
+      smartHomeId: a.string().required(),
+      owners: a.string().array(),
+      modelNumber: a.string().required(),
+      serialNumber: a.string().required(),
+      deviceType: a.string().required(),
+      purchaseDate: a.date(),
+      installationDate: a.date(),
+      firmwareVersion: a.string(),
+      lifecycleState: a.ref("DeviceLifecycle"),
+      location: a.string(),
+      s3SpecsPath: a.string(),
+    })
+    .authorization((allow) => [
+      allow.ownersDefinedIn("owners"),
+      allow.group("dhc-admins"),
+    ])
+    .secondaryIndexes((index) => [index("smartHomeId")]),
+
+  // ─── custom return type for the signed-URL mutations ─────────────
+  DesignStorageUrl: a.customType({
+    url: a.string().required(),
+    expiresAt: a.datetime().required(),
+    contentType: a.string(),
+  }),
+
+  // ─── custom return type for initiateDigitalHome ──────────────────
+  InitiateDigitalHomePayload: a.customType({
+    smartHomeId: a.string().required(),
+    createdAt: a.datetime().required(),
+  }),
+
+  // ─── custom return type for edge device-code approve/deny ────────
+  DeviceApprovalResult: a.customType({
+    status: a.string().required(),
+    home_id: a.string(),
+  }),
+
+  // ─── device_info shown on the /link approval screen ──────────────
+  // Lets the user sanity-check "yes, that's my box" before approving.
+  DeviceCodeInfo: a.customType({
+    status: a.string().required(),
+    hostname: a.string(),
+    lan_ip: a.string(),
+    dhe_version: a.string(),
+    machine_id: a.string(),
+  }),
+
+  // ─── one registered edge, for the Portal "My Edges" view ─────────
+  EdgeSummary: a.customType({
+    edge_id: a.string().required(),
+    home_id: a.string(),
+    machine_id: a.string(),
+    hostname: a.string(),
+    dhe_version: a.string(),
+    status: a.string(),
+    last_telemetry_at: a.string(),
+    linked_at: a.string(),
+  }),
+
+  // ─── initiateDigitalHome custom mutation ─────────────────────────
+  // Backed by the createDigitalHome Lambda. Performs:
+  //   - DDB PutItem (DigitalHome row)
+  //   - Cognito group create + add caller
+  //   - S3 writes: abox.ttl, graph.jsonld, data/ placeholder, optional Public/ placeholder
+  // Auth: caller must be in dhc-standard, dhc-professional, or dhc-admins.
+  // Named "initiate" to distinguish from the auto-generated CRUD createDigitalHome.
+  initiateDigitalHome: a
+    .mutation()
+    .arguments({
+      country: a.string().required(),
+      postalCode: a.string().required(),
+      streetCode: a.string().required(),
+      houseNumber: a.string().required(),
+      suffix: a.string().required(),
+      city: a.string().required(),
+      addressLine1: a.string().required(),
+      addressLine2: a.string(),
+      isDemo: a.boolean().required(),
+    })
+    .returns(a.ref("InitiateDigitalHomePayload"))
+    .handler(a.handler.function(createDigitalHome))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── edge device-flow approval (backed by edgeDeviceApproval) ────
+  // The Portal /link page calls these after the user logs in with Cognito.
+  // describeDeviceCode returns the box's device_info for the approval screen;
+  // approveDeviceCode binds a pending device_code (looked up by the human
+  // user_code) to a home the caller owns; denyDeviceCode rejects it. The
+  // Lambda enforces the owner/admin check — see spec DH-SPEC-100 §3.2.
+  describeDeviceCode: a
+    .query()
+    .arguments({
+      user_code: a.string().required(),
+    })
+    .returns(a.ref("DeviceCodeInfo"))
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  approveDeviceCode: a
+    .mutation()
+    .arguments({
+      user_code: a.string().required(),
+      // Optional (two-step model): omit to register the edge to the caller now
+      // and link it to a home later via linkEdgeToHome.
+      home_id: a.string(),
+    })
+    .returns(a.ref("DeviceApprovalResult"))
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  denyDeviceCode: a
+    .mutation()
+    .arguments({
+      user_code: a.string().required(),
+    })
+    .returns(a.ref("DeviceApprovalResult"))
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── two-step: list the caller's edges + (re)assign them to homes ─
+  listMyEdges: a
+    .query()
+    .returns(a.ref("EdgeSummary").array())
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // Assign (or, with no home_id, unassign) an edge the caller owns to a home
+  // the caller owns. Enforced in the Lambda.
+  linkEdgeToHome: a
+    .mutation()
+    .arguments({
+      edge_id: a.string().required(),
+      home_id: a.string(),
+    })
+    .returns(a.ref("EdgeSummary"))
+    .handler(a.handler.function(edgeDeviceApproval))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── admin debug: read-only AWS inspection (backed by adminDebug) ─
+  // dhc-admins only, enforced both here and in the Lambda. Returns AWSJSON.
+  debugS3: a
+    .query()
+    .arguments({ prefix: a.string() })
+    .returns(a.json())
+    .handler(a.handler.function(adminDebug))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  debugTables: a
+    .query()
+    .returns(a.json())
+    .handler(a.handler.function(adminDebug))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  debugCognito: a
+    .query()
+    .returns(a.json())
+    .handler(a.handler.function(adminDebug))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  debugConsole: a
+    .query()
+    .returns(a.json())
+    .handler(a.handler.function(adminDebug))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  // ─── signed-URL mutations (backed by dhcDesignStorageProxy) ──────
+  requestDesignReadUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+      fileName: a.string().required(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestDesignWriteUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+      fileName: a.string().required(),
+      contentType: a.string(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // Step-1 designtime read — signed URL for
+  //   {Private|Public}/DigitalHomes/{smartHomeId}/designtime/{fileName}
+  // Authz handled inside the Lambda (DigitalHome.owners + dhc-admins).
+  requestDigitalHomeReadUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+      fileName: a.string().required(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // Per-device spec/doc files. Key (built in the Lambda):
+  //   {Private|Public}/DigitalHomes/{smartHomeId}/devices/{deviceType}/{serialNumber}/{fileName}
+  // Authz: DigitalHome.owners + dhc-admins (same check as requestDigitalHomeReadUrl).
+  requestDeviceFileReadUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+      deviceType: a.string().required(),
+      serialNumber: a.string().required(),
+      fileName: a.string().required(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestDeviceFileWriteUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+      deviceType: a.string().required(),
+      serialNumber: a.string().required(),
+      fileName: a.string().required(),
+      contentType: a.string(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // CSV mass-import inbox — a single file directly under devices/ (no
+  // deviceType/serialNumber segment), so it needs its own mutation pair.
+  // Key (built in the Lambda):
+  //   {Private|Public}/DigitalHomes/{smartHomeId}/devices/inbox.json
+  // Authz: DigitalHome.owners + dhc-admins (same check as requestDigitalHomeReadUrl).
+  requestDeviceInboxReadUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestDeviceInboxWriteUrl: a
+    .mutation()
+    .arguments({
+      smartHomeId: a.id().required(),
+      contentType: a.string(),
+    })
+    .returns(a.ref("DesignStorageUrl"))
+    .handler(a.handler.function(dhcDesignStorageProxy))
+    .authorization((allow) => [allow.authenticated()]),
+});
+
+export type Schema = ClientSchema<typeof schema>;
+
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    defaultAuthorizationMode: "userPool",
+  },
+});

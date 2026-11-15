@@ -1,0 +1,36 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "dhc:DigitalHome",
+        "x": 40,
+        "y": 40,
+        "fields": {
+          "smartHomeId": "DE-DEMO-01",
+          "preferredLanguage": "en"
+        },
+        "extraState": { "itemCount": 2 },
+        "inputs": {
+          "hasPart_0": {
+            "block": {
+              "type": "dhc:DetachedHouse",
+              "fields": { "name": "Main House", "area_M2": 180 }
+            }
+          },
+          "hasPart_1": {
+            "block": {
+              "type": "dhc:Garden",
+              "fields": {
+                "name": "Front Garden",
+                "area_M2": 120,
+                "surfaceType": "lawn",
+                "fenced": true
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}
