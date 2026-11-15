@@ -84,39 +84,6 @@ describe("marketplace: a seller's catalogue", () => {
   });
 });
 
-describe("marketplace: the old DeviceModel rows as articles", async () => {
-  const { modelQuads } = await import("../../amplify/functions/market/importDeviceModels.ts");
-  const N3 = (await import("n3")).default;
-  const ttl = (quads) => new Promise((ok) => { const w = new N3.Writer(); w.addQuads(quads); w.end((_, out) => ok(out)); });
-
-  it("maps a full row, and the result passes the shapes", async () => {
-    const notes = [];
-    const q = modelQuads({
-      modelNumber: "HmIP-BSM (v2)", brand: "Homematic IP", deviceType: "Switch actuator", description: "Brand switch",
-      category: "CONTROLLERS_AUTOMATION", powerSource: "FIXED", voltageV: 230, currentA: 5, powerW: null,
-      hasActorCapability: true, hasIOTCapability: true, hasSensorCapability: false,
-      region: "EU, de;Europe", standards: ["EN 60669"], compatibleClasses: ["brick:Switch"],
-      s3ImgPath: "public/catalogue/devices/x", thumbnail: "data:…", __typename: "DeviceModel",
-    }, "digitalhome-cloud", notes);
-    expect(q[0].subject.value).toBe("https://digitalhome.cloud/id/market/digitalhome-cloud/HmIP-BSM%20%28v2%29");
-    const v = await validateListing(await ttl(q), "digitalhome-cloud");
-    expect(v.problems).toEqual([]);
-    expect(notes).toEqual([]);
-    const objs = (pred) => q.filter((x) => x.predicate.value.endsWith(pred)).map((x) => x.object.value).sort();
-    expect(objs("#capability")).toEqual(["actor", "iot"]);
-    expect([...new Set(objs("#usableIn"))]).toEqual(["DE", "EU"]);           // "Europe" → EU, case and separators normalised
-    expect(objs("#powerW")).toEqual([]);
-  });
-
-  it("leaves out what the shapes would refuse, and says so", async () => {
-    const notes = [];
-    const q = modelQuads({ modelNumber: "X1", brand: "B", deviceType: "T", category: "TOASTERS", powerSource: "SOLAR",
-      region: "Worldwide", voltageV: -3 }, "digitalhome-cloud", notes);
-    expect((await validateListing(await ttl(q), "digitalhome-cloud")).ok).toBe(true);
-    expect(notes).toEqual(["X1: category TOASTERS left out", "X1: power source SOLAR left out", "X1: region “WORLDWIDE” left out"]);
-  });
-});
-
 describe("marketplace: editing one article from the Portal", async () => {
   const { applyEdit, articles, parse, write } = await import("../../amplify/functions/market-shared/articles.ts");
   const seller = "maker-a";

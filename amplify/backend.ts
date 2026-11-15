@@ -126,7 +126,6 @@ const tablesNeedingPITR = [
   "LibraryItem",
   "DigitalHome",
   "SmartHomeDesign",
-  "DeviceModel",
   "DeviceInstance",
 ] as const;
 for (const tableName of tablesNeedingPITR) {
@@ -448,25 +447,6 @@ edgeMarketFn.addToRolePolicy(new PolicyStatement({
   actions: ["cognito-idp:ListUsers", "cognito-idp:AdminListGroupsForUser", "cognito-idp:AdminGetUser"],
   resources: [userPoolWildcardArn],
 }));
-// market: the one-time import reads the old DeviceModel table and its files.
-const deviceModelTable = backend.data.resources.tables.DeviceModel;
-marketFn.addToRolePolicy(new PolicyStatement({
-  effect: Effect.ALLOW,
-  actions: ["dynamodb:Scan"],
-  resources: [deviceModelTable.tableArn],
-}));
-marketFn.addToRolePolicy(new PolicyStatement({
-  effect: Effect.ALLOW,
-  actions: ["s3:GetObject"],
-  resources: [`${bucket.bucketArn}/public/catalogue/*`],
-}));
-marketFn.addToRolePolicy(new PolicyStatement({
-  effect: Effect.ALLOW,
-  actions: ["s3:ListBucket"],
-  resources: [bucket.bucketArn],
-  conditions: { StringLike: { "s3:prefix": ["public/catalogue/devices/*"] } },
-}));
-backend.market.addEnvironment("DEVICEMODEL_TABLE_NAME", deviceModelTable.tableName);
 // market: dhc-admins create sellers (a Cognito group each) and their editors.
 marketFn.addToRolePolicy(new PolicyStatement({
   effect: Effect.ALLOW,

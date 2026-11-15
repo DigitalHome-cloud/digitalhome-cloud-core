@@ -19,8 +19,8 @@ import { market } from "../functions/market/resource";
  *   - createDigitalHome: structured-address create flow that produces the full
  *     "shell" (DDB row + Cognito group + S3 abox.ttl/graph.jsonld/data folder)
  *     per repos/core/experimental/abox/abox.md (Step 1).
- *   - DeviceModel:    admin write, any signed-in user read (device-product
- *                     catalogue — Brand/ModelNumber/DeviceType + S3 doc/img/specs)
+ *   - The device catalogue is the marketplace (custom types Market*, the
+ *     market Lambda; ADR 0016). DeviceModel was retired.
  *   - DeviceInstance: multi-owner + admin (per-SmartHome device inventory,
  *                     keyed/indexed by smartHomeId — same pattern as
  *                     SmartHomeDesign so the Designer can list a home's devices)
@@ -53,16 +53,6 @@ const schema = a.schema({
     "ACTIVE",
     "END_OF_LIFE",
     "DECOMMISSIONED",
-  ]),
-
-  // How a DeviceModel is powered. Voltage/current/power are numeric ratings
-  // (their typical values depend on this — e.g. SOCKET/FIXED ≈ 220 V mains,
-  // BATTERY/ACCU ≈ 12/6/3.7 V).
-  PowerSource: a.enum([
-    "FIXED",   // hard-wired to mains
-    "SOCKET",  // mains plug
-    "BATTERY", // non-rechargeable
-    "ACCU",    // rechargeable accumulator
   ]),
 
   // ─── models ───────────────────────────────────────────────────────
@@ -165,43 +155,6 @@ const schema = a.schema({
     // Index on smartHomeId so the Lambda's owner-check Query is O(items per
     // SmartHome) instead of a full Scan (scales as the table grows).
     .secondaryIndexes((index) => [index("smartHomeId")]),
-
-  // DeviceModel — global device-product catalogue. PK is modelNumber (unique
-  // by construction). Admin-curated, any signed-in user reads (mirrors
-  // LibraryItem). S3 paths are stored as strings; assets live under
-  // public/catalogue/devices/{deviceType}/{modelNumber}/{docs,img,specs}.
-  DeviceModel: a
-    .model({
-      modelNumber: a.id().required(),
-      brand: a.string().required(),
-      deviceType: a.string().required(),
-      category: a.ref("DeviceCategory"),
-      description: a.string(),
-      region: a.string(),
-      standards: a.string().array(),
-      compatibleClasses: a.string().array(),
-      hasActorCapability: a.boolean(),
-      hasSensorCapability: a.boolean(),
-      hasControllerCapability: a.boolean(),
-      hasIOTCapability: a.boolean(),
-      // Power: source + numeric input ratings (volts / amps / watts).
-      powerSource: a.ref("PowerSource"),
-      voltageV: a.float(),
-      currentA: a.float(),
-      powerW: a.float(),
-      s3DocPath: a.string(),
-      s3ImgPath: a.string(),
-      s3SpecsPath: a.string(),
-      // Tiny (~few KB) data-URL preview generated client-side from the
-      // uploaded image — inlined so list views render thumbnails without a
-      // per-row S3 fetch. The full image stays in S3 (s3ImgPath).
-      thumbnail: a.string(),
-    })
-    .identifier(["modelNumber"])
-    .authorization((allow) => [
-      allow.group("dhc-admins").to(["create", "update", "delete"]),
-      allow.authenticated().to(["read"]),
-    ]),
 
   // DeviceInstance — a physical device deployed in one SmartHome. Keyed by the
   // default Amplify id; indexed by smartHomeId so the Designer can list a
@@ -583,14 +536,6 @@ const schema = a.schema({
     .handler(a.handler.function(market))
     .authorization((allow) => [allow.group("dhc-admins")]),
 
-  // Once per environment: the DeviceModel table (the old Catalog) and its
-  // files become the catalogue of seller digitalhome-cloud. Re-runnable:
-  // articles already there are kept. → { status, version, added, files, notes }
-  importDeviceCatalogue: a
-    .mutation()
-    .returns(a.json())
-    .handler(a.handler.function(market))
-    .authorization((allow) => [allow.group("dhc-admins")]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

@@ -11,8 +11,6 @@
 //   marketArticles(seller?, query?)               every signed-in user: articles as JSON
 //   editMarketArticle(seller, reference, before, after)
 //                                                 editors: one article, merged into the current catalogue
-//   importDeviceCatalogue                         dhc-admins, once per environment: the old
-//                                                 DeviceModel table → seller digitalhome-cloud
 //
 // Editors are the Cognito group market-<seller>. Rights come from the token's
 // groups: adminMfaGate puts dhc-admins and market-* groups into a token only
@@ -28,7 +26,6 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import type { AppSyncIdentityCognito, AppSyncResolverEvent } from "aws-lambda";
 import { ADMIN_GROUP, BadRequest, cleanFiles, groupOf, mayEdit, sellerId } from "../market-shared/rules";
-import { importDeviceModels } from "./importDeviceModels";
 import { applyEdit, articles, parse, write, type Article } from "../market-shared/articles";
 import {
   commit, createSeller, getSeller, graphUrl, listSellers, readGraph, stageUpload, uploads, writeGraph, type Seller,
@@ -39,7 +36,6 @@ const USER_POOL_ID = () => process.env.USER_POOL_ID!;
 const EMAIL = /^[^\s@"]{1,64}@[^\s@"]{1,190}$/;
 
 type Args = Record<string, any>;
-const PLATFORM = "digitalhome-cloud";
 const json = (v: unknown) => (typeof v === "string" ? JSON.parse(v) : v ?? null);
 
 // Parsed catalogues, by the S3 key of their version (a key is never reused).
@@ -157,13 +153,6 @@ export const handler = async (event: AppSyncResolverEvent<Args>) => {
         asAdmin();
         const row = await newSeller(sellerId(args.id), args.name, args.kind, who);
         return { ...row, articles: 0, updatedAt: null, mayEdit: true };
-      }
-      case "importDeviceCatalogue": {
-        asAdmin();
-        const s = (await getSeller(PLATFORM)) ?? (await newSeller(PLATFORM, "digitalhome.cloud", "platform", who));
-        const report = await importDeviceModels(s, who);
-        console.log(`[market] importDeviceCatalogue by ${who}: ${report.status}, ${report.added} added, ${report.files} files`);
-        return JSON.stringify(report);
       }
       case "sellerEditors": {
         asAdmin();

@@ -5,12 +5,12 @@ import { defineStorage } from "@aws-amplify/backend";
  *
  * Path scheme:
  *   - public/ontology/...           — global ontology artifacts (admin write)
- *   - public/catalogue/devices/...  — device-product catalogue assets
- *                                      (docs/img/specs). World-readable,
- *                                      dhc-admins write only — the longest
- *                                      matching prefix wins, so this tightens
- *                                      the broad public/* write grant for the
- *                                      catalogue subtree.
+ *   - public/market/{seller}/sha256/ — marketplace images and datasheets
+ *                                      (ADR 0016), written only through the
+ *                                      market Lambdas' presigned PUTs
+ *   - public/catalogue/...          — the retired DeviceModel catalogue's
+ *                                      files; the rule stays so the broad
+ *                                      public/* write grant does not open it
  *   - public/smarthomes/{demoId}/   — demo SmartHome data (any authenticated
  *                                      user can read+write; admins reset on
  *                                      vandalism)
@@ -27,8 +27,8 @@ import { defineStorage } from "@aws-amplify/backend";
 export const storage = defineStorage({
   name: "dhcStorage",
   access: (allow) => ({
-    // More specific than public/* — longest-prefix match governs this
-    // subtree, so catalogue assets are world-readable but admin-write only.
+    // The retired DeviceModel catalogue's files. More specific than public/*
+    // (longest prefix wins), so this subtree stays admin-write only.
     "public/catalogue/*": [
       allow.guest.to(["read"]),
       allow.authenticated.to(["read"]),
