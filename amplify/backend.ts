@@ -42,6 +42,8 @@ import { edgeTokenRotate } from "./functions/edgeTokenRotate/resource";
 import { edgeHomes } from "./functions/edgeHomes/resource";
 import { edgeMarket } from "./functions/edgeMarket/resource";
 import { market } from "./functions/market/resource";
+import { templates } from "./functions/templates/resource";
+import { edgeTemplates } from "./functions/edgeTemplates/resource";
 import { edgeDeviceApproval } from "./functions/edgeDeviceApproval/resource";
 import { adminDebug } from "./functions/adminDebug/resource";
 import { adminMfaGate } from "./functions/adminMfaGate/resource";
@@ -60,6 +62,8 @@ const backend = defineBackend({
   edgeHomes,
   edgeMarket,
   market,
+  templates,
+  edgeTemplates,
   edgeDeviceApproval,
   adminDebug,
   adminMfaGate,
@@ -303,6 +307,7 @@ const edgeTelemetryFn = backend.edgeTelemetry.resources.lambda;
 const edgeRotateFn = backend.edgeTokenRotate.resources.lambda;
 const edgeHomesFn = backend.edgeHomes.resources.lambda;
 const edgeMarketFn = backend.edgeMarket.resources.lambda;
+const edgeTemplatesFn = backend.edgeTemplates.resources.lambda;
 const edgeApprovalFn = backend.edgeDeviceApproval.resources.lambda;
 
 for (const fn of [
@@ -312,6 +317,7 @@ for (const fn of [
   backend.edgeTokenRotate,
   backend.edgeHomes,
   backend.edgeMarket,
+  backend.edgeTemplates,
 ]) {
   fn.addEnvironment("DEVICE_CODES_TABLE_NAME", deviceCodesTable.tableName);
   fn.addEnvironment("EDGE_REGISTRY_TABLE_NAME", edgeRegistryTable.tableName);
@@ -457,6 +463,56 @@ marketFn.addToRolePolicy(new PolicyStatement({
   resources: [userPoolWildcardArn],
 }));
 
+// ─── Board templates (templates for the Portal, edgeTemplates for edges) ───
+// One row per norm edition in NormTemplates (its graph's version and S3 key),
+// the Turtle under templates/graphs/ (Lambdas only), staging under
+// templates/staging/ (ADR-0017). As MarketSeller: the table lives in the DATA
+// stack beside the templates Lambda; edgeTemplates (edge stack) only reads it.
+const templatesFn = backend.templates.resources.lambda;
+const normTemplatesTable = new Table(Stack.of(templatesFn), "NormTemplates", {
+  partitionKey: { name: "id", type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+  pointInTimeRecovery: true,
+  encryption: TableEncryption.AWS_MANAGED,
+});
+templatesFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:UpdateItem", "dynamodb:PutItem"],
+  resources: [normTemplatesTable.tableArn],
+}));
+templatesFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+  resources: [`${bucket.bucketArn}/templates/*`],
+}));
+// checkedBy: the verifier's e-mail when the token carries none (access tokens)
+templatesFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["cognito-idp:AdminGetUser"],
+  resources: [userPoolWildcardArn],
+}));
+backend.templates.addEnvironment("NORM_TEMPLATES_TABLE_NAME", normTemplatesTable.tableName);
+backend.templates.addEnvironment("STORAGE_BUCKET_NAME", bucket.bucketName);
+backend.templates.addEnvironment("USER_POOL_ID", backend.auth.resources.userPool.userPoolId);
+// edgeTemplates: verify the token, read the rows, sign GETs of the graphs.
+edgeTemplatesFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["dynamodb:GetItem"],
+  resources: [edgeRegistryTable.tableArn],
+}));
+edgeTemplatesFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["dynamodb:GetItem", "dynamodb:Scan"],
+  resources: [normTemplatesTable.tableArn],
+}));
+edgeTemplatesFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["s3:GetObject"],
+  resources: [`${bucket.bucketArn}/templates/graphs/*`],
+}));
+backend.edgeTemplates.addEnvironment("NORM_TEMPLATES_TABLE_NAME", normTemplatesTable.tableName);
+backend.edgeTemplates.addEnvironment("STORAGE_BUCKET_NAME", bucket.bucketName);
+
 // edgeDeviceApproval (AppSync): queries the KEYS_ONLY user_code GSI, re-reads
 // the base row (GetItem) for device_info, updates DeviceCodes, reads DigitalHome
 // to verify home ownership, and (two-step) reads/updates EdgeRegistry to list
@@ -542,6 +598,8 @@ const routes: Array<[string, typeof edgeAuthzFn]> = [
   ["/edge/v1/market/graphs/get", edgeMarketFn],
   ["/edge/v1/market/graphs/put", edgeMarketFn],
   ["/edge/v1/market/uploads", edgeMarketFn],
+  ["/edge/v1/templates/editions", edgeTemplatesFn],
+  ["/edge/v1/templates/get", edgeTemplatesFn],
 ];
 for (const [path, fn] of routes) {
   edgeApi.addRoutes({

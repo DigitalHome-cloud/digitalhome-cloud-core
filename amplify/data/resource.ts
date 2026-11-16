@@ -4,6 +4,7 @@ import { createDigitalHome } from "../functions/createDigitalHome/resource";
 import { edgeDeviceApproval } from "../functions/edgeDeviceApproval/resource";
 import { adminDebug } from "../functions/adminDebug/resource";
 import { market } from "../functions/market/resource";
+import { templates } from "../functions/templates/resource";
 
 /**
  * AppSync data layer. Models + custom mutations.
@@ -535,6 +536,74 @@ const schema = a.schema({
     .returns(a.boolean())
     .handler(a.handler.function(market))
     .authorization((allow) => [allow.group("dhc-admins")]),
+
+  // ─── board templates (backed by the templates Lambda; ADR-0017) ─────────
+  // One template graph per norm edition (Turtle in S3, a version in
+  // NormTemplates), read by every signed-in user, written and verified by
+  // dhc-template-editors and dhc-admins through a two-step save. The Lambda
+  // enforces who may write; the rules here only require sign-in. Edges read
+  // them through /edge/v1/templates/* (edgeTemplates).
+  NormTemplateEdition: a.customType({
+    edition: a.string().required(),         // nfc15100-2024
+    label: a.string(),
+    norm: a.string(),                       // the dhc:Norm IRI
+    latest: a.boolean(),
+    supersedes: a.string(),
+    version: a.integer().required(),
+    templates: a.integer(),
+    updatedAt: a.string(),
+    mayEdit: a.boolean(),
+  }),
+  TemplateGraph: a.customType({
+    edition: a.string().required(),
+    version: a.integer().required(),
+    url: a.string(),
+  }),
+  TemplateSave: a.customType({
+    status: a.string().required(),          // ready | ok | conflict | invalid
+    key: a.string(),
+    url: a.string(),
+    version: a.integer(),
+    templates: a.integer(),
+    currentVersion: a.integer(),
+    currentUrl: a.string(),
+    problems: a.string().array(),
+  }),
+
+  templateEditions: a
+    .query()
+    .returns(a.ref("NormTemplateEdition").array())
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  templateGraph: a
+    .query()
+    .arguments({ edition: a.string().required() })
+    .returns(a.ref("TemplateGraph"))
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestTemplatesSave: a
+    .mutation()
+    .arguments({ edition: a.string().required(), baseVersion: a.integer().required() })
+    .returns(a.ref("TemplateSave"))
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  commitTemplatesSave: a
+    .mutation()
+    .arguments({ edition: a.string().required(), key: a.string().required(), baseVersion: a.integer().required() })
+    .returns(a.ref("TemplateSave"))
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // template: its id in the edition (t3-electric-heating) or its IRI
+  verifyTemplate: a
+    .mutation()
+    .arguments({ edition: a.string().required(), template: a.string().required() })
+    .returns(a.ref("TemplateSave"))
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
 
 });
 

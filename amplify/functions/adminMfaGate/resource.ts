@@ -17,6 +17,7 @@ export const adminMfaGate = defineFunction({
   timeoutSeconds: 5,
   environment: {
     // market-*: a marketplace seller's editors (they change a public catalogue)
-    PROTECTED_GROUPS: "dhc-admins,market-*",
+    // dhc-template-editors: they write and verify the board templates
+    PROTECTED_GROUPS: "dhc-admins,market-*,dhc-template-editors",
   },
 });

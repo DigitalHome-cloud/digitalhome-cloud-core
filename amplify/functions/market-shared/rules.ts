@@ -20,7 +20,10 @@ export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 export const MAX_FILES = 50;
 export const MAX_GRAPH_BYTES = 20 * 1024 * 1024;
 
-export class BadRequest extends Error {}
+// One class for "the request was wrong" across the stores, so a handler's
+// instanceof check catches what graph-store throws too.
+export { BadRequest } from "../graph-store/errors";
+import { BadRequest } from "../graph-store/errors";
 
 export function sellerId(v: unknown): string {
   const id = String(v ?? "");

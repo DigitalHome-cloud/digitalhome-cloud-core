@@ -14,6 +14,8 @@ import { adminMfaGate } from "../functions/adminMfaGate/resource";
  *   - dhc-professional:     paid tier, future feature gating
  *   - dhc-standard:         default paid tier, future feature gating
  *   - dhc-welcome:          auto-assigned on sign-up (postConfirmation Lambda)
+ *   - dhc-template-editors: write and verify the board templates (ADR-0017);
+ *                           protected by adminMfaGate like dhc-admins
  *
  * Google federation is intentionally NOT configured in this initial sandbox
  * cutover. To re-enable later:
@@ -36,6 +38,7 @@ export const auth = defineAuth({
     "dhc-professional",
     "dhc-standard",
     "dhc-welcome",
+    "dhc-template-editors",
   ],
   // Two-step sign-in with an authenticator app (TOTP). OPTIONAL: ordinary
   // users are never asked; admins must set it up, or adminMfaGate withholds

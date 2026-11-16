@@ -94,6 +94,13 @@ schema/
     market.ttl                ← Marketplace vocabulary (dhp: articles of a seller's catalogue; no prices)
     market.shapes.ttl         ← Closed SHACL shapes every saved seller catalogue must pass
                                 (copied into the Lambdas by scripts/sync-market-shapes.mjs)
+  templates/
+    templates.ttl             ← Board template vocabulary (dht:): a board, its RCDs and circuits
+    templates.shapes.ttl      ← Closed SHACL shapes every saved template graph must pass
+                                (with the T-Box and norm shapes, copied into the Lambdas by
+                                scripts/sync-template-shapes.mjs)
+    seed/nfc15100-2024.ttl    ← The UNVERIFIED first drafts, written once to stage. A seed,
+                                not the source: templates live in the cloud (see below)
 py-tools/
   ontology_explorer.py        ← The ONLY sanctioned writer for tbox/dhc-*.ttl
 tests/
@@ -307,6 +314,32 @@ right once, against one country, while `dhc-core` is prototyped. They return
 after the core is released. **Do not re-add them as a tidy-up**; adding a norm
 back means all four artifacts above, plus a valid *and* invalid fixture per
 shape.
+
+## Board templates live in the cloud, not here
+
+A board template (a starting tableau principal for "T3, electric heating,
+NF C 15-100:2024") is **content**, kept per instance (stage, prod) as one
+versioned Turtle graph per norm edition — `NormTemplates` + S3
+`templates/graphs/<edition>/`, on `amplify/functions/graph-store/` like the
+marketplace (darkfactory ADR-0017). This repo holds only what a valid
+template graph is:
+
+- `schema/templates/` — vocabulary and closed shapes;
+- **every save is also checked against the edition's own effective norm
+  shapes** (`dhc:shapesFile` down `dhc:supersedes`), so a template that breaks
+  its edition is refused. The validator hands the norm shapes decimals in
+  their shortest form (`32`, not `32.0`): the IRVE guards use
+  `sh:hasValue "32"^^xsd:decimal`, which the Turtle shorthand `32.0` never
+  matches — the guard-literal trap again, in data rather than shapes;
+- `dht:verified` / `dht:checkedBy` / `dht:checkedAt` are never taken from an
+  upload. Only `verifyTemplate` sets them, with the caller's e-mail; any change
+  to a template's content makes it unverified again.
+
+Write with `node scripts/templates.mjs put|get|list|verify|copy` (a Portal
+refresh token in `~/.config/dhc/refresh-token`, group
+`dhc-template-editors` or `dhc-admins`, authenticator app required). After
+changing `schema/templates/`, the T-Box or a norm shapes file, run
+`node scripts/sync-template-shapes.mjs`; `tests/templates/` fails on drift.
 
 ## What this repo does NOT do
 

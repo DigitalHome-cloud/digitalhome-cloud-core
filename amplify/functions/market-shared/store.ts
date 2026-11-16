@@ -1,35 +1,19 @@
 // The marketplace store. One row per seller in MarketSeller, holding its
-// catalogue's version and where that version's Turtle is in S3. The version
-// moves forward only by a conditional update naming the version the writer
-// read (template-dlab5-cloud ADR-0007, as the Mediathek's Graph table): a
-// stale write is refused with the current version, and the writer merges.
-//
-// The Turtle itself is in S3, not in the row: a wholesaler's catalogue is far
-// larger than a DynamoDB item. Every saved version keeps its own object
-// (market/graphs/<seller>/v<n>-<token>.ttl), so a lost race never overwrites
-// the winner's file, and older versions stay as history.
+// catalogue's version and where that version's Turtle is in S3. The versioned
+// graph itself (conditional version update, one S3 object per version, the
+// two-step save) is graph-store's, shared with the board templates; this file
+// adds what only sellers have: creating one, and its images and datasheets.
 
-import { randomBytes } from "node:crypto";
 import {
   ConditionalCheckFailedException,
   DynamoDBClient,
-  GetItemCommand,
   PutItemCommand,
-  ScanCommand,
-  UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
-import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
+import { marshall } from "@aws-sdk/util-dynamodb";
+import { HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import {
-  BadRequest, FILE_EXT, FileSpec, KINDS, STAGING, b64OfHex, fileKey, sellerId, stagingKey,
-} from "./rules";
+import { GraphStore, type Clients } from "../graph-store/store";
+import { BadRequest, FILE_EXT, FileSpec, KINDS, b64OfHex, fileKey, sellerId } from "./rules";
 import { validateListing } from "./validate";
 
 const ddb = new DynamoDBClient({});
@@ -38,7 +22,18 @@ const ddb = new DynamoDBClient({});
 const s3 = new S3Client({ requestChecksumCalculation: "WHEN_REQUIRED" });
 const TABLE = () => process.env.MARKET_SELLER_TABLE_NAME!;
 const BUCKET = () => process.env.STORAGE_BUCKET_NAME!;
-const URL_TTL_S = 900;
+
+/** The sellers' catalogues as versioned graphs (market/graphs/<seller>/v<n>-<token>.ttl). */
+export const marketGraphs = (clients?: Clients) => new GraphStore({
+  area: "market", table: TABLE, bucket: BUCKET, noun: "catalogue", clients,
+  validate: async (ttl, id) => {
+    const v = await validateListing(ttl, id);
+    return { ok: v.ok, problems: v.problems, triples: v.triples, counts: { articles: v.articles } };
+  },
+});
+let graphs = marketGraphs();
+/** Tests only: run the store against fake clients. */
+export const useClients = (clients?: Clients) => { graphs = marketGraphs(clients); };
 
 export interface Seller {
   id: string;
@@ -58,22 +53,10 @@ export type SaveResult =
   | { status: "conflict"; current: { version: number; url: string | null } }
   | { status: "invalid"; problems: string[] };
 
-const token = () => randomBytes(16).toString("hex");
-
-export async function listSellers(): Promise<Seller[]> {
-  const out: Seller[] = [];
-  let start: Record<string, any> | undefined;
-  do {
-    const res = await ddb.send(new ScanCommand({ TableName: TABLE(), ExclusiveStartKey: start }));
-    (res.Items || []).forEach((i) => out.push(unmarshall(i) as Seller));
-    start = res.LastEvaluatedKey;
-  } while (start);
-  return out.sort((a, b) => a.id.localeCompare(b.id));
-}
+export const listSellers = (): Promise<Seller[]> => graphs.list<Seller>();
 
 export async function getSeller(id: string): Promise<Seller | null> {
-  const got = await ddb.send(new GetItemCommand({ TableName: TABLE(), Key: marshall({ id: sellerId(id) }) }));
-  return got.Item ? (unmarshall(got.Item) as Seller) : null;
+  return graphs.get<Seller>(sellerId(id));
 }
 
 export async function createSeller(id: string, name: string, kind: string, by: string): Promise<Seller> {
@@ -94,80 +77,31 @@ export async function createSeller(id: string, name: string, kind: string, by: s
 }
 
 /** A 15-minute link to the seller's current catalogue; null before its first save. */
-export async function graphUrl(seller: Seller): Promise<string | null> {
-  if (!seller.version || !seller.s3Key) return null;
-  return getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET(), Key: seller.s3Key }), { expiresIn: URL_TTL_S });
-}
+export const graphUrl = (seller: Seller): Promise<string | null> => graphs.url(seller);
 
 /** The seller's current catalogue as Turtle ("" before its first save). */
-export async function readGraph(seller: Seller): Promise<string> {
-  if (!seller.version || !seller.s3Key) return "";
-  const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET(), Key: seller.s3Key }));
-  return obj.Body!.transformToString("utf-8");
-}
+export const readGraph = (seller: Seller): Promise<string> => graphs.read(seller);
+
+const asSave = (r: Awaited<ReturnType<GraphStore["commit"]>>): SaveResult =>
+  r.status === "ok" ? { status: "ok", version: r.version, triples: r.triples, articles: r.counts.articles ?? 0 } : r;
 
 /** A server-side save of a whole catalogue on top of the version `seller` holds. */
 export async function writeGraph(seller: Seller, ttl: string, by: string): Promise<SaveResult> {
-  const key = stagingKeyFor(seller.id);
-  await s3.send(new PutObjectCommand({ Bucket: BUCKET(), Key: key, Body: ttl, ContentType: "text/turtle" }));
-  return commit(seller, key, seller.version, by);
+  return asSave(await graphs.write(seller, ttl, by));
 }
 
 /** A fresh staging key for a seller (a save's step 1, or a server-side write). */
-export const stagingKeyFor = (seller: string) => stagingKey(seller, token());
+export const stagingKeyFor = (seller: string) => graphs.stagingKey(seller);
 
 /** Step 1 of a save: where to PUT the new Turtle (a private staging key). */
-export async function stageUpload(seller: Seller): Promise<{ key: string; url: string; headers: Record<string, string> }> {
-  const key = stagingKeyFor(seller.id);
-  const url = await getSignedUrl(s3, new PutObjectCommand({ Bucket: BUCKET(), Key: key, ContentType: "text/turtle" }),
-    { expiresIn: URL_TTL_S });
-  return { key, url, headers: { "Content-Type": "text/turtle" } };
-}
+export const stageUpload = (seller: Seller) => graphs.stageUpload(seller.id);
 
 /**
  * Step 2: check the staged Turtle and make it the next version, if the
  * catalogue is still at `baseVersion`. The staged object is removed either way.
  */
 export async function commit(seller: Seller, key: string, baseVersion: number, by: string): Promise<SaveResult> {
-  const m = STAGING.exec(String(key ?? ""));
-  if (!m || m[1] !== seller.id) throw new BadRequest("key must be a staging key of this seller (from step 1)");
-  if (!Number.isInteger(baseVersion) || baseVersion < 0) throw new BadRequest("baseVersion is the version you read, 0 for a new catalogue");
-  try {
-    if (baseVersion !== seller.version) return { status: "conflict", current: { version: seller.version, url: await graphUrl(seller) } };
-    let ttl: string;
-    try {
-      const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET(), Key: key }));
-      ttl = await obj.Body!.transformToString("utf-8");
-    } catch {
-      throw new BadRequest("nothing was uploaded to that key");
-    }
-    const verdict = await validateListing(ttl, seller.id);
-    if (!verdict.ok) return { status: "invalid", problems: verdict.problems };
-
-    const version = baseVersion + 1;
-    const dest = `market/graphs/${seller.id}/v${version}-${token()}.ttl`;
-    await s3.send(new PutObjectCommand({ Bucket: BUCKET(), Key: dest, Body: ttl, ContentType: "text/turtle" }));
-    const now = new Date().toISOString();
-    try {
-      await ddb.send(new UpdateItemCommand({
-        TableName: TABLE(),
-        Key: marshall({ id: seller.id }),
-        UpdateExpression: "SET version = :v, s3Key = :k, triples = :t, articles = :a, updatedAt = :now, updatedBy = :by",
-        ConditionExpression: "version = :base",
-        ExpressionAttributeValues: marshall({
-          ":v": version, ":k": dest, ":t": verdict.triples, ":a": verdict.articles, ":now": now, ":by": by, ":base": baseVersion,
-        }),
-      }));
-    } catch (err) {
-      await s3.send(new DeleteObjectCommand({ Bucket: BUCKET(), Key: dest }));
-      if (!(err instanceof ConditionalCheckFailedException)) throw err;
-      const current = (await getSeller(seller.id))!;
-      return { status: "conflict", current: { version: current.version, url: await graphUrl(current) } };
-    }
-    return { status: "ok", version, triples: verdict.triples, articles: verdict.articles };
-  } finally {
-    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET(), Key: key })).catch(() => undefined);
-  }
+  return asSave(await graphs.commit(seller, key, baseVersion, by));
 }
 
 async function storedChecksum(key: string): Promise<string | null | undefined> {

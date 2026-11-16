@@ -1,0 +1,70 @@
+# Board templates — the vocabulary of a norm edition's template graph.
+#
+# A template is a starting point for a distribution board (tableau principal)
+# for one dwelling case under one norm edition: "T3, electric heating, NF C
+# 15-100:2024". It lists the board's size, its RCDs and its circuits; a pro
+# edge builds a real board from it, which the person then adapts.
+#
+# The CONTENT lives in the cloud, per instance (stage, prod): one Turtle graph
+# per norm edition, versioned, validated on every save (darkfactory ADR-0017).
+# This repository holds only the vocabulary and the rules a template graph
+# must satisfy (templates.shapes.ttl). Templates are named
+#   https://digitalhome.cloud/id/templates/<edition>/<template>
+# and their RCDs and circuits
+#   https://digitalhome.cloud/id/templates/<edition>/<template>/<part>
+# where <edition> is the graph's id, e.g. nfc15100-2024.
+#
+# RCDs and circuits are described with the dhc: T-Box terms (dhc:RCD,
+# dhc:Circuit, dhc:ratedCurrent …), so the edition's own norm shapes check a
+# template exactly as they check a design: a template that breaks its edition
+# is refused.
+#
+# Kept apart from the dhc-* T-Box (ontology_explorer.py is its only writer)
+# and from the norm C-Boxes, as the marketplace vocabulary is.
+
+@prefix dht:  <https://digitalhome.cloud/templates#> .
+@prefix dhc:  <https://digitalhome.cloud/ontology#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+<https://digitalhome.cloud/templates> a owl:Ontology ;
+    rdfs:label "digitalhome.cloud board templates"@en , "digitalhome.cloud Verteilervorlagen"@de ,
+               "Modèles de tableau digitalhome.cloud"@fr .
+
+dht:BoardTemplate a owl:Class ;
+    rdfs:label "Board template"@en , "Verteilervorlage"@de , "Modèle de tableau"@fr ;
+    rdfs:comment "A starting point for a distribution board, for one dwelling case under one norm edition."@en .
+
+dht:forEdition a owl:ObjectProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range dhc:NormEdition ;
+    rdfs:label "for edition"@en , "für Ausgabe"@de , "pour l'édition"@fr ;
+    rdfs:comment "The norm edition the template is made for; the graph's own edition."@en .
+dht:dwelling a owl:DatatypeProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range xsd:string ;
+    rdfs:label "dwelling"@en , "Wohnungstyp"@de , "type de logement"@fr ;
+    rdfs:comment "The dwelling case by its main rooms: T1 … T6 (T1 = one main room)."@en .
+dht:electricHeating a owl:DatatypeProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range xsd:boolean ;
+    rdfs:label "electric heating"@en , "elektrische Heizung"@de , "chauffage électrique"@fr .
+dht:rows a owl:DatatypeProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range xsd:integer ;
+    rdfs:label "rows"@en , "Reihen"@de , "rangées"@fr .
+dht:modulesPerRow a owl:DatatypeProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range xsd:integer ;
+    rdfs:label "modules per row"@en , "Teilungseinheiten je Reihe"@de , "modules par rangée"@fr .
+dht:hasRCD a owl:ObjectProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range dhc:RCD ;
+    rdfs:label "RCD"@en , "FI-Schutzschalter"@de , "interrupteur différentiel"@fr .
+dht:hasCircuit a owl:ObjectProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range dhc:Circuit ;
+    rdfs:label "circuit"@en , "Stromkreis"@de , "circuit"@fr .
+dht:position a owl:DatatypeProperty ; rdfs:range xsd:integer ;
+    rdfs:label "position"@en , "Reihenfolge"@de , "position"@fr ;
+    rdfs:comment "Display order of a template, an RCD or a circuit."@en .
+dht:appliance a owl:DatatypeProperty ; rdfs:domain dhc:Circuit ; rdfs:range xsd:string ;
+    rdfs:label "appliance"@en , "Gerät"@de , "appareil"@fr ;
+    rdfs:comment "What a dedicated circuit feeds (washing machine, oven …), in plain words."@en .
+
+# Verification. A template is a draft until a named person has checked it
+# against the published norm. Only the verify call sets these; any change to
+# a template's content sets dht:verified back to false.
+dht:verified a owl:DatatypeProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range xsd:boolean ;
+    rdfs:label "verified"@en , "geprüft"@de , "vérifié"@fr .
+dht:checkedBy a owl:DatatypeProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range xsd:string ;
+    rdfs:label "checked by"@en , "geprüft von"@de , "vérifié par"@fr .
+dht:checkedAt a owl:DatatypeProperty ; rdfs:domain dht:BoardTemplate ; rdfs:range xsd:dateTime ;
+    rdfs:label "checked at"@en , "geprüft am"@de , "vérifié le"@fr .
