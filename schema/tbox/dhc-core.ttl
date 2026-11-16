@@ -588,6 +588,31 @@ dhc:Norm_NFC15100 a dhc:Norm ;
     dhc:normId "nfc15100" ;
     dhc:normWeight 1.0 .
 
+dhc:NormEdition_RGIE_1981 a dhc:NormEdition ;
+    rdfs:label "RGIE / AREI (1981)"@en ;
+    rdfs:comment "The Belgian RGIE (in Dutch AREI) as it applied to domestic installations from 1981, by the royal decree of 10 March 1981, with its later amendments, until the new Book 1 replaced it on 1 June 2020. Installations built in those years (e.g. 2009) were built under it. Its dhc:shapesFile is a DRAFT: the shapes encode the domestic rules as commonly stated and have not been compared with the published articles; see the header of cbox/electrical/rgie-1981.shapes.ttl."@en ;
+    dhc:editionOf dhc:Norm_RGIE ;
+    dhc:editionYear "1981"^^xsd:gYear ;
+    dhc:shapesFile "cbox/electrical/rgie-1981.shapes.ttl" .
+
+dhc:NormEdition_RGIE_2020 a dhc:NormEdition ;
+    rdfs:label "RGIE / AREI Book 1 (2020)"@en ;
+    rdfs:comment "Book 1 of the new RGIE (low and very-low voltage installations), in force from 1 June 2020, and dhc:latestEdition. No dhc:shapesFile: no shapes have been authored for it."@en ;
+    dhc:editionEffectiveDate "2020-06-01"^^xsd:date ;
+    dhc:editionOf dhc:Norm_RGIE ;
+    dhc:editionYear "2020"^^xsd:gYear ;
+    dhc:supersedes dhc:NormEdition_RGIE_1981 .
+
+dhc:Norm_RGIE a dhc:Norm ;
+    rdfs:label "RGIE / AREI"@en ;
+    rdfs:comment "Règlement général sur les installations électriques / Algemeen Reglement op de Elektrische Installaties (Belgium): the regulation governing low-voltage installations in dwellings, from the supply to the circuits. Re-added after its removal in v3.0.0, starting with the edition existing Belgian installations were built under."@en ;
+    dhc:latestEdition dhc:NormEdition_RGIE_2020 ;
+    dhc:normCategory "Regulation" ;
+    dhc:normCountry "BE" ;
+    dhc:normDomain "electrical" ;
+    dhc:normId "rgie" ;
+    dhc:normWeight 1.0 .
+
 dhc:builtUnder a owl:ObjectProperty ;
     rdfs:label "built under"@en ;
     rdfs:comment "Optional evidence: the dhc:NormEdition an A-Box entity's work was designed and carried out under. It does NOT decide compliance — that is computed by validating against each edition's C-Box shapes. It disambiguates ONE result: a node that fails the edition in force. With builtUnder present, that failure is checkable — if the node also fails the very edition it claims to have been built under, it was never lawful even as built (illegal as built, not grandfathered); if it passes its declared edition and only fails a later one, it is genuinely grandfathered. With builtUnder absent — the normal case when reverse-engineering an existing installation — the tool cannot tell grandfathered from newly-illegal, and must say so rather than assume the charitable reading. Deliberately has no rdfs:domain, like dhc:governedBy: it applies to Circuit, EnergyMeter, EnergyDelivery, DistributionBoard and ElectricalTechnicalSpace, which share no common ancestor. Range is dhc:NormEdition."@en ;

@@ -1,0 +1,224 @@
+@prefix dhc:     <https://digitalhome.cloud/ontology#> .
+@prefix sh:      <http://www.w3.org/ns/shacl#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rgie:    <https://digitalhome.cloud/cbox/rgie#> .
+
+# ═══════════════════════════════════════════════════════════════════════
+#  C-Box SHACL profile: RGIE / AREI (Belgium), domestic installations,
+#  the edition in force for installations built 1981 – May 2020
+#  Binds to: dhc:Norm_RGIE, edition dhc:NormEdition_RGIE_1981
+#  Activation pattern: P3 sh:or guard, as nfc15100-2015.shapes.ttl
+#
+#  ⚠ DRAFT, NOT YET CHECKED AGAINST THE TEXT. These shapes encode the
+#  domestic rules as they are commonly stated for the old RGIE; nobody has
+#  compared them with the published articles yet. Until that is done a
+#  report may say "breaks" or "passes" wrongly, so the label of every
+#  shape and of the manifest profile says DRAFT.
+#
+#  What is here:
+#   1. no residual-current device above 300 mA (the general differential)
+#   2. every circuit below a residual-current device
+#   3. a socket circuit (not dedicated): at most 8 sockets (single or
+#      multiple, each counts once), conductors ≥ 2.5 mm², protection ≤ 20 A
+#   4. a lighting circuit: conductors ≥ 1.5 mm², protection ≤ 16 A
+#   5. protection by conductor section: < 2.5 mm² ≤ 16 A, < 4 mm² ≤ 20 A,
+#      < 6 mm² ≤ 25 A, < 10 mm² ≤ 32 A
+#
+#  What is NOT here, because the T-Box cannot say it yet: the 30 mA
+#  device for the bathroom and for the washing machine, dryer and
+#  dishwasher circuits (no circuit type names those appliances; the pro
+#  edge checks the appliances it records), the earth resistance, and the
+#  bathroom volumes.
+# ═══════════════════════════════════════════════════════════════════════
+
+rgie:Profile
+  a owl:Ontology ;
+  rdfs:label "RGIE C-Box profile (DRAFT)"@en ;
+  rdfs:label "AREI/RGIE C-Box-Profil (ENTWURF)"@de ;
+  rdfs:label "Profil C-Box RGIE (BROUILLON)"@fr ;
+  owl:versionInfo "0.1.0" ;
+  dhc:normId       "rgie" ;
+  dhc:normCountry  "BE" ;
+  dhc:normVersion  "1981" ;
+  dhc:normDomain   "electrical" .
+
+# ── 1. The general differential: at most 300 mA ─────────────────────────
+
+rgie:RCDSensitivityShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:RCD ;
+  dhc:normId "rgie" ;
+  rdfs:label "RCD sensitivity ≤ 300 mA (RGIE, DRAFT)"@en ;
+  rdfs:label "RCD-Ansprechstrom ≤ 300 mA (AREI/RGIE, ENTWURF)"@de ;
+  rdfs:label "Sensibilité du différentiel ≤ 300 mA (RGIE, BROUILLON)"@fr ;
+  sh:property [
+    sh:path dhc:sensitivityMA ;
+    sh:minCount 1 ;
+    sh:maxInclusive 300 ;
+    sh:message "RGIE: a residual current device in a dwelling has a sensitivity of at most 300 mA."@en ;
+    sh:message "AREI/RGIE: ein Fehlerstromschutzschalter in einer Wohnung hat höchstens 300 mA."@de ;
+    sh:message "RGIE : un différentiel d'une installation domestique a une sensibilité d'au plus 300 mA."@fr ;
+  ] .
+
+# ── 2. Every circuit below a residual-current device ────────────────────
+
+rgie:CircuitRCDProtectionShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "rgie" ;
+  rdfs:label "Every circuit is protected by an RCD (RGIE, DRAFT)"@en ;
+  rdfs:label "Jeder Stromkreis ist durch einen FI geschützt (AREI/RGIE, ENTWURF)"@de ;
+  rdfs:label "Chaque circuit est protégé par un différentiel (RGIE, BROUILLON)"@fr ;
+  sh:property [
+    sh:path dhc:hasProtection ;
+    sh:qualifiedValueShape [ sh:class dhc:RCD ] ;
+    sh:qualifiedMinCount 1 ;
+    sh:message "RGIE: every circuit is below the general differential (300 mA) or a more sensitive one."@en ;
+    sh:message "AREI/RGIE: jeder Stromkreis liegt hinter dem Haupt-FI (300 mA) oder einem empfindlicheren."@de ;
+    sh:message "RGIE : chaque circuit est en aval du différentiel général (300 mA) ou d'un plus sensible."@fr ;
+  ] .
+
+# ── 3. Socket circuit (not dedicated) ───────────────────────────────────
+
+rgie:SocketCircuitShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "rgie" ;
+  rdfs:label "Socket circuit (RGIE, DRAFT)"@en ;
+  rdfs:label "Steckdosenstromkreis (AREI/RGIE, ENTWURF)"@de ;
+  rdfs:label "Circuit de prises (RGIE, BROUILLON)"@fr ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Socket ] ] ]
+    [ sh:property [ sh:path dhc:dedicated ; sh:hasValue true ] ]
+    [
+      sh:property [
+        sh:path dhc:maxPoints ;
+        sh:maxInclusive 8 ;
+        sh:message "RGIE: a socket circuit has at most 8 sockets (a multiple socket counts once)."@en ;
+        sh:message "AREI/RGIE: ein Steckdosenstromkreis hat höchstens 8 Steckdosen (eine Mehrfachsteckdose zählt einmal)."@de ;
+        sh:message "RGIE : un circuit de prises compte au plus 8 prises (une prise multiple compte pour une)."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 2.5 ;
+        sh:message "RGIE: a socket circuit's conductors are at least 2.5 mm²."@en ;
+        sh:message "AREI/RGIE: Leiterquerschnitt eines Steckdosenstromkreises ≥ 2,5 mm²."@de ;
+        sh:message "RGIE : les conducteurs d'un circuit de prises ont une section d'au moins 2,5 mm²."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 20 ;
+        sh:message "RGIE: a socket circuit is protected at 20 A or less."@en ;
+        sh:message "AREI/RGIE: ein Steckdosenstromkreis ist mit höchstens 20 A abgesichert."@de ;
+        sh:message "RGIE : un circuit de prises est protégé à 20 A au plus."@fr ;
+      ]
+    ]
+  ) .
+
+# ── 4. Lighting circuit ─────────────────────────────────────────────────
+
+rgie:LightingCircuitShape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "rgie" ;
+  rdfs:label "Lighting circuit (RGIE, DRAFT)"@en ;
+  rdfs:label "Lichtstromkreis (AREI/RGIE, ENTWURF)"@de ;
+  rdfs:label "Circuit d'éclairage (RGIE, BROUILLON)"@fr ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:hasCircuitType ; sh:hasValue dhc:CircuitType_Lighting ] ] ]
+    [
+      sh:property [
+        sh:path dhc:crossSection ;
+        sh:minInclusive 1.5 ;
+        sh:message "RGIE: a lighting circuit's conductors are at least 1.5 mm²."@en ;
+        sh:message "AREI/RGIE: Leiterquerschnitt eines Lichtstromkreises ≥ 1,5 mm²."@de ;
+        sh:message "RGIE : les conducteurs d'un circuit d'éclairage ont une section d'au moins 1,5 mm²."@fr ;
+      ] ;
+      sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 16 ;
+        sh:message "RGIE: a lighting circuit is protected at 16 A or less."@en ;
+        sh:message "AREI/RGIE: ein Lichtstromkreis ist mit höchstens 16 A abgesichert."@de ;
+        sh:message "RGIE : un circuit d'éclairage est protégé à 16 A au plus."@fr ;
+      ]
+    ]
+  ) .
+
+# ── 5. Protection by conductor section, any circuit ─────────────────────
+# Guarded on the section: a circuit whose section is below the bound must
+# not be protected above the current that goes with it.
+
+rgie:Section15Shape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "rgie" ;
+  rdfs:label "1.5 mm² protected at 16 A at most (RGIE, DRAFT)"@en ;
+  rdfs:label "1,5 mm² mit höchstens 16 A abgesichert (AREI/RGIE, ENTWURF)"@de ;
+  rdfs:label "1,5 mm² protégé à 16 A au plus (RGIE, BROUILLON)"@fr ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:crossSection ; sh:minCount 1 ; sh:maxExclusive 2.5 ] ] ]
+    [ sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 16 ;
+        sh:message "RGIE: conductors below 2.5 mm² are protected at 16 A or less."@en ;
+        sh:message "AREI/RGIE: Leiter unter 2,5 mm² sind mit höchstens 16 A abgesichert."@de ;
+        sh:message "RGIE : des conducteurs de moins de 2,5 mm² sont protégés à 16 A au plus."@fr ;
+    ] ]
+  ) .
+
+rgie:Section25Shape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "rgie" ;
+  rdfs:label "2.5 mm² protected at 20 A at most (RGIE, DRAFT)"@en ;
+  rdfs:label "2,5 mm² mit höchstens 20 A abgesichert (AREI/RGIE, ENTWURF)"@de ;
+  rdfs:label "2,5 mm² protégé à 20 A au plus (RGIE, BROUILLON)"@fr ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:crossSection ; sh:minCount 1 ; sh:maxExclusive 4 ] ] ]
+    [ sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 20 ;
+        sh:message "RGIE: conductors below 4 mm² are protected at 20 A or less."@en ;
+        sh:message "AREI/RGIE: Leiter unter 4 mm² sind mit höchstens 20 A abgesichert."@de ;
+        sh:message "RGIE : des conducteurs de moins de 4 mm² sont protégés à 20 A au plus."@fr ;
+    ] ]
+  ) .
+
+rgie:Section4Shape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "rgie" ;
+  rdfs:label "4 mm² protected at 25 A at most (RGIE, DRAFT)"@en ;
+  rdfs:label "4 mm² mit höchstens 25 A abgesichert (AREI/RGIE, ENTWURF)"@de ;
+  rdfs:label "4 mm² protégé à 25 A au plus (RGIE, BROUILLON)"@fr ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:crossSection ; sh:minCount 1 ; sh:maxExclusive 6 ] ] ]
+    [ sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 25 ;
+        sh:message "RGIE: conductors below 6 mm² are protected at 25 A or less."@en ;
+        sh:message "AREI/RGIE: Leiter unter 6 mm² sind mit höchstens 25 A abgesichert."@de ;
+        sh:message "RGIE : des conducteurs de moins de 6 mm² sont protégés à 25 A au plus."@fr ;
+    ] ]
+  ) .
+
+rgie:Section6Shape
+  a sh:NodeShape ;
+  sh:targetClass dhc:Circuit ;
+  dhc:normId "rgie" ;
+  rdfs:label "6 mm² protected at 32 A at most (RGIE, DRAFT)"@en ;
+  rdfs:label "6 mm² mit höchstens 32 A abgesichert (AREI/RGIE, ENTWURF)"@de ;
+  rdfs:label "6 mm² protégé à 32 A au plus (RGIE, BROUILLON)"@fr ;
+  sh:or (
+    [ sh:not [ sh:property [ sh:path dhc:crossSection ; sh:minCount 1 ; sh:maxExclusive 10 ] ] ]
+    [ sh:property [
+        sh:path dhc:ratedCurrent ;
+        sh:maxInclusive 32 ;
+        sh:message "RGIE: conductors below 10 mm² are protected at 32 A or less."@en ;
+        sh:message "AREI/RGIE: Leiter unter 10 mm² sind mit höchstens 32 A abgesichert."@de ;
+        sh:message "RGIE : des conducteurs de moins de 10 mm² sont protégés à 32 A au plus."@fr ;
+    ] ]
+  ) .

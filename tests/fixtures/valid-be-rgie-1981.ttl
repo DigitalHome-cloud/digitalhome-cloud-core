@@ -1,0 +1,30 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+# A Belgian board as RGIE 1981 wants it: a 300 mA general differential, a
+# 30 mA one, sockets on 2.5 mm² at 20 A, lighting on 1.5 mm² at 16 A, a
+# dedicated washing-machine circuit on 2.5 mm² at 16 A, a hob on 6 mm² at
+# 32 A.
+ex:be-rcd-300 a dhc:RCD ; dhc:sensitivityMA "300"^^xsd:decimal ; dhc:rcdType "A" .
+ex:be-rcd-30  a dhc:RCD ; dhc:sensitivityMA "30"^^xsd:decimal ;  dhc:rcdType "A" .
+
+ex:be-sockets a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Socket ; dhc:governedBy dhc:Norm_RGIE ; dhc:dedicated false ;
+  dhc:maxPoints "8"^^xsd:integer ; dhc:ratedCurrent "20"^^xsd:decimal ; dhc:crossSection "2.5"^^xsd:decimal ;
+  dhc:hasProtection ex:be-rcd-300 .
+
+ex:be-light a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Lighting ; dhc:governedBy dhc:Norm_RGIE ; dhc:dedicated false ;
+  dhc:ratedCurrent "16"^^xsd:decimal ; dhc:crossSection "1.5"^^xsd:decimal ;
+  dhc:hasProtection ex:be-rcd-300 .
+
+ex:be-washer a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_DedicatedAppliance ; dhc:governedBy dhc:Norm_RGIE ; dhc:dedicated true ;
+  dhc:ratedCurrent "16"^^xsd:decimal ; dhc:crossSection "2.5"^^xsd:decimal ;
+  dhc:hasProtection ex:be-rcd-30 .
+
+ex:be-hob a dhc:Circuit ;
+  dhc:hasCircuitType dhc:CircuitType_Cooking ; dhc:governedBy dhc:Norm_RGIE ; dhc:dedicated true ;
+  dhc:ratedCurrent "32"^^xsd:decimal ; dhc:crossSection "6"^^xsd:decimal ;
+  dhc:hasProtection ex:be-rcd-300 .
