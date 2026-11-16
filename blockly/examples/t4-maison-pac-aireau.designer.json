@@ -1,0 +1,1020 @@
+{
+  "version": "dhc-blockly-designer/1",
+  "electrical": {
+    "variables": [
+      {
+        "name": "Inter_diff_40A_30mA_type_A",
+        "id": "d1",
+        "type": "Differential"
+      },
+      {
+        "name": "Plaque_de_cuisson",
+        "id": "c1",
+        "type": "Circuit"
+      },
+      {
+        "name": "_clairage_1",
+        "id": "c2",
+        "type": "Circuit"
+      },
+      {
+        "name": "VMC",
+        "id": "c3",
+        "type": "Circuit"
+      },
+      {
+        "name": "Lave_linge",
+        "id": "c4",
+        "type": "Circuit"
+      },
+      {
+        "name": "Prises_cuisine",
+        "id": "c5",
+        "type": "Circuit"
+      },
+      {
+        "name": "Inter_diff_40A_30mA_type_AC",
+        "id": "d2",
+        "type": "Differential"
+      },
+      {
+        "name": "Store_volet",
+        "id": "c6",
+        "type": "Circuit"
+      },
+      {
+        "name": "_clairage_2",
+        "id": "c7",
+        "type": "Circuit"
+      },
+      {
+        "name": "Four",
+        "id": "c8",
+        "type": "Circuit"
+      },
+      {
+        "name": "Lave_vaisselle",
+        "id": "c9",
+        "type": "Circuit"
+      },
+      {
+        "name": "Prises_tage",
+        "id": "c10",
+        "type": "Circuit"
+      },
+      {
+        "name": "Inter_diff_63A_30mA_type_F_renforc_e_",
+        "id": "d3",
+        "type": "Differential"
+      },
+      {
+        "name": "PAC_air_eau",
+        "id": "c11",
+        "type": "Circuit"
+      },
+      {
+        "name": "S_che_serviette",
+        "id": "c12",
+        "type": "Circuit"
+      },
+      {
+        "name": "_clairage_3",
+        "id": "c13",
+        "type": "Circuit"
+      },
+      {
+        "name": "S_che_linge",
+        "id": "c14",
+        "type": "Circuit"
+      },
+      {
+        "name": "Porte_de_garage",
+        "id": "c15",
+        "type": "Circuit"
+      },
+      {
+        "name": "Prises_GTL",
+        "id": "c16",
+        "type": "Circuit"
+      }
+    ],
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "dhcb:PowerDistributionSystem",
+          "x": 40,
+          "y": 40,
+          "fields": {
+            "name": "Maison T4 — PAC air/eau",
+            "neutralSystem": "TT",
+            "hasMedium": "s223:AC-230VLN-1Ph-50Hz"
+          },
+          "inputs": {
+            "sources": {
+              "block": {
+                "type": "dhcb:EnergyDelivery",
+                "fields": {
+                  "name": "Enedis",
+                  "energyProviderName": "Enedis",
+                  "contractedPowerKVA": "12",
+                  "currentType": "single-phase"
+                }
+              }
+            },
+            "routes": {
+              "block": {
+                "type": "dhcb:EnergyMeter",
+                "fields": {
+                  "name": "Compteur"
+                },
+                "next": {
+                  "block": {
+                    "type": "dhcb:EmergencyDisconnect",
+                    "fields": {
+                      "name": "Disjoncteur de branchement",
+                      "ratedCurrent": "60"
+                    },
+                    "next": {
+                      "block": {
+                        "type": "dhcb:DistributionBoard",
+                        "fields": {
+                          "name": "Coffret maison T4"
+                        },
+                        "extraState": {
+                          "itemCount": 3
+                        },
+                        "inputs": {
+                          "row_0": {
+                            "block": {
+                              "type": "dhcb:RCD",
+                              "fields": {
+                                "name": "Inter. diff. 40A 30mA type A",
+                                "RCD_VAR": {
+                                  "id": "d1"
+                                },
+                                "rcdType": "A",
+                                "sensitivityMA": "30",
+                                "ratedCurrent": "40",
+                                "selectivity": "instantaneous"
+                              },
+                              "next": {
+                                "block": {
+                                  "type": "dhcb:Circuit",
+                                  "fields": {
+                                    "name": "Plaque de cuisson",
+                                    "CIRCUIT_VAR": {
+                                      "id": "c1"
+                                    },
+                                    "hasCircuitType": "dhc:CircuitType_Cooking",
+                                    "ratedCurrent": "32",
+                                    "crossSection": "6",
+                                    "phase": "1",
+                                    "protection": "MCB",
+                                    "DIFFERENTIAL": {
+                                      "id": "d1"
+                                    },
+                                    "maxPoints": 8,
+                                    "dedicated": "TRUE"
+                                  },
+                                  "next": {
+                                    "block": {
+                                      "type": "dhcb:Circuit",
+                                      "fields": {
+                                        "name": "Éclairage 1",
+                                        "CIRCUIT_VAR": {
+                                          "id": "c2"
+                                        },
+                                        "hasCircuitType": "dhc:CircuitType_Lighting",
+                                        "ratedCurrent": "10",
+                                        "crossSection": "1.5",
+                                        "phase": "1",
+                                        "protection": "MCB",
+                                        "DIFFERENTIAL": {
+                                          "id": "d1"
+                                        },
+                                        "maxPoints": 8,
+                                        "dedicated": "FALSE"
+                                      },
+                                      "next": {
+                                        "block": {
+                                          "type": "dhcb:Circuit",
+                                          "fields": {
+                                            "name": "VMC",
+                                            "CIRCUIT_VAR": {
+                                              "id": "c3"
+                                            },
+                                            "hasCircuitType": "dhc:CircuitType_Ventilation",
+                                            "ratedCurrent": "2",
+                                            "crossSection": "1.5",
+                                            "phase": "1",
+                                            "protection": "MCB",
+                                            "DIFFERENTIAL": {
+                                              "id": "d1"
+                                            },
+                                            "maxPoints": 8,
+                                            "dedicated": "FALSE"
+                                          },
+                                          "next": {
+                                            "block": {
+                                              "type": "dhcb:Circuit",
+                                              "fields": {
+                                                "name": "Lave-linge",
+                                                "CIRCUIT_VAR": {
+                                                  "id": "c4"
+                                                },
+                                                "hasCircuitType": "dhc:CircuitType_Socket",
+                                                "ratedCurrent": "20",
+                                                "crossSection": "2.5",
+                                                "phase": "1",
+                                                "protection": "MCB",
+                                                "DIFFERENTIAL": {
+                                                  "id": "d1"
+                                                },
+                                                "maxPoints": 8,
+                                                "dedicated": "TRUE"
+                                              },
+                                              "next": {
+                                                "block": {
+                                                  "type": "dhcb:Circuit",
+                                                  "fields": {
+                                                    "name": "Prises cuisine",
+                                                    "CIRCUIT_VAR": {
+                                                      "id": "c5"
+                                                    },
+                                                    "hasCircuitType": "dhc:CircuitType_Socket",
+                                                    "ratedCurrent": "16",
+                                                    "crossSection": "2.5",
+                                                    "phase": "1",
+                                                    "protection": "MCB",
+                                                    "DIFFERENTIAL": {
+                                                      "id": "d1"
+                                                    },
+                                                    "maxPoints": 8,
+                                                    "dedicated": "FALSE"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "row_1": {
+                            "block": {
+                              "type": "dhcb:RCD",
+                              "fields": {
+                                "name": "Inter. diff. 40A 30mA type AC",
+                                "RCD_VAR": {
+                                  "id": "d2"
+                                },
+                                "rcdType": "AC",
+                                "sensitivityMA": "30",
+                                "ratedCurrent": "40",
+                                "selectivity": "instantaneous"
+                              },
+                              "next": {
+                                "block": {
+                                  "type": "dhcb:Circuit",
+                                  "fields": {
+                                    "name": "Store/volet",
+                                    "CIRCUIT_VAR": {
+                                      "id": "c6"
+                                    },
+                                    "hasCircuitType": "dhc:CircuitType_Shutters",
+                                    "ratedCurrent": "10",
+                                    "crossSection": "1.5",
+                                    "phase": "1",
+                                    "protection": "MCB",
+                                    "DIFFERENTIAL": {
+                                      "id": "d2"
+                                    },
+                                    "maxPoints": 8,
+                                    "dedicated": "FALSE"
+                                  },
+                                  "next": {
+                                    "block": {
+                                      "type": "dhcb:Circuit",
+                                      "fields": {
+                                        "name": "Éclairage 2",
+                                        "CIRCUIT_VAR": {
+                                          "id": "c7"
+                                        },
+                                        "hasCircuitType": "dhc:CircuitType_Lighting",
+                                        "ratedCurrent": "10",
+                                        "crossSection": "1.5",
+                                        "phase": "1",
+                                        "protection": "MCB",
+                                        "DIFFERENTIAL": {
+                                          "id": "d2"
+                                        },
+                                        "maxPoints": 8,
+                                        "dedicated": "FALSE"
+                                      },
+                                      "next": {
+                                        "block": {
+                                          "type": "dhcb:Circuit",
+                                          "fields": {
+                                            "name": "Four",
+                                            "CIRCUIT_VAR": {
+                                              "id": "c8"
+                                            },
+                                            "hasCircuitType": "dhc:CircuitType_Cooking",
+                                            "ratedCurrent": "20",
+                                            "crossSection": "2.5",
+                                            "phase": "1",
+                                            "protection": "MCB",
+                                            "DIFFERENTIAL": {
+                                              "id": "d2"
+                                            },
+                                            "maxPoints": 8,
+                                            "dedicated": "TRUE"
+                                          },
+                                          "next": {
+                                            "block": {
+                                              "type": "dhcb:Circuit",
+                                              "fields": {
+                                                "name": "Lave-vaisselle",
+                                                "CIRCUIT_VAR": {
+                                                  "id": "c9"
+                                                },
+                                                "hasCircuitType": "dhc:CircuitType_Socket",
+                                                "ratedCurrent": "20",
+                                                "crossSection": "2.5",
+                                                "phase": "1",
+                                                "protection": "MCB",
+                                                "DIFFERENTIAL": {
+                                                  "id": "d2"
+                                                },
+                                                "maxPoints": 8,
+                                                "dedicated": "TRUE"
+                                              },
+                                              "next": {
+                                                "block": {
+                                                  "type": "dhcb:Circuit",
+                                                  "fields": {
+                                                    "name": "Prises étage",
+                                                    "CIRCUIT_VAR": {
+                                                      "id": "c10"
+                                                    },
+                                                    "hasCircuitType": "dhc:CircuitType_Socket",
+                                                    "ratedCurrent": "16",
+                                                    "crossSection": "2.5",
+                                                    "phase": "1",
+                                                    "protection": "MCB",
+                                                    "DIFFERENTIAL": {
+                                                      "id": "d2"
+                                                    },
+                                                    "maxPoints": 8,
+                                                    "dedicated": "FALSE"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "row_2": {
+                            "block": {
+                              "type": "dhcb:RCD",
+                              "fields": {
+                                "name": "Inter. diff. 63A 30mA type F (renforcée)",
+                                "RCD_VAR": {
+                                  "id": "d3"
+                                },
+                                "rcdType": "F",
+                                "sensitivityMA": "30",
+                                "ratedCurrent": "63",
+                                "selectivity": "instantaneous"
+                              },
+                              "next": {
+                                "block": {
+                                  "type": "dhcb:Circuit",
+                                  "fields": {
+                                    "name": "PAC air/eau",
+                                    "CIRCUIT_VAR": {
+                                      "id": "c11"
+                                    },
+                                    "hasCircuitType": "dhc:CircuitType_HeatPump",
+                                    "ratedCurrent": "32",
+                                    "crossSection": "6",
+                                    "phase": "1",
+                                    "protection": "MCB",
+                                    "DIFFERENTIAL": {
+                                      "id": "d3"
+                                    },
+                                    "maxPoints": 8,
+                                    "dedicated": "TRUE"
+                                  },
+                                  "next": {
+                                    "block": {
+                                      "type": "dhcb:Circuit",
+                                      "fields": {
+                                        "name": "Sèche-serviette",
+                                        "CIRCUIT_VAR": {
+                                          "id": "c12"
+                                        },
+                                        "hasCircuitType": "dhc:CircuitType_Heating",
+                                        "ratedCurrent": "10",
+                                        "crossSection": "1.5",
+                                        "phase": "1",
+                                        "protection": "MCB",
+                                        "DIFFERENTIAL": {
+                                          "id": "d3"
+                                        },
+                                        "maxPoints": 8,
+                                        "dedicated": "FALSE"
+                                      },
+                                      "next": {
+                                        "block": {
+                                          "type": "dhcb:Circuit",
+                                          "fields": {
+                                            "name": "Éclairage 3",
+                                            "CIRCUIT_VAR": {
+                                              "id": "c13"
+                                            },
+                                            "hasCircuitType": "dhc:CircuitType_Lighting",
+                                            "ratedCurrent": "10",
+                                            "crossSection": "1.5",
+                                            "phase": "1",
+                                            "protection": "MCB",
+                                            "DIFFERENTIAL": {
+                                              "id": "d3"
+                                            },
+                                            "maxPoints": 8,
+                                            "dedicated": "FALSE"
+                                          },
+                                          "next": {
+                                            "block": {
+                                              "type": "dhcb:Circuit",
+                                              "fields": {
+                                                "name": "Sèche-linge",
+                                                "CIRCUIT_VAR": {
+                                                  "id": "c14"
+                                                },
+                                                "hasCircuitType": "dhc:CircuitType_Socket",
+                                                "ratedCurrent": "20",
+                                                "crossSection": "2.5",
+                                                "phase": "1",
+                                                "protection": "MCB",
+                                                "DIFFERENTIAL": {
+                                                  "id": "d3"
+                                                },
+                                                "maxPoints": 8,
+                                                "dedicated": "TRUE"
+                                              },
+                                              "next": {
+                                                "block": {
+                                                  "type": "dhcb:Circuit",
+                                                  "fields": {
+                                                    "name": "Porte de garage",
+                                                    "CIRCUIT_VAR": {
+                                                      "id": "c15"
+                                                    },
+                                                    "hasCircuitType": "dhc:CircuitType_Shutters",
+                                                    "ratedCurrent": "16",
+                                                    "crossSection": "2.5",
+                                                    "phase": "1",
+                                                    "protection": "MCB",
+                                                    "DIFFERENTIAL": {
+                                                      "id": "d3"
+                                                    },
+                                                    "maxPoints": 8,
+                                                    "dedicated": "FALSE"
+                                                  },
+                                                  "next": {
+                                                    "block": {
+                                                      "type": "dhcb:Circuit",
+                                                      "fields": {
+                                                        "name": "Prises GTL",
+                                                        "CIRCUIT_VAR": {
+                                                          "id": "c16"
+                                                        },
+                                                        "hasCircuitType": "dhc:CircuitType_Socket",
+                                                        "ratedCurrent": "16",
+                                                        "crossSection": "2.5",
+                                                        "phase": "1",
+                                                        "protection": "MCB",
+                                                        "DIFFERENTIAL": {
+                                                          "id": "d3"
+                                                        },
+                                                        "maxPoints": 8,
+                                                        "dedicated": "FALSE"
+                                                      },
+                                                      "next": {
+                                                        "block": {
+                                                          "type": "dhcb:IoTDevice",
+                                                          "fields": {
+                                                            "name": "Essensya (EC453/EC410)",
+                                                            "deviceType": "Energy monitor",
+                                                            "dinSlots": 4
+                                                          },
+                                                          "extraState": {
+                                                            "itemCount": 1
+                                                          },
+                                                          "inputs": {
+                                                            "point_0": {
+                                                              "block": {
+                                                                "type": "dhcb:Point",
+                                                                "fields": {
+                                                                  "name": "Total consumption",
+                                                                  "pointType": "brick:Sensor"
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "sinks": {
+              "block": {
+                "type": "dhcb:Appliance",
+                "fields": {
+                  "name": "Plaque de cuisson",
+                  "applianceType": "Other",
+                  "FED_BY": {
+                    "id": "c1"
+                  }
+                },
+                "next": {
+                  "block": {
+                    "type": "dhcb:Luminaire",
+                    "fields": {
+                      "name": "Éclairage 1",
+                      "quantity": 8,
+                      "FED_BY": {
+                        "id": "c2"
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "dhcb:Appliance",
+                        "fields": {
+                          "name": "Lave-linge",
+                          "applianceType": "Washing machine",
+                          "FED_BY": {
+                            "id": "c4"
+                          }
+                        },
+                        "next": {
+                          "block": {
+                            "type": "dhcb:Socket",
+                            "fields": {
+                              "name": "Prises cuisine",
+                              "quantity": 6,
+                              "FED_BY": {
+                                "id": "c5"
+                              }
+                            },
+                            "next": {
+                              "block": {
+                                "type": "dhcb:Appliance",
+                                "fields": {
+                                  "name": "Store/volet",
+                                  "applianceType": "Other",
+                                  "FED_BY": {
+                                    "id": "c6"
+                                  }
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "dhcb:Luminaire",
+                                    "fields": {
+                                      "name": "Éclairage 2",
+                                      "quantity": 8,
+                                      "FED_BY": {
+                                        "id": "c7"
+                                      }
+                                    },
+                                    "next": {
+                                      "block": {
+                                        "type": "dhcb:Appliance",
+                                        "fields": {
+                                          "name": "Four",
+                                          "applianceType": "Oven",
+                                          "FED_BY": {
+                                            "id": "c8"
+                                          }
+                                        },
+                                        "next": {
+                                          "block": {
+                                            "type": "dhcb:Appliance",
+                                            "fields": {
+                                              "name": "Lave-vaisselle",
+                                              "applianceType": "Dishwasher",
+                                              "FED_BY": {
+                                                "id": "c9"
+                                              }
+                                            },
+                                            "next": {
+                                              "block": {
+                                                "type": "dhcb:Socket",
+                                                "fields": {
+                                                  "name": "Prises étage",
+                                                  "quantity": 8,
+                                                  "FED_BY": {
+                                                    "id": "c10"
+                                                  }
+                                                },
+                                                "next": {
+                                                  "block": {
+                                                    "type": "dhcb:Appliance",
+                                                    "fields": {
+                                                      "name": "PAC air/eau",
+                                                      "applianceType": "Other",
+                                                      "FED_BY": {
+                                                        "id": "c11"
+                                                      }
+                                                    },
+                                                    "next": {
+                                                      "block": {
+                                                        "type": "dhcb:Appliance",
+                                                        "fields": {
+                                                          "name": "Sèche-serviette",
+                                                          "applianceType": "Other",
+                                                          "FED_BY": {
+                                                            "id": "c12"
+                                                          }
+                                                        },
+                                                        "next": {
+                                                          "block": {
+                                                            "type": "dhcb:Luminaire",
+                                                            "fields": {
+                                                              "name": "Éclairage 3",
+                                                              "quantity": 8,
+                                                              "FED_BY": {
+                                                                "id": "c13"
+                                                              }
+                                                            },
+                                                            "next": {
+                                                              "block": {
+                                                                "type": "dhcb:Appliance",
+                                                                "fields": {
+                                                                  "name": "Sèche-linge",
+                                                                  "applianceType": "Dryer",
+                                                                  "FED_BY": {
+                                                                    "id": "c14"
+                                                                  }
+                                                                },
+                                                                "next": {
+                                                                  "block": {
+                                                                    "type": "dhcb:Appliance",
+                                                                    "fields": {
+                                                                      "name": "Porte de garage",
+                                                                      "applianceType": "Other",
+                                                                      "FED_BY": {
+                                                                        "id": "c15"
+                                                                      }
+                                                                    },
+                                                                    "next": {
+                                                                      "block": {
+                                                                        "type": "dhcb:Socket",
+                                                                        "fields": {
+                                                                          "name": "Prises GTL",
+                                                                          "quantity": 2,
+                                                                          "FED_BY": {
+                                                                            "id": "c16"
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "spatial": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "dhcb:DigitalHome",
+          "x": 40,
+          "y": 40,
+          "fields": {
+            "smartHomeId": "FR-DEMO-T4",
+            "preferredLanguage": "fr"
+          },
+          "extraState": {
+            "itemCount": 1
+          },
+          "inputs": {
+            "hasPart_0": {
+              "block": {
+                "type": "dhcb:DetachedHouse",
+                "fields": {
+                  "name": "Maison T4",
+                  "area_M2": 90
+                },
+                "extraState": {
+                  "itemCount": 1
+                },
+                "inputs": {
+                  "hasPart_0": {
+                    "block": {
+                      "type": "dhcb:Level",
+                      "fields": {
+                        "name": "Niveau 0",
+                        "levelNumber": 0,
+                        "elevation_M": 0
+                      },
+                      "extraState": {
+                        "itemCount": 7
+                      },
+                      "inputs": {
+                        "hasPart_0": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Séjour",
+                              "rec:RoomType": "rec:LivingRoom",
+                              "area_M2": 35
+                            },
+                            "extraState": {
+                              "itemCount": 2
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Éclairage 1"
+                                  }
+                                }
+                              },
+                              "hasPoint_1": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Store/volet"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "hasPart_1": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Cuisine",
+                              "rec:RoomType": "rec:Kitchen",
+                              "area_M2": 12
+                            },
+                            "extraState": {
+                              "itemCount": 4
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Plaque de cuisson"
+                                  }
+                                }
+                              },
+                              "hasPoint_1": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Prises cuisine"
+                                  }
+                                }
+                              },
+                              "hasPoint_2": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Four"
+                                  }
+                                }
+                              },
+                              "hasPoint_3": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Lave-vaisselle"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "hasPart_2": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Chambre 1",
+                              "rec:RoomType": "rec:Bedroom",
+                              "area_M2": 14
+                            },
+                            "extraState": {
+                              "itemCount": 2
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Éclairage 2"
+                                  }
+                                }
+                              },
+                              "hasPoint_1": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Prises étage"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "hasPart_3": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Chambre 2",
+                              "rec:RoomType": "rec:Bedroom",
+                              "area_M2": 12
+                            },
+                            "extraState": {
+                              "itemCount": 1
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Éclairage 3"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "hasPart_4": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Salle de bain",
+                              "rec:RoomType": "rec:Bathroom",
+                              "area_M2": 6
+                            },
+                            "extraState": {
+                              "itemCount": 1
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Sèche-serviette"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "hasPart_5": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Buanderie",
+                              "rec:RoomType": "rec:LaundryRoom",
+                              "area_M2": 6
+                            },
+                            "extraState": {
+                              "itemCount": 3
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Lave-linge"
+                                  }
+                                }
+                              },
+                              "hasPoint_1": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "PAC air/eau"
+                                  }
+                                }
+                              },
+                              "hasPoint_2": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Sèche-linge"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "hasPart_6": {
+                          "block": {
+                            "type": "dhcb:Room",
+                            "fields": {
+                              "name": "Garage",
+                              "rec:RoomType": "rec:Garage",
+                              "area_M2": 18
+                            },
+                            "extraState": {
+                              "itemCount": 2
+                            },
+                            "inputs": {
+                              "hasPoint_0": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Porte de garage"
+                                  }
+                                }
+                              },
+                              "hasPoint_1": {
+                                "block": {
+                                  "type": "dhcb:Placement",
+                                  "fields": {
+                                    "LEAF": "Prises GTL"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

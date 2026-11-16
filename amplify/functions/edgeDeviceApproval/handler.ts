@@ -20,12 +20,30 @@ import {
   DynamoDBClient,
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
+import { GetParametersCommand, SSMClient } from "@aws-sdk/client-ssm";
 import type { AppSyncResolverEvent, AppSyncIdentityCognito } from "aws-lambda";
 
 const REGION = process.env.AWS_REGION || "eu-central-1";
-const DEVICE_CODES_TABLE = process.env.DEVICE_CODES_TABLE_NAME!;
 const DIGITALHOME_TABLE = process.env.DIGITALHOME_TABLE_NAME!;
-const EDGE_REGISTRY_TABLE = process.env.EDGE_REGISTRY_TABLE_NAME!;
+// The edge tables live in the "edge" nested stack. This Lambda is in "data",
+// and the edge Lambdas read data tables, so naming the edge tables here would
+// close a CloudFormation cycle (edge ↔ data). The edge stack publishes their
+// names as SSM parameters under EDGE_TABLES_PARAM; they are read once.
+let DEVICE_CODES_TABLE = process.env.DEVICE_CODES_TABLE_NAME || "";
+let EDGE_REGISTRY_TABLE = process.env.EDGE_REGISTRY_TABLE_NAME || "";
+
+async function edgeTables(): Promise<void> {
+  if (DEVICE_CODES_TABLE && EDGE_REGISTRY_TABLE) return;
+  const prefix = process.env.EDGE_TABLES_PARAM;
+  if (!prefix) return;
+  const got = await new SSMClient({ region: REGION }).send(
+    new GetParametersCommand({ Names: [`${prefix}/DeviceCodes`, `${prefix}/EdgeRegistry`] })
+  );
+  for (const p of got.Parameters || []) {
+    if (p.Name?.endsWith("/DeviceCodes")) DEVICE_CODES_TABLE = p.Value || "";
+    if (p.Name?.endsWith("/EdgeRegistry")) EDGE_REGISTRY_TABLE = p.Value || "";
+  }
+}
 const ADMIN_GROUP = "dhc-admins";
 
 const ddb = new DynamoDBClient({ region: REGION });
@@ -107,6 +125,7 @@ function toEdgeSummary(row: Record<string, unknown>) {
 }
 
 export const handler = async (event: AppSyncResolverEvent<Args>) => {
+  await edgeTables();
   if (!DEVICE_CODES_TABLE || !DIGITALHOME_TABLE || !EDGE_REGISTRY_TABLE) {
     throw new Error("Server misconfigured");
   }

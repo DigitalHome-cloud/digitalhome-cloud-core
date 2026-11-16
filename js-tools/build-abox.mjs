@@ -26,6 +26,7 @@ const RDFS  = 'http://www.w3.org/2000/01/rdf-schema#';
 const DHC   = 'https://digitalhome.cloud/ontology#';
 const BRICK = 'https://brickschema.org/schema/Brick#';
 const S223  = 'http://data.ashrae.org/standard223#';
+const REC   = 'https://w3id.org/rec#';
 
 const PREFIXES = {
   'https://digitalhome.cloud/ontology#': 'dhc',
@@ -256,6 +257,64 @@ for (let grew = true; grew; ) {
   }
 }
 const equipmentCuries = new Set([...equipment].map(curie));
+
+// ── glyphs, derived from the class hierarchy ──────────────────────────────
+// The viewer can draw a symbol per class (a bulb for a luminaire, a disc for a
+// socket, a DIN module for a breaker …). Which glyph a node gets is read from
+// the ontology exactly like equipment/box: an ordered list of glyph ROOTS, each
+// resolved to its transitive-subclass closure over the same `hierarchy` store.
+// Order matters and is specific-before-generic: a Luminaire ⊑ Equipment must hit
+// `bulb` before the catch-all `appliance`, so the first root whose closure
+// contains one of the node's types wins. A root that resolves to nothing (no
+// such class, or no subclasses) simply matches only nodes asserting it verbatim
+// — harmless. `n.shape` stays the coarse box/sphere fallback.
+const GLYPH_ROOTS = [
+  ['bulb',       [`${BRICK}Luminaire`, `${BRICK}Lighting_Equipment`]],
+  ['socket',     [`${DHC}Socket`, `${S223}ElectricityOutlet`]],
+  ['breaker',    [`${DHC}ProtectionDevice`, `${DHC}RCD`, `${DHC}RCBO`, `${DHC}EmergencyDisconnect`, `${S223}ElectricityBreaker`]],
+  ['panel',      [`${DHC}DistributionBoard`]],
+  ['meter',      [`${DHC}EnergyMeter`, `${BRICK}Meter`]],
+  ['inverter',   [`${BRICK}Inverter`, `${S223}ElectricEnergyInverter`]],
+  ['battery',    [`${BRICK}Battery`, `${S223}Battery`, `${BRICK}Energy_Storage`]],
+  ['pv',         [`${BRICK}PV_Panel`, `${BRICK}PV_Array`, `${BRICK}PV_Generation_System`]],
+  ['charger',    [`${BRICK}Electric_Vehicle_Charging_Station`]],
+  ['delivery',   [`${DHC}EnergyDelivery`]],
+  ['busbar',     [`${DHC}BusBar`, `${S223}Junction`]],
+  ['circuit',    [`${DHC}Circuit`]],
+  ['wire',       [`${DHC}WiringSegment`, `${S223}Connection`]],
+  ['port',       [`${S223}ConnectionPoint`]],
+  ['controller', [`${BRICK}Controller`]],
+  ['sensor',     [`${BRICK}Point`]],
+  ['building',   [`${DHC}DigitalHome`, `${DHC}DetachedHouse`, `${REC}Building`]],
+  ['room',       [`${REC}Room`, `${REC}Space`, `${DHC}ElectricalTechnicalSpace`]],
+  ['appliance',  [`${S223}Equipment`, `${BRICK}Equipment`]],
+];
+// Parent → direct children adjacency, built once, so each glyph closure is a
+// cheap BFS down its own subtree rather than a full-store fixpoint per glyph.
+const childrenOf = new Map();
+for (const q of hierarchy.match(null, namedNode(`${RDFS}subClassOf`), null)) {
+  if (!childrenOf.has(q.object.value)) childrenOf.set(q.object.value, []);
+  childrenOf.get(q.object.value).push(q.subject.value);
+}
+const closureDown = (roots) => {
+  const seen = new Set(roots);
+  const queue = [...roots];
+  while (queue.length) {
+    for (const c of childrenOf.get(queue.pop()) ?? []) {
+      if (!seen.has(c)) { seen.add(c); queue.push(c); }
+    }
+  }
+  return seen;
+};
+const GLYPHS = GLYPH_ROOTS.map(([glyph, roots]) => [glyph, closureDown(roots)]);
+// First glyph (in priority order) whose closure contains any of the node's
+// asserted types. Matches on full IRIs, like the equipment closure.
+const glyphFor = (typeIris) => {
+  for (const [glyph, set] of GLYPHS) {
+    if (typeIris.some((t) => set.has(t))) return glyph;
+  }
+  return 'sphere';
+};
 
 // ── shapes, driven by editions ────────────────────────────────────────────
 // The T-Box's dhc:shapesFile is the authority on which shapes exist, NOT the
@@ -585,6 +644,18 @@ async function buildOne(rel, reference = false) {
     const kinds = selectableAs(n);
     n.checked = [...kinds].some((t) => targetClasses.has(t));
     n.shape = n.types.some((t) => equipmentCuries.has(t)) ? 'box' : 'sphere';
+    n.glyph = glyphFor(n.typeIris);
+
+    // The editions in play for this node, as curies — additive data for the
+    // viewer's Designing mode, which recomputes compliance client-side for a
+    // chosen edition subset without re-running SHACL. `targetedEditions` are the
+    // editions whose shapes SELECT this node (r.targets ∩ its subclass closure);
+    // `violatedEditions` are the subset it fails. Both come straight from the
+    // per-edition runs already computed above — no new validation.
+    n.targetedEditions = runs
+      .filter((r) => [...kinds].some((t) => r.targets.has(t)))
+      .map((r) => curie(r.edition));
+    n.violatedEditions = [...(violatedEditions.get(n.id) ?? [])].map(curie);
 
     // Which norms are in play? TWO sources, and they answer different questions:
     //   targeting — a norm whose shapes actually select this node. ex:rcd-main
@@ -865,6 +936,45 @@ for (const rel of allAbox) {
 if (refOk || refSkipped) console.log(`  reference models: ${refOk} shown, ${refSkipped} skipped`);
 
 fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify(index, null, 2));
+
+// ── vocab.json ────────────────────────────────────────────────────────────
+// The modelling mode reads this to show a class/property + its DESCRIPTION.
+// One entry per dhc-core class/property and per in-scope external class (the
+// keys of viewOf — everything the annotation overlay skinned). @en label and
+// comment come from `hierarchy` (dhc-core + Brick+extensions, where the English
+// text lives); designView from `viewOf` (the metadata overlay). Written once.
+{
+  const OWL = 'http://www.w3.org/2002/07/owl#';
+  const en = (s, pred) => {
+    for (const q of hierarchy.match(namedNode(s), namedNode(pred), null)) {
+      if (q.object.termType === 'Literal' && (q.object.language === 'en' || !q.object.language)) return q.object.value;
+    }
+    return null;
+  };
+  const kindOf = (s) => {
+    for (const [t, k] of [[`${OWL}Class`, 'class'], [`${OWL}ObjectProperty`, 'objectProperty'], [`${OWL}DatatypeProperty`, 'dataProperty']]) {
+      if ([...hierarchy.match(namedNode(s), namedNode(`${RDF}type`), namedNode(t))].length) return k;
+    }
+    return null;
+  };
+  const subjects = new Set(viewOf.keys());
+  for (const t of [`${OWL}Class`, `${OWL}ObjectProperty`, `${OWL}DatatypeProperty`]) {
+    for (const q of tbox.match(null, namedNode(`${RDF}type`), namedNode(t))) {
+      if (q.subject.value.startsWith(DHC)) subjects.add(q.subject.value);
+    }
+  }
+  const vocab = [...subjects].sort().map((s) => ({
+    curie: curie(s),
+    kind: kindOf(s),
+    label: en(s, `${RDFS}label`),
+    comment: en(s, `${RDFS}comment`),
+    designView: viewOf.get(s) ?? null,
+  }));
+  fs.writeFileSync(path.join(outDir, 'vocab.json'),
+    JSON.stringify({ generatedAt: new Date().toISOString(), terms: vocab }, null, 2));
+  console.log(`  → vocab.json  (${vocab.length} terms)`);
+}
+
 console.log(`\n  shapes target: ${[...targetClasses].sort().join(', ')}`);
 for (const e of editionCoverage) {
   if (e.assessable) {

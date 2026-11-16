@@ -16,6 +16,8 @@ export const adminMfaGate = defineFunction({
   entry: "./handler.ts",
   timeoutSeconds: 5,
   environment: {
-    PROTECTED_GROUPS: "dhc-admins",
+    // market-*: a marketplace seller's editors (they change a public catalogue)
+    // dhc-template-editors: they write and verify the board templates
+    PROTECTED_GROUPS: "dhc-admins,market-*,dhc-template-editors",
   },
 });

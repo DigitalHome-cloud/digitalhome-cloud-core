@@ -12,13 +12,18 @@ export function parseProtected(env: string | undefined): string[] {
  * dropped: fail closed for admin rights, never for sign-in).
  * Returns the groups to put in the token, or null when nothing changes.
  */
+/** A protected entry is a group name, or a prefix ending in * (market-*). */
+export function isProtected(group: string, protectedGroups: string[]): boolean {
+  return protectedGroups.some((p) => (p.endsWith("*") ? group.startsWith(p.slice(0, -1)) : group === p));
+}
+
 export function groupsForToken(
   groups: string[],
   protectedGroups: string[],
   mfaSettings: string[] | null,
 ): string[] | null {
-  const held = groups.filter((g) => protectedGroups.includes(g));
+  const held = groups.filter((g) => isProtected(g, protectedGroups));
   if (held.length === 0) return null;
   if (mfaSettings !== null && mfaSettings.includes(TOTP)) return null;
-  return groups.filter((g) => !protectedGroups.includes(g));
+  return groups.filter((g) => !isProtected(g, protectedGroups));
 }

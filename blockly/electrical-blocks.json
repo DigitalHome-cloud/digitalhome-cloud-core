@@ -1,0 +1,1212 @@
+{
+  "blocks": [
+    {
+      "type": "dhcb:PowerDistributionSystem",
+      "message0": "⚡ Power Distribution System %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Main Installation"
+        }
+      ],
+      "message1": "neutral system (régime de neutre) %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "neutralSystem",
+          "options": [
+            [
+              "TT",
+              "TT"
+            ],
+            [
+              "TN-S",
+              "TN-S"
+            ],
+            [
+              "TN-C",
+              "TN-C"
+            ],
+            [
+              "IT",
+              "IT"
+            ]
+          ]
+        }
+      ],
+      "message2": "medium (electrical system) %1",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "hasMedium",
+          "options": [
+            [
+              "230 V · 1-phase · 50 Hz",
+              "s223:AC-230VLN-1Ph-50Hz"
+            ],
+            [
+              "400/230 V · 3-phase · 50 Hz",
+              "s223:AC-400VLL-230VLN-3Ph-50Hz"
+            ]
+          ]
+        }
+      ],
+      "message3": "① source sub-system — energy generators %1",
+      "args3": [
+        {
+          "type": "input_statement",
+          "name": "sources",
+          "check": "source"
+        }
+      ],
+      "message4": "② routing sub-system — inverter & distribution boards %1",
+      "args4": [
+        {
+          "type": "input_statement",
+          "name": "routes",
+          "check": "route"
+        }
+      ],
+      "message5": "③ load sub-system — consumers %1",
+      "args5": [
+        {
+          "type": "input_statement",
+          "name": "sinks",
+          "check": "sink"
+        }
+      ],
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "Root of an electrical installation (dhc:PowerDistributionSystem ⊑ brick:System). It groups three functional sub-systems — sources, routing, sinks — whose members become brick:hasPart on blockly→abox. neutralSystem is the earthing arrangement (régime de neutre); hasMedium (s223:hasMedium) names the electrical system, e.g. s223:AC-230VLN-1Ph-50Hz.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:PowerDistributionSystem"
+    },
+    {
+      "type": "dhcb:EnergyDelivery",
+      "message0": "🔌 Grid Delivery %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Grid"
+        }
+      ],
+      "message1": "provider %1 · subscribed %2 kVA · %3",
+      "args1": [
+        {
+          "type": "field_input",
+          "name": "energyProviderName",
+          "text": "Enedis"
+        },
+        {
+          "type": "field_dropdown",
+          "name": "contractedPowerKVA",
+          "options": [
+            [
+              "3",
+              "3"
+            ],
+            [
+              "6",
+              "6"
+            ],
+            [
+              "9",
+              "9"
+            ],
+            [
+              "12",
+              "12"
+            ],
+            [
+              "15",
+              "15"
+            ],
+            [
+              "18",
+              "18"
+            ],
+            [
+              "24",
+              "24"
+            ],
+            [
+              "30",
+              "30"
+            ],
+            [
+              "36",
+              "36"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "currentType",
+          "options": [
+            [
+              "single-phase",
+              "SinglePhase"
+            ],
+            [
+              "three-phase",
+              "ThreePhase"
+            ]
+          ]
+        }
+      ],
+      "previousStatement": "source",
+      "nextStatement": "source",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "The point of supply from the distribution network (dhc:EnergyDelivery). Carries the energy provider, the subscribed / contracted power in kVA (dhc:contractedPowerKVA), and the current type (dhc:currentType). A source member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:EnergyDelivery",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:PV_Generation_System",
+      "message0": "☀ PV System %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Rooftop PV"
+        }
+      ],
+      "message1": "power %1 kWp",
+      "args1": [
+        {
+          "type": "field_number",
+          "name": "powerRating",
+          "value": 6,
+          "min": 0,
+          "precision": 0.1
+        }
+      ],
+      "previousStatement": "source",
+      "nextStatement": "source",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A photovoltaic generation system (brick:PV_Generation_System). powerRating in kWp (dhc:powerRating). A source member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:PV_Generation_System",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:Battery",
+      "message0": "🔋 Battery %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Home Battery"
+        }
+      ],
+      "message1": "power %1 kW",
+      "args1": [
+        {
+          "type": "field_number",
+          "name": "powerRating",
+          "value": 5,
+          "min": 0,
+          "precision": 0.1
+        }
+      ],
+      "previousStatement": "source",
+      "nextStatement": "source",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "An electrical storage battery (brick:Battery). powerRating in kW (dhc:powerRating). A source member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Battery",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:EnergyMeter",
+      "message0": "▭ Energy Meter %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Linky"
+        }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "The billing meter at the delivery point, e.g. Linky (dhc:EnergyMeter). A control & routing member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:EnergyMeter",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:EmergencyDisconnect",
+      "message0": "⛔ Main Disconnect / AGCP %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "AGCP"
+        }
+      ],
+      "message1": "rated %1 A",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "ratedCurrent",
+          "options": [
+            [
+              "15",
+              "15"
+            ],
+            [
+              "30",
+              "30"
+            ],
+            [
+              "45",
+              "45"
+            ],
+            [
+              "60",
+              "60"
+            ],
+            [
+              "63",
+              "63"
+            ]
+          ]
+        }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "The main disconnect at the origin of the installation — the AGCP / disjoncteur d'abonné (dhc:EmergencyDisconnect). ratedCurrent in A (dhc:ratedCurrent). A control & routing member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:EmergencyDisconnect",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:SurgeProtector",
+      "message0": "↯ Surge Protector / SPD %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Parafoudre"
+        }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A Surge Protective Device / parafoudre (dhc:SurgeProtector), mandatory per NF C 15-100 §443. A control & routing member; typically at the main board.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:SurgeProtector",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:Inverter",
+      "message0": "⇄ Inverter %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Hybrid Inverter"
+        }
+      ],
+      "message1": "power %1 kW",
+      "args1": [
+        {
+          "type": "field_number",
+          "name": "powerRating",
+          "value": 6,
+          "min": 0,
+          "precision": 0.1
+        }
+      ],
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "Converts and routes energy between sources and the board (brick:Inverter). powerRating in kW (dhc:powerRating). A control & routing member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Inverter",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:DistributionBoard",
+      "message0": "▦ Main Distribution Board %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Main Board"
+        }
+      ],
+      "mutator": "dhc_board_mutator",
+      "previousStatement": "route",
+      "nextStatement": "route",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "The main consumer unit (dhc:DistributionBoard). A control & routing member. Use the ⚙ gear to add/remove rows (DIN rails); each rail holds circuit definitions and protection modules.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:DistributionBoard"
+    },
+    {
+      "type": "dhcb:Circuit",
+      "message0": "● Circuit %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Circuit"
+        }
+      ],
+      "message1": "line %1",
+      "args1": [
+        {
+          "type": "field_variable",
+          "name": "CIRCUIT_VAR",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
+      ],
+      "message2": "type %1 · %2 A · %3 mm²",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "hasCircuitType",
+          "options": [
+            [
+              "Lighting",
+              "dhc:CircuitType_Lighting"
+            ],
+            [
+              "Socket",
+              "dhc:CircuitType_Socket"
+            ],
+            [
+              "Cooking",
+              "dhc:CircuitType_Cooking"
+            ],
+            [
+              "Dedicated appliance",
+              "dhc:CircuitType_DedicatedAppliance"
+            ],
+            [
+              "Water heater",
+              "dhc:CircuitType_WaterHeater"
+            ],
+            [
+              "Heating",
+              "dhc:CircuitType_Heating"
+            ],
+            [
+              "Floor heating",
+              "dhc:CircuitType_FloorHeating"
+            ],
+            [
+              "Heat pump",
+              "dhc:CircuitType_HeatPump"
+            ],
+            [
+              "Ventilation (VMC)",
+              "dhc:CircuitType_Ventilation"
+            ],
+            [
+              "Shutters (store/volet)",
+              "dhc:CircuitType_Shutters"
+            ],
+            [
+              "IRVE (EV)",
+              "dhc:CircuitType_IRVE"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "ratedCurrent",
+          "options": [
+            [
+              "6",
+              "6"
+            ],
+            [
+              "10",
+              "10"
+            ],
+            [
+              "16",
+              "16"
+            ],
+            [
+              "20",
+              "20"
+            ],
+            [
+              "25",
+              "25"
+            ],
+            [
+              "32",
+              "32"
+            ],
+            [
+              "40",
+              "40"
+            ],
+            [
+              "63",
+              "63"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "crossSection",
+          "options": [
+            [
+              "1.5",
+              "1.5"
+            ],
+            [
+              "2.5",
+              "2.5"
+            ],
+            [
+              "4",
+              "4"
+            ],
+            [
+              "6",
+              "6"
+            ],
+            [
+              "10",
+              "10"
+            ],
+            [
+              "16",
+              "16"
+            ]
+          ]
+        }
+      ],
+      "message3": "%1-phase · protection %2",
+      "args3": [
+        {
+          "type": "field_dropdown",
+          "name": "phase",
+          "options": [
+            [
+              "1",
+              "1"
+            ],
+            [
+              "3",
+              "3"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "protection",
+          "options": [
+            [
+              "MCB (needs a differential)",
+              "MCB"
+            ],
+            [
+              "RCBO (integral differential)",
+              "RCBO"
+            ]
+          ]
+        }
+      ],
+      "message4": "differential %1",
+      "args4": [
+        {
+          "type": "field_variable",
+          "name": "DIFFERENTIAL",
+          "variable": "ID_Main",
+          "variableTypes": [
+            "Differential"
+          ],
+          "defaultType": "Differential"
+        }
+      ],
+      "message5": "max points %1 · dedicated %2",
+      "args5": [
+        {
+          "type": "field_number",
+          "name": "maxPoints",
+          "value": 8,
+          "min": 0,
+          "precision": 1
+        },
+        {
+          "type": "field_checkbox",
+          "name": "dedicated",
+          "checked": false
+        }
+      ],
+      "previousStatement": "module",
+      "nextStatement": "module",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A protected line (dhc:Circuit) — the unit the C-Box validates. Sits on a board rail. Its `line` variable is the token loads reference via 'protected by'. The `differential` variable references the dhc:RCD device protecting it — SHARED referencing is how the topology is expressed: all circuits → one differential = one-per-install (older NF C 15-100); one differential per rail = one-per-rail (newer editions). An RCBO circuit is its own differential (protection = RCBO). On blockly→abox it becomes dhc:Circuit + dhc:hasProtection (its breaker + the referenced RCD) + dhc:hasWiring.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:Circuit",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:RCD",
+      "message0": "⧉ RCD / differential %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Main differential"
+        }
+      ],
+      "message1": "id %1",
+      "args1": [
+        {
+          "type": "field_variable",
+          "name": "RCD_VAR",
+          "variable": "ID_Main",
+          "variableTypes": [
+            "Differential"
+          ],
+          "defaultType": "Differential"
+        }
+      ],
+      "message2": "type %1 · %2 mA · rated %3 A",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "rcdType",
+          "options": [
+            [
+              "AC",
+              "AC"
+            ],
+            [
+              "A",
+              "A"
+            ],
+            [
+              "B",
+              "B"
+            ],
+            [
+              "F",
+              "F"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "sensitivityMA",
+          "options": [
+            [
+              "30",
+              "30"
+            ],
+            [
+              "300",
+              "300"
+            ],
+            [
+              "500",
+              "500"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "ratedCurrent",
+          "options": [
+            [
+              "25",
+              "25"
+            ],
+            [
+              "40",
+              "40"
+            ],
+            [
+              "63",
+              "63"
+            ],
+            [
+              "80",
+              "80"
+            ]
+          ]
+        }
+      ],
+      "message3": "selectivity %1",
+      "args3": [
+        {
+          "type": "field_dropdown",
+          "name": "selectivity",
+          "options": [
+            [
+              "instantaneous",
+              "instantaneous"
+            ],
+            [
+              "selective (S)",
+              "S"
+            ]
+          ]
+        }
+      ],
+      "previousStatement": "module",
+      "nextStatement": "module",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A differential device (dhc:RCD) — this is where the differential is DEFINED (rcdType, sensitivityMA, ratedCurrent, selectivity). Its `id` variable is the token circuits reference via 'differential'. Drop ONE and have every circuit reference it for one-per-install (older norm); drop one per rail and reference it from that rail's circuits for one-per-rail (newer norm). Selectivity 'S' (selective/time-delayed) is used upstream, e.g. the 500 mA type-S differential integral to the disjoncteur de branchement. A DIN-rail module.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:RCD",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:WiringSegment",
+      "message0": "〰 Wiring Segment %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Cable run"
+        }
+      ],
+      "message1": "wiring of %1",
+      "args1": [
+        {
+          "type": "field_variable",
+          "name": "WIRING_OF",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
+      ],
+      "message2": "cable %1 · %2 mm² · %3 m",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "cableType",
+          "options": [
+            [
+              "U1000 R2V",
+              "U1000R2V"
+            ],
+            [
+              "H07V-U (rigid)",
+              "H07V-U"
+            ],
+            [
+              "H07V-R (flexible)",
+              "H07V-R"
+            ],
+            [
+              "H07V-K",
+              "H07V-K"
+            ]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "crossSection",
+          "options": [
+            [
+              "1.5",
+              "1.5"
+            ],
+            [
+              "2.5",
+              "2.5"
+            ],
+            [
+              "4",
+              "4"
+            ],
+            [
+              "6",
+              "6"
+            ],
+            [
+              "10",
+              "10"
+            ],
+            [
+              "16",
+              "16"
+            ]
+          ]
+        },
+        {
+          "type": "field_number",
+          "name": "length",
+          "value": 10,
+          "min": 0,
+          "precision": 0.1
+        }
+      ],
+      "previousStatement": "module",
+      "nextStatement": "module",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A run of cable for a circuit (dhc:WiringSegment ⊑ s223:Connection). Carries cable type, cross-section (dhc:crossSection) and length. `wiring of` references the circuit it belongs to → dhc:hasWiring. A rail module. (length + cableType are parked ontology properties.)",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:WiringSegment"
+    },
+    {
+      "type": "dhcb:IoTDevice",
+      "message0": "📟 IoT Device %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "IoT Module"
+        }
+      ],
+      "message1": "%1 · %2 DIN slots",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "deviceType",
+          "options": [
+            [
+              "Gateway",
+              "Gateway"
+            ],
+            [
+              "Energy monitor",
+              "EnergyMonitor"
+            ],
+            [
+              "Smart relay",
+              "SmartRelay"
+            ],
+            [
+              "Controller",
+              "Controller"
+            ],
+            [
+              "Other",
+              "Other"
+            ]
+          ]
+        },
+        {
+          "type": "field_number",
+          "name": "dinSlots",
+          "value": 1,
+          "min": 1,
+          "precision": 1
+        }
+      ],
+      "mutator": "dhc_points_mutator",
+      "previousStatement": "module",
+      "nextStatement": "module",
+      "inputsInline": false,
+      "colour": "#a855f7",
+      "tooltip": "A DIN-rail-mounted IoT / smart module (gateway, energy monitor, smart relay, controller). Consumes `DIN slots` modules on the rail and carries automation points via its ⚙. Drop it on a board rail to give a rows-only board automation hooks. brick:Equipment on translation.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:IoTDevice"
+    },
+    {
+      "type": "dhcb:Socket",
+      "message0": "◵ Socket %1 ×%2",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Socket"
+        },
+        {
+          "type": "field_number",
+          "name": "quantity",
+          "value": 1,
+          "min": 1,
+          "precision": 1
+        }
+      ],
+      "message1": "protected by %1",
+      "args1": [
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
+      ],
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "An electrical socket outlet (dhc:Socket). 'protected by' references the circuit line that feeds it (→ dhc:feedsEquipment). A sink member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:Socket",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:Luminaire",
+      "message0": "💡 Luminaire %1 ×%2",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Light"
+        },
+        {
+          "type": "field_number",
+          "name": "quantity",
+          "value": 1,
+          "min": 1,
+          "precision": 1
+        }
+      ],
+      "message1": "protected by %1",
+      "args1": [
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
+      ],
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A lighting fixture (brick:Luminaire). 'protected by' references its circuit line. A sink member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Luminaire",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:Electric_Vehicle_Charging_Station",
+      "message0": "🚗 EV Charger %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Wallbox"
+        }
+      ],
+      "message1": "protected by %1",
+      "args1": [
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
+      ],
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "An EV charging station / wallbox (brick:Electric_Vehicle_Charging_Station), an IRVE circuit load. 'protected by' references its circuit line. A sink member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Electric_Vehicle_Charging_Station",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:Appliance",
+      "message0": "⊡ Appliance %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Appliance"
+        }
+      ],
+      "message1": "type %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "applianceType",
+          "options": [
+            [
+              "Washing machine",
+              "WashingMachine"
+            ],
+            [
+              "Dishwasher",
+              "Dishwasher"
+            ],
+            [
+              "Oven",
+              "Oven"
+            ],
+            [
+              "Water heater",
+              "WaterHeater"
+            ],
+            [
+              "Dryer",
+              "Dryer"
+            ],
+            [
+              "Other",
+              "Other"
+            ]
+          ]
+        }
+      ],
+      "message2": "protected by %1",
+      "args2": [
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
+      ],
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A generic consumer appliance (dhc:Appliance — parked; maps to brick:Equipment, with applianceType hinting the specific Brick/223P class). 'protected by' references its circuit line. A sink member.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:Appliance",
+      "mutator": "dhc_points_mutator"
+    },
+    {
+      "type": "dhcb:SubDistributionBoard",
+      "message0": "▥ Sub-Distribution Board %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Sub Board"
+        }
+      ],
+      "message1": "protected by %1",
+      "args1": [
+        {
+          "type": "field_variable",
+          "name": "FED_BY",
+          "variable": "CB_Circuit",
+          "variableTypes": [
+            "Circuit"
+          ],
+          "defaultType": "Circuit"
+        }
+      ],
+      "mutator": "dhc_board_mutator",
+      "previousStatement": "sink",
+      "nextStatement": "sink",
+      "inputsInline": false,
+      "colour": "#3b82f6",
+      "tooltip": "A secondary / divisional board fed from a circuit downstream (dhc:SubDistributionBoard). 'protected by' references its feeding circuit line. Use the ⚙ gear to add/remove rows (DIN rails).",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:SubDistributionBoard"
+    },
+    {
+      "type": "dhcb:Point",
+      "message0": "◦ Point %1",
+      "args0": [
+        {
+          "type": "field_input",
+          "name": "name",
+          "text": "Point"
+        }
+      ],
+      "message1": "kind %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "pointType",
+          "options": [
+            [
+              "Sensor",
+              "brick:Sensor"
+            ],
+            [
+              "Setpoint (controller target)",
+              "brick:Setpoint"
+            ],
+            [
+              "Command (manual / direct)",
+              "brick:Command"
+            ],
+            [
+              "Status",
+              "brick:Status"
+            ],
+            [
+              "Alarm",
+              "brick:Alarm"
+            ],
+            [
+              "Parameter",
+              "brick:Parameter"
+            ],
+            [
+              "Point (generic)",
+              "brick:Point"
+            ]
+          ]
+        }
+      ],
+      "output": "brick:Point",
+      "inputsInline": true,
+      "colour": "#a855f7",
+      "tooltip": "An automation point (a brick:Point subclass chosen by kind). Plugs into a smart device's ⚙ point slots → brick:hasPoint. Kinds: Command = a manual / direct actuation (a switch); Setpoint = a target the controller works toward; Sensor = a measured read-back; Status = resulting state; Alarm = a fault condition; Parameter = a configuration value.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=brick:Point"
+    },
+    {
+      "type": "dhcb:CommunicationPanel",
+      "message0": "🖧 Communication panel (VDI) %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Coffret VDI" }
+      ],
+      "message1": "grade %1 · arrival %2",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "grade",
+          "options": [
+            ["grade 2 TV (1 Gbit/s)", "2"],
+            ["grade 3 TV (10 Gbit/s)", "3"]
+          ]
+        },
+        {
+          "type": "field_dropdown",
+          "name": "arrival",
+          "options": [
+            ["DTi (copper)", "DTi"],
+            ["DTiO (fibre-ready)", "DTiO"],
+            ["Fibre (ONT)", "Fibre"]
+          ]
+        }
+      ],
+      "message2": "Hager ref %1",
+      "args2": [
+        { "type": "field_input", "name": "ref", "text": "TN415" }
+      ],
+      "mutator": "dhc_vdi_outlets_mutator",
+      "inputsInline": false,
+      "colour": "#14b8a6",
+      "tooltip": "The low-voltage / data panel (coffret de communication, VDI — courants faibles), sitting in the GTL alongside the power board. Use the ⚙ gear to add outlets (RJ45 data, TV/SAT). grade 2 = 1 Gbit/s, grade 3 = 10 Gbit/s. A separate network from the power distribution — a first-pass block; the ontology classes are parked (see doc/gap-analysis-nfc15100-hager.md).",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:CommunicationPanel"
+    },
+    {
+      "type": "dhcb:DTI",
+      "message0": "⇥ Network arrival (DTI) %1",
+      "args0": [
+        {
+          "type": "field_dropdown",
+          "name": "arrival",
+          "options": [
+            ["DTi (copper / xDSL)", "DTi"],
+            ["DTiO (optical)", "DTiO"]
+          ]
+        }
+      ],
+      "previousStatement": "vdi",
+      "nextStatement": "vdi",
+      "inputsInline": true,
+      "colour": "#14b8a6",
+      "tooltip": "The network demarcation / arrival point (DTI or DTIO) inside the VDI panel — where the operator line lands.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:DTI"
+    },
+    {
+      "type": "dhcb:InternetBox",
+      "message0": "📶 Internet box %1",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "Box internet" }
+      ],
+      "previousStatement": "vdi",
+      "nextStatement": "vdi",
+      "inputsInline": true,
+      "colour": "#14b8a6",
+      "tooltip": "The operator's internet box housed in / fed from the VDI panel.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:InternetBox"
+    },
+    {
+      "type": "dhcb:RJ45Outlet",
+      "message0": "🔌 RJ45 outlet %1 ×%2",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "RJ45" },
+        { "type": "field_number", "name": "quantity", "value": 1, "min": 1, "precision": 1 }
+      ],
+      "message1": "category %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "category",
+          "options": [
+            ["Cat 6 STP (grade 2)", "Cat6"],
+            ["Cat 6a STP (grade 3)", "Cat6a"]
+          ]
+        }
+      ],
+      "previousStatement": "vdi",
+      "nextStatement": "vdi",
+      "inputsInline": true,
+      "colour": "#14b8a6",
+      "tooltip": "An RJ45 data outlet served from the VDI panel (brassage). `category` sets the grade (Cat 6 = grade 2, Cat 6a = grade 3). A placeable leaf — place it in the room it serves.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:RJ45Outlet"
+    },
+    {
+      "type": "dhcb:TVOutlet",
+      "message0": "📺 TV/SAT outlet %1 ×%2",
+      "args0": [
+        { "type": "field_input", "name": "name", "text": "TV" },
+        { "type": "field_number", "name": "quantity", "value": 1, "min": 1, "precision": 1 }
+      ],
+      "message1": "signal %1",
+      "args1": [
+        {
+          "type": "field_dropdown",
+          "name": "signal",
+          "options": [
+            ["TNT", "TNT"],
+            ["Câble", "Cable"],
+            ["SAT", "SAT"]
+          ]
+        }
+      ],
+      "previousStatement": "vdi",
+      "nextStatement": "vdi",
+      "inputsInline": true,
+      "colour": "#14b8a6",
+      "tooltip": "A TV/SAT outlet from the VDI panel's TV distributor (répartiteur TV). A placeable leaf — place it in the room it serves.",
+      "helpUrl": "",
+      "data": "dhc:blocklyBlockTemplate=dhc:TVOutlet"
+    }
+  ]
+}

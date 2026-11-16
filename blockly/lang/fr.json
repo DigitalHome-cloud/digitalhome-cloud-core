@@ -1,0 +1,139 @@
+{
+  "_note": "French (Français) locale overrides for the electrical harness. English (electrical-blocks.json) is the base; this file overrides messageN / tooltip / (where translatable) argsN per block type. A messageN override MUST keep the same %N placeholder count as the base. Dropdown option labels stay coded — only human message text and the root's medium labels are translated.",
+  "ui": {
+    "brand.title": "Concepteur d'installation électrique",
+    "brand.sub": "Système de distribution électrique",
+    "tab.All": "Tout",
+    "tab.Sources": "Sources",
+    "tab.Routing": "Distribution",
+    "tab.Circuits": "Circuits",
+    "tab.Sinks": "Consommateurs",
+    "tab.Circuit lines": "Lignes",
+    "btn.clear": "Effacer",
+    "btn.json": "Voir JSON",
+    "btn.save": "Enregistrer",
+    "lbl.renderer": "Rendu",
+    "lbl.lang": "Langue"
+  },
+  "blocks": {
+    "dhcb:PowerDistributionSystem": {
+      "message0": "⚡ Système de distribution électrique %1",
+      "message1": "régime de neutre %1",
+      "message2": "médium (système électrique) %1",
+      "args2": [
+        {
+          "type": "field_dropdown",
+          "name": "hasMedium",
+          "options": [
+            [
+              "230 V · monophasé · 50 Hz",
+              "s223:AC-230VLN-1Ph-50Hz"
+            ],
+            [
+              "400/230 V · triphasé · 50 Hz",
+              "s223:AC-400VLL-230VLN-3Ph-50Hz"
+            ]
+          ]
+        }
+      ],
+      "message3": "① sous-système sources — générateurs %1",
+      "message4": "② sous-système distribution — onduleur & tableaux %1",
+      "message5": "③ sous-système consommateurs %1",
+      "tooltip": "Racine d'une installation électrique (dhc:PowerDistributionSystem ⊑ brick:System). Regroupe trois sous-systèmes — sources, distribution, consommateurs — dont les membres deviennent brick:hasPart lors de blockly→abox. neutralSystem est le régime de neutre ; hasMedium (s223:hasMedium) nomme le système électrique."
+    },
+    "dhcb:EnergyDelivery": {
+      "message0": "🔌 Raccordement réseau %1",
+      "message1": "fournisseur %1 · souscrit %2 kVA · %3",
+      "tooltip": "Le point de livraison depuis le réseau (dhc:EnergyDelivery). Porte le fournisseur, la puissance souscrite en kVA (dhc:contractedPowerKVA) et le type de courant (dhc:currentType). Un membre source."
+    },
+    "dhcb:PV_Generation_System": {
+      "message0": "☀ Système PV %1",
+      "message1": "puissance %1 kWc",
+      "tooltip": "Un système de génération photovoltaïque (brick:PV_Generation_System), powerRating en kWc. Un membre source."
+    },
+    "dhcb:Battery": {
+      "message0": "🔋 Batterie %1",
+      "message1": "puissance %1 kW",
+      "tooltip": "Une batterie de stockage électrique (brick:Battery), powerRating en kW. Un membre source."
+    },
+    "dhcb:EnergyMeter": {
+      "message0": "▭ Compteur %1",
+      "tooltip": "Le compteur de facturation au point de livraison, p. ex. Linky (dhc:EnergyMeter). Un membre distribution."
+    },
+    "dhcb:EmergencyDisconnect": {
+      "message0": "⛔ Disjoncteur de branchement / AGCP %1",
+      "message1": "calibre %1 A",
+      "tooltip": "Le disjoncteur à l'origine de l'installation — AGCP / disjoncteur d'abonné (dhc:EmergencyDisconnect), ratedCurrent en A. Un membre distribution."
+    },
+    "dhcb:SurgeProtector": {
+      "message0": "↯ Parafoudre / SPD %1",
+      "tooltip": "Un parasurtenseur / parafoudre (dhc:SurgeProtector), obligatoire selon NF C 15-100 §443. Un membre distribution."
+    },
+    "dhcb:Inverter": {
+      "message0": "⇄ Onduleur %1",
+      "message1": "puissance %1 kW",
+      "tooltip": "Convertit et achemine l'énergie entre les sources et le tableau (brick:Inverter), powerRating en kW. Un membre distribution."
+    },
+    "dhcb:DistributionBoard": {
+      "message0": "▦ Tableau principal %1",
+      "tooltip": "Le tableau principal (dhc:DistributionBoard). Un membre distribution. Utilisez l'engrenage ⚙ pour gérer les rangées (rails DIN) ; chaque rail porte des définitions de circuit et des modules de protection."
+    },
+    "dhcb:Circuit": {
+      "message0": "● Circuit %1",
+      "message1": "ligne %1",
+      "message2": "type %1 · %2 A · %3 mm²",
+      "message3": "%1-phasé · protection %2",
+      "message4": "différentiel %1",
+      "message5": "points max %1 · dédié %2",
+      "tooltip": "Une ligne protégée (dhc:Circuit) — l'unité que la C-Box valide. Posée sur un rail. `ligne` est le jeton que les consommateurs référencent via « protégé par ». `différentiel` référence le dhc:RCD qui la protège — le référencement partagé exprime la topologie : tous les circuits → un différentiel = un par installation (ancienne NF C 15-100) ; un différentiel par rangée = un par rangée (éditions récentes). Un circuit DDR/disjoncteur (protection = RCBO) est son propre différentiel. Devient dhc:Circuit + dhc:hasProtection + dhc:hasWiring lors de blockly→abox."
+    },
+    "dhcb:RCD": {
+      "message0": "⧉ Différentiel %1",
+      "message1": "id %1",
+      "message2": "type %1 · %2 mA · calibre %3 A",
+      "tooltip": "Un dispositif différentiel (dhc:RCD) — c'est ici que le différentiel est DÉFINI (rcdType, sensitivityMA, ratedCurrent). Son `id` est le jeton que les circuits référencent via « différentiel ». En placer un et le référencer depuis tous les circuits = un par installation (ancienne norme) ; un par rangée = un par rangée (norme récente). Un module sur rail DIN."
+    },
+    "dhcb:Socket": {
+      "message0": "◵ Prise %1 ×%2",
+      "message1": "protégé par %1",
+      "tooltip": "Une prise de courant (dhc:Socket). « protégé par » référence la ligne qui l'alimente (→ dhc:feedsEquipment). Un membre consommateur."
+    },
+    "dhcb:Luminaire": {
+      "message0": "💡 Luminaire %1 ×%2",
+      "message1": "protégé par %1",
+      "tooltip": "Un luminaire (brick:Luminaire). « protégé par » référence sa ligne. Un membre consommateur."
+    },
+    "dhcb:Electric_Vehicle_Charging_Station": {
+      "message0": "🚗 Borne de recharge VE %1",
+      "message1": "protégé par %1",
+      "tooltip": "Une borne de recharge VE / wallbox (brick:Electric_Vehicle_Charging_Station), une charge IRVE. « protégé par » référence sa ligne. Un membre consommateur."
+    },
+    "dhcb:Appliance": {
+      "message0": "⊡ Appareil %1",
+      "message1": "type %1",
+      "message2": "protégé par %1",
+      "tooltip": "Un consommateur générique (dhc:Appliance — en attente ; correspond à brick:Equipment, applianceType précise la classe Brick/223P). « protégé par » référence sa ligne. Un membre consommateur."
+    },
+    "dhcb:SubDistributionBoard": {
+      "message0": "▥ Tableau divisionnaire %1",
+      "message1": "protégé par %1",
+      "tooltip": "Un tableau divisionnaire alimenté en aval par une ligne (dhc:SubDistributionBoard). « protégé par » référence la ligne d'alimentation. Utilisez l'engrenage ⚙ pour gérer les rangées (rails DIN)."
+    },
+    "dhcb:WiringSegment": {
+      "message0": "〰 Segment de câble %1",
+      "message1": "câblage de %1",
+      "message2": "câble %1 · %2 mm² · %3 m",
+      "tooltip": "Un segment de câble d’un circuit (dhc:WiringSegment ⊑ s223:Connection). Porte le type de câble, la section (dhc:crossSection) et la longueur. « câblage de » référence le circuit associé → dhc:hasWiring. Un module sur rail DIN. (longueur + type de câble sont des propriétés d’ontologie en attente.)"
+    },
+    "dhcb:Point": {
+      "message0": "◦ Point %1",
+      "message1": "type %1",
+      "tooltip": "Un point d’automatisation (une sous-classe de brick:Point selon le type). Se branche dans les emplacements de points ⚙ d’un appareil intelligent → brick:hasPoint. Types : Command = une commande manuelle/directe (un interrupteur) ; Setpoint = une consigne que le régulateur cherche à atteindre ; Sensor = une mesure ; Status = l’état résultant ; Alarm = un défaut ; Parameter = une valeur de configuration."
+    },
+    "dhcb:IoTDevice": {
+      "message0": "📟 Appareil IoT %1",
+      "message1": "%1 · %2 modules DIN",
+      "tooltip": "Un module IoT sur rail DIN (passerelle, moniteur d’énergie, relais intelligent, contrôleur). Occupe `modules DIN` sur le rail et porte des points d’automatisation via son ⚙. À poser sur un rail du tableau pour donner des points d’accroche à un tableau à rangées seules. brick:Equipment lors de la traduction."
+    }
+  }
+}

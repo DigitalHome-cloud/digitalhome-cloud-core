@@ -1,0 +1,67 @@
+# The digitalhome.cloud marketplace — vocabulary of a seller's catalogue.
+#
+# One graph per seller (a manufacturer, distributor or wholesaler, or the
+# platform's own curated catalogue `digitalhome-cloud`). Articles are named
+#   https://digitalhome.cloud/id/market/<seller>/<reference, URL-encoded>
+# and described with the terms below. Prices are NOT part of the vocabulary:
+# they stay private on each edge (from the partner's API or file).
+#
+# Kept apart from the dhc-* T-Box (ontology_explorer.py is its only writer)
+# and from the norm C-Boxes; validated by market.shapes.ttl on every save.
+
+@prefix dhp:  <https://digitalhome.cloud/pro#> .
+@prefix dhc:  <https://digitalhome.cloud/ontology#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+<https://digitalhome.cloud/pro> a owl:Ontology ;
+    rdfs:label "digitalhome.cloud marketplace"@en , "digitalhome.cloud Marktplatz"@de , "Place de marché digitalhome.cloud"@fr .
+
+dhp:Article a owl:Class ;
+    rdfs:label "Article"@en , "Artikel"@de , "Article"@fr ;
+    rdfs:comment "A product a seller offers, under the seller's own reference."@en .
+
+dhp:partner a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "seller"@en , "Anbieter"@de , "vendeur"@fr ;
+    rdfs:comment "The seller id (the graph's name)."@en .
+dhp:reference a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "reference"@en , "Artikelnummer"@de , "référence"@fr .
+dhp:ean a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "GTIN / EAN"@en , "GTIN / EAN"@de , "GTIN / EAN"@fr .
+dhp:etimClass a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "ETIM class"@en , "ETIM-Klasse"@de , "classe ETIM"@fr .
+dhp:brand a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "brand"@en , "Marke"@de , "marque"@fr .
+dhp:deviceType a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "device type"@en , "Gerätetyp"@de , "type d'appareil"@fr .
+dhp:category a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "category"@en , "Kategorie"@de , "catégorie"@fr .
+dhp:powerSource a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "power source"@en , "Stromversorgung"@de , "alimentation"@fr .
+dhp:voltageV a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:decimal ;
+    rdfs:label "voltage (V)"@en , "Spannung (V)"@de , "tension (V)"@fr .
+dhp:currentA a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:decimal ;
+    rdfs:label "current (A)"@en , "Strom (A)"@de , "courant (A)"@fr .
+dhp:powerW a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:decimal ;
+    rdfs:label "power (W)"@en , "Leistung (W)"@de , "puissance (W)"@fr .
+dhp:capability a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "capability"@en , "Fähigkeit"@de , "capacité"@fr ;
+    rdfs:comment "actor, sensor, controller or iot."@en .
+dhp:compatibleClass a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "compatible class"@en , "kompatible Klasse"@de , "classe compatible"@fr ;
+    rdfs:comment "A T-Box class the article can be an instance of, e.g. brick:Switch."@en .
+dhp:usableIn a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "market"@en , "Markt"@de , "marché"@fr ;
+    rdfs:comment "An ISO 3166 country code, or EU."@en .
+dhp:approvedFor a owl:ObjectProperty ; rdfs:domain dhp:Article ; rdfs:range dhc:Norm ;
+    rdfs:label "approved for"@en , "zugelassen für"@de , "homologué pour"@fr .
+dhp:conformsTo a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "conforms to"@en , "entspricht"@de , "conforme à"@fr ;
+    rdfs:comment "A product standard, e.g. EN 61008-1."@en .
+dhp:image a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "image"@en , "Bild"@de , "image"@fr ;
+    rdfs:comment "<sha256>.<ext> of a file under public/market/<seller>/sha256/."@en .
+dhp:datasheet a owl:DatatypeProperty ; rdfs:domain dhp:Article ; rdfs:range xsd:string ;
+    rdfs:label "datasheet"@en , "Datenblatt"@de , "fiche technique"@fr ;
+    rdfs:comment "<sha256>.<ext> of a file under public/market/<seller>/sha256/."@en .

@@ -3,6 +3,10 @@ import { dhcDesignStorageProxy } from "../functions/dhcDesignStorageProxy/resour
 import { createDigitalHome } from "../functions/createDigitalHome/resource";
 import { edgeDeviceApproval } from "../functions/edgeDeviceApproval/resource";
 import { adminDebug } from "../functions/adminDebug/resource";
+import { market } from "../functions/market/resource";
+import { templates } from "../functions/templates/resource";
+import { configurations } from "../functions/configurations/resource";
+import { homeVault } from "../functions/homeVault/resource";
 
 /**
  * AppSync data layer. Models + custom mutations.
@@ -18,8 +22,8 @@ import { adminDebug } from "../functions/adminDebug/resource";
  *   - createDigitalHome: structured-address create flow that produces the full
  *     "shell" (DDB row + Cognito group + S3 abox.ttl/graph.jsonld/data folder)
  *     per repos/core/experimental/abox/abox.md (Step 1).
- *   - DeviceModel:    admin write, any signed-in user read (device-product
- *                     catalogue — Brand/ModelNumber/DeviceType + S3 doc/img/specs)
+ *   - The device catalogue is the marketplace (custom types Market*, the
+ *     market Lambda; ADR 0016). DeviceModel was retired.
  *   - DeviceInstance: multi-owner + admin (per-SmartHome device inventory,
  *                     keyed/indexed by smartHomeId — same pattern as
  *                     SmartHomeDesign so the Designer can list a home's devices)
@@ -52,16 +56,6 @@ const schema = a.schema({
     "ACTIVE",
     "END_OF_LIFE",
     "DECOMMISSIONED",
-  ]),
-
-  // How a DeviceModel is powered. Voltage/current/power are numeric ratings
-  // (their typical values depend on this — e.g. SOCKET/FIXED ≈ 220 V mains,
-  // BATTERY/ACCU ≈ 12/6/3.7 V).
-  PowerSource: a.enum([
-    "FIXED",   // hard-wired to mains
-    "SOCKET",  // mains plug
-    "BATTERY", // non-rechargeable
-    "ACCU",    // rechargeable accumulator
   ]),
 
   // ─── models ───────────────────────────────────────────────────────
@@ -117,6 +111,11 @@ const schema = a.schema({
       addressLine2: a.string(),
       isDemo: a.boolean().required(),
       createdBy: a.string().required(),
+      // The home's permanent, meaningless id (ADR 0018). The SmartHome ID is
+      // a name made from the address; what is keyed per home from ADR 0018 on
+      // (configuration versions, options, the vault) uses this. Minted by
+      // initiateDigitalHome, or by the first function that needs it.
+      homeId: a.string(),
     })
     .identifier(["smartHomeId"])
     .authorization((allow) => [
@@ -165,43 +164,6 @@ const schema = a.schema({
     // SmartHome) instead of a full Scan (scales as the table grows).
     .secondaryIndexes((index) => [index("smartHomeId")]),
 
-  // DeviceModel — global device-product catalogue. PK is modelNumber (unique
-  // by construction). Admin-curated, any signed-in user reads (mirrors
-  // LibraryItem). S3 paths are stored as strings; assets live under
-  // public/catalogue/devices/{deviceType}/{modelNumber}/{docs,img,specs}.
-  DeviceModel: a
-    .model({
-      modelNumber: a.id().required(),
-      brand: a.string().required(),
-      deviceType: a.string().required(),
-      category: a.ref("DeviceCategory"),
-      description: a.string(),
-      region: a.string(),
-      standards: a.string().array(),
-      compatibleClasses: a.string().array(),
-      hasActorCapability: a.boolean(),
-      hasSensorCapability: a.boolean(),
-      hasControllerCapability: a.boolean(),
-      hasIOTCapability: a.boolean(),
-      // Power: source + numeric input ratings (volts / amps / watts).
-      powerSource: a.ref("PowerSource"),
-      voltageV: a.float(),
-      currentA: a.float(),
-      powerW: a.float(),
-      s3DocPath: a.string(),
-      s3ImgPath: a.string(),
-      s3SpecsPath: a.string(),
-      // Tiny (~few KB) data-URL preview generated client-side from the
-      // uploaded image — inlined so list views render thumbnails without a
-      // per-row S3 fetch. The full image stays in S3 (s3ImgPath).
-      thumbnail: a.string(),
-    })
-    .identifier(["modelNumber"])
-    .authorization((allow) => [
-      allow.group("dhc-admins").to(["create", "update", "delete"]),
-      allow.authenticated().to(["read"]),
-    ]),
-
   // DeviceInstance — a physical device deployed in one SmartHome. Keyed by the
   // default Amplify id; indexed by smartHomeId so the Designer can list a
   // home's devices cheaply (same rationale as SmartHomeDesign). Per-device
@@ -212,6 +174,10 @@ const schema = a.schema({
       smartHomeId: a.string().required(),
       owners: a.string().array(),
       modelNumber: a.string().required(),
+      // The marketplace article this device is (its IRI,
+      // https://digitalhome.cloud/id/market/<seller>/<reference>); modelNumber
+      // stays the reference, for display and older rows.
+      article: a.string(),
       serialNumber: a.string().required(),
       deviceType: a.string().required(),
       purchaseDate: a.date(),
@@ -237,6 +203,7 @@ const schema = a.schema({
   // ─── custom return type for initiateDigitalHome ──────────────────
   InitiateDigitalHomePayload: a.customType({
     smartHomeId: a.string().required(),
+    homeId: a.string(),
     createdAt: a.datetime().required(),
   }),
 
@@ -460,6 +427,360 @@ const schema = a.schema({
     .returns(a.ref("DesignStorageUrl"))
     .handler(a.handler.function(dhcDesignStorageProxy))
     .authorization((allow) => [allow.authenticated()]),
+
+  // ─── the marketplace (backed by the market Lambda) ──────────────
+  // One catalogue graph per seller (Turtle in S3, a version in MarketSeller),
+  // read by every signed-in user, written by the seller's editors (group
+  // market-<id>) through a two-step save, administered by dhc-admins. The
+  // Lambda enforces who may do what; the rules here only require sign-in.
+  // Edges use /edge/v1/market/* (edgeMarket) with the same store.
+  MarketSeller: a.customType({
+    id: a.string().required(),
+    name: a.string().required(),
+    kind: a.string().required(),
+    version: a.integer().required(),
+    articles: a.integer(),
+    updatedAt: a.string(),
+    mayEdit: a.boolean(),
+  }),
+  MarketGraph: a.customType({
+    seller: a.string().required(),
+    version: a.integer().required(),
+    url: a.string(),
+  }),
+  MarketSave: a.customType({
+    status: a.string().required(),          // ready | ok | conflict | invalid
+    key: a.string(),
+    url: a.string(),
+    version: a.integer(),
+    articles: a.integer(),
+    currentVersion: a.integer(),
+    currentUrl: a.string(),
+    problems: a.string().array(),
+  }),
+
+  listSellers: a
+    .query()
+    .returns(a.ref("MarketSeller").array())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  marketGraph: a
+    .query()
+    .arguments({ seller: a.string().required() })
+    .returns(a.ref("MarketGraph"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // { versions: {seller: n}, articles: [{ seller, reference, label, brand, … }], more }
+  marketArticles: a
+    .query()
+    .arguments({ seller: a.string(), query: a.string(), limit: a.integer() })
+    .returns(a.json())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // One article, as it was read (before; null = new) and as it should be
+  // (after; null = remove). Merged into the CURRENT catalogue, so others'
+  // changes to other facts survive. → { status: ok | conflict | invalid, … }
+  editMarketArticle: a
+    .mutation()
+    .arguments({
+      seller: a.string().required(),
+      reference: a.string().required(),
+      before: a.json(),
+      after: a.json(),
+    })
+    .returns(a.json())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestMarketSave: a
+    .mutation()
+    .arguments({ seller: a.string().required(), baseVersion: a.integer().required() })
+    .returns(a.ref("MarketSave"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  commitMarketSave: a
+    .mutation()
+    .arguments({ seller: a.string().required(), key: a.string().required(), baseVersion: a.integer().required() })
+    .returns(a.ref("MarketSave"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // files: [{ sha256, ext, size }] → [{ name, key, exists, url?, headers? }]
+  marketUploads: a
+    .mutation()
+    .arguments({ seller: a.string().required(), files: a.json().required() })
+    .returns(a.json())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.authenticated()]),
+
+  createSeller: a
+    .mutation()
+    .arguments({ id: a.string().required(), name: a.string().required(), kind: a.string().required() })
+    .returns(a.ref("MarketSeller"))
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  sellerEditors: a
+    .query()
+    .arguments({ seller: a.string().required() })
+    .returns(a.string().array())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  addSellerEditor: a
+    .mutation()
+    .arguments({ seller: a.string().required(), email: a.string().required() })
+    .returns(a.boolean())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  removeSellerEditor: a
+    .mutation()
+    .arguments({ seller: a.string().required(), email: a.string().required() })
+    .returns(a.boolean())
+    .handler(a.handler.function(market))
+    .authorization((allow) => [allow.group("dhc-admins")]),
+
+  // ─── board templates (backed by the templates Lambda; ADR-0017) ─────────
+  // One template graph per norm edition (Turtle in S3, a version in
+  // NormTemplates), read by every signed-in user, written and verified by
+  // dhc-template-editors and dhc-admins through a two-step save. The Lambda
+  // enforces who may write; the rules here only require sign-in. Edges read
+  // them through /edge/v1/templates/* (edgeTemplates).
+  NormTemplateEdition: a.customType({
+    edition: a.string().required(),         // nfc15100-2024
+    label: a.string(),
+    norm: a.string(),                       // the dhc:Norm IRI
+    latest: a.boolean(),
+    supersedes: a.string(),
+    version: a.integer().required(),
+    templates: a.integer(),
+    updatedAt: a.string(),
+    mayEdit: a.boolean(),
+  }),
+  TemplateGraph: a.customType({
+    edition: a.string().required(),
+    version: a.integer().required(),
+    url: a.string(),
+  }),
+  TemplateSave: a.customType({
+    status: a.string().required(),          // ready | ok | conflict | invalid
+    key: a.string(),
+    url: a.string(),
+    version: a.integer(),
+    templates: a.integer(),
+    currentVersion: a.integer(),
+    currentUrl: a.string(),
+    problems: a.string().array(),
+  }),
+
+  templateEditions: a
+    .query()
+    .returns(a.ref("NormTemplateEdition").array())
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  templateGraph: a
+    .query()
+    .arguments({ edition: a.string().required() })
+    .returns(a.ref("TemplateGraph"))
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  requestTemplatesSave: a
+    .mutation()
+    .arguments({ edition: a.string().required(), baseVersion: a.integer().required() })
+    .returns(a.ref("TemplateSave"))
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  commitTemplatesSave: a
+    .mutation()
+    .arguments({ edition: a.string().required(), key: a.string().required(), baseVersion: a.integer().required() })
+    .returns(a.ref("TemplateSave"))
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // template: its id in the edition (t3-electric-heating) or its IRI
+  verifyTemplate: a
+    .mutation()
+    .arguments({ edition: a.string().required(), template: a.string().required() })
+    .returns(a.ref("TemplateSave"))
+    .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── A home's configurations (ADR 0018): live, legacy, planning options ──
+  // Keyed on the home's meaningless homeId. The Lambda allows the home's
+  // owners and dhc-admins only (allow.authenticated() just lets it run).
+  HomeConfigVersion: a.customType({
+    id: a.string().required(),              // <homeId>-MMMM-mmmm
+    version: a.string().required(),         // MMMM-mmmm
+    status: a.string().required(),          // live | superseded | legacy
+    kind: a.string().required(),            // first | major | minor
+    basedOn: a.string(),
+    fromOption: a.string(),
+    triples: a.integer(),
+    summary: a.string(),
+    at: a.string(),
+    by: a.string(),
+  }),
+  HomeConfigOption: a.customType({
+    id: a.string().required(),              // <homeId>-pNN
+    label: a.string(),
+    basedOn: a.string(),
+    status: a.string(),                     // open | promoted
+    promotedTo: a.string(),
+    version: a.integer(),                   // the option graph's save counter
+    updatedAt: a.string(),
+    updatedBy: a.string(),
+  }),
+  HomeConfigurations: a.customType({
+    homeId: a.string().required(),
+    live: a.string(),
+    versions: a.ref("HomeConfigVersion").array(),
+    options: a.ref("HomeConfigOption").array(),
+  }),
+  HomeConfigGraph: a.customType({
+    id: a.string().required(),
+    kind: a.string(),                       // option | first | major | minor
+    version: a.string(),
+    url: a.string(),                        // 15 minutes
+  }),
+  HomeConfigSave: a.customType({
+    status: a.string().required(),          // ready | ok | conflict | invalid
+    key: a.string(),
+    url: a.string(),
+    version: a.integer(),
+    triples: a.integer(),
+    currentVersion: a.integer(),
+    currentUrl: a.string(),
+    problems: a.string().array(),
+  }),
+  HomeConfigChange: a.customType({
+    status: a.string().required(),          // ok | conflict | invalid
+    id: a.string(),
+    version: a.string(),
+    summary: a.string(),
+    live: a.string(),
+    problems: a.string().array(),
+  }),
+
+  homeConfigurations: a
+    .query()
+    .arguments({ homeId: a.string().required() })
+    .returns(a.ref("HomeConfigurations"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  homeConfigurationGraph: a
+    .query()
+    .arguments({ homeId: a.string().required(), id: a.string().required() })
+    .returns(a.ref("HomeConfigGraph"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  createHomeConfigOption: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), basedOn: a.string().required(), label: a.string().required() })
+    .returns(a.ref("HomeConfigOption"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // step 1 without key: where to PUT; step 2 with the key from step 1
+  saveHomeConfigOption: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), option: a.string().required(), baseVersion: a.integer().required(), key: a.string() })
+    .returns(a.ref("HomeConfigSave"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  promoteHomeConfigOption: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), option: a.string().required() })
+    .returns(a.ref("HomeConfigChange"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  seedHomeConfiguration: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), ttl: a.string().required() })
+    .returns(a.ref("HomeConfigChange"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  addHomeConfigMinor: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), ttl: a.string().required(), expectedLive: a.string() })
+    .returns(a.ref("HomeConfigChange"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── A home's vault (ADR 0019): photos and documents by configuration ───
+  HomeVaultItem: a.customType({
+    sha256: a.string().required(),
+    kind: a.string().required(),            // photo | video | document | other
+    name: a.string().required(),
+    size: a.float(),
+    contentType: a.string(),
+    takenAt: a.string(),
+    caption: a.string(),
+    configVersion: a.string(),              // <homeId>-MMMM-mmmm or <homeId>-pNN
+    thumbUrl: a.string(),                   // 5 minutes
+    uploadedAt: a.string(),
+    uploadedBy: a.string(),
+  }),
+  HomeVaultItems: a.customType({
+    homeId: a.string().required(),
+    items: a.ref("HomeVaultItem").array(),
+  }),
+  HomeVaultResult: a.customType({
+    status: a.string(),
+    sha256: a.string(),
+    configVersion: a.string(),
+    url: a.string(),
+  }),
+
+  homeVaultItems: a
+    .query()
+    .arguments({ homeId: a.string().required(), configVersion: a.string() })
+    .returns(a.ref("HomeVaultItems"))
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  homeVaultItemUrl: a
+    .query()
+    .arguments({ homeId: a.string().required(), sha256: a.string().required() })
+    .returns(a.ref("HomeVaultResult"))
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // files: [{ sha256, size, name, contentType, takenAt?, caption?, configVersion?, thumb? }]
+  // → JSON { files: [{ sha256, status: known | new | too_large, url?, headers?, thumbUrl? }] }
+  requestHomeVaultUpload: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), files: a.json().required(), dryRun: a.boolean() })
+    .returns(a.json())
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  commitHomeVaultItem: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), file: a.json().required() })
+    .returns(a.ref("HomeVaultResult"))
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  setHomeVaultItemGroup: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), sha256: a.string().required(), configVersion: a.string() })
+    .returns(a.ref("HomeVaultResult"))
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
 });
 
 export type Schema = ClientSchema<typeof schema>;

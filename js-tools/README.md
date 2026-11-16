@@ -49,19 +49,47 @@ the other.
 
 ## What you see
 
-- **Nodes** — A-Box individuals. **Boxes are equipment, spheres are not.**
-  Which is which is read from the ontology (`brick:Equipment` ∪ `s223:Equipment`
-  and their transitive subclasses), never hand-listed — so `dhc:Circuit`
-  (`⊑ s223:System`), `dhc:WiringSegment` (`⊑ s223:Connection`) and `dhc:Socket`
-  (`⊑ s223:ElectricityOutlet`) correctly stay spheres, and a new class lands in
-  the right shape without anyone remembering to update a list.
+- **Nodes** — A-Box individuals, each drawn as a **per-class glyph** (a lamp is
+  a sphere, a breaker a tall box, the grid source an octahedron, …). The glyph is
+  resolved from the class by subclass closure, never hand-listed — see
+  [Per-class glyphs](#per-class-glyphs). A toggle swaps the 3-D primitives for
+  flat IEC-style symbols.
 - **Links** — the actual instance triples, drawn by **kind** (below).
-- **Click any legend row to filter** — nodes *or* edges; **All** resets.
+- **Click any legend row to filter** — nodes, edges, *or* a group row (which
+  collapses the group); **All** resets.
 - **Model picker** — every A-Box in `schema/abox/` is prebuilt, so switching is
   a fetch, not a revalidation. A model with violations is marked `— n⚠`.
 - **Log pane** — the whole chain: counts, circuits found, which classes the
   shapes target, which *edition* the shapes implement, the conformance verdict.
-- **Linkable views** — `?colour=compliance&model=<slug>`.
+- **Linkable views** — every control is a query param, so any state is a URL:
+  `?model=<slug>&mode=modelling|designing&colour=<mode>&group=none|zone|circuit|composition&symbols=flat&trace=<curie|id-suffix>`.
+
+### Two modes: modelling and designing
+
+Two audiences want opposite things from the same graph, so the header has a
+**mode** switch that gates what the rest of the UI can show.
+
+| Mode | For | Colour options | Compliance |
+|---|---|---|---|
+| **modelling** | reading the model — classes, properties, descriptions, the vocabulary | design view · standard | **never shown** |
+| **designing** | analysing the model against a chosen set of norm editions | compliance · design view | **only shown here** |
+
+- **Modelling** leads the inspector with the node's **class + description** and a
+  **properties** table — every predicate carries the label and comment from
+  `data/vocab.json` (built from `dhc-core` + the annotation overlay). With no node
+  selected it shows the **Vocabulary catalog**: the classes / object properties /
+  data properties the model actually uses, each with its description; click one to
+  isolate what it touches. Compliance colour, ghosting and violation markers are
+  all suppressed — a modeller never sees a red node.
+- **Designing** adds a **Norms…** modal that lists `report.editions` grouped by
+  norm (plus an empty good-practices category — no norm declares
+  `dhc:normCategory "BestPractice"` yet). Ticking a subset **recomputes each
+  node's displayed verdict client-side** from its `targetedEditions` /
+  `violatedEditions` — worst-wins, with the same grandfathering and ghosting rules
+  the build uses (fails the oldest selected edition ⇒ danger; passes it, fails the
+  newest ⇒ gap; none selected target it ⇒ unchecked). **The built verdict is never
+  rewritten** — this is a display recompute, so `npm test` and the page cannot
+  disagree. On the full edition set it reproduces the build's verdict exactly.
 
 ### Four kinds of edge
 
@@ -80,7 +108,82 @@ Flow and control move because they are the two that describe something
 that isn't in it is drawn orange as `other` **and reported at the end of the
 build**, so new modelling surfaces as a question rather than a default.
 
+### Per-class glyphs
+
+Each node's shape is chosen from its `rdf:type` by **subclass closure** — the
+same fixpoint walk over `rdfs:subClassOf` that decides equipment, so a new class
+lands on the right glyph the moment it is subtyped, with nothing to hand-edit.
+The map is an ordered priority list (`GLYPH_ROOTS` in `build-abox.mjs`): the
+first glyph whose root set contains any of the node's types wins, so specific
+loads beat the generic `appliance` fallback (a `Luminaire ⊑ Equipment` is a lamp,
+not a box). `build-abox.mjs` writes the resolved `glyph` onto each node.
+
+| Glyph | Shape (3-D) | Root classes |
+|---|---|---|
+| `bulb` | glowing sphere | `brick:Luminaire`, `brick:Lighting_Equipment` |
+| `socket` | short disc | `dhc:Socket`, `s223:ElectricityOutlet` |
+| `breaker` | tall thin box | `dhc:ProtectionDevice`/`RCD`/`RCBO`/`EmergencyDisconnect`, `s223:ElectricityBreaker` |
+| `panel` | wide flat box | `dhc:DistributionBoard` |
+| `meter` | squat cylinder | `dhc:EnergyMeter`, `brick:Meter` |
+| `inverter` | box | `brick:Inverter`, `s223:ElectricEnergyInverter` |
+| `battery` | upright cylinder | `brick:Battery`, `s223:Battery`, `brick:Energy_Storage` |
+| `pv` | thin flat panel | `brick:PV_Panel`/`PV_Array`/`PV_Generation_System` |
+| `charger` | tapered post | `brick:Electric_Vehicle_Charging_Station` |
+| `delivery` | octahedron | `dhc:EnergyDelivery` (the grid source) |
+| `busbar` | long thin bar | `dhc:BusBar`, `s223:Junction` |
+| `circuit` | torus | `dhc:Circuit` |
+| `wire` | thin rod | `dhc:WiringSegment`, `s223:Connection` |
+| `port` | tetrahedron | `s223:ConnectionPoint` |
+| `controller` | small octahedron | `brick:Controller` |
+| `sensor` | small sphere | `brick:Point` |
+| `building` | house (body + roof) | `dhc:DigitalHome`/`DetachedHouse`, `rec:Building` |
+| `room` | floor plate | `rec:Room`/`Space`, `dhc:ElectricalTechnicalSpace` |
+| `appliance` | cube | `s223:Equipment`, `brick:Equipment` (fallback) |
+
+The **symbols** header button toggles the 3-D primitives for **flat IEC-style
+symbols** — each glyph drawn once on a `<canvas>` → `CanvasTexture` → billboarded
+sprite. Both are built offline from primitives and canvas only; no SVG, no
+network. Geometry and materials are shared across nodes (one geometry per glyph, a
+~20-entry material cache keyed `colour|opacity`), which is what keeps the
+1695-node `soda_brick` sample interactive.
+
+### Grouping
+
+The **group** selector wraps related nodes in a translucent hull, derived from
+the edges — nothing is hand-assigned:
+
+| Group by | Membership predicates |
+|---|---|
+| **zone** | `rec:locatedIn`, `brick:hasLocation`, `rec:isLocationOf` |
+| **circuit** | `s223:hasMember` |
+| **composition** | `brick:hasPart`, `s223:contains`, `rec:includes`, `rec:hasPart`, `brick:isPartOf` |
+
+Each group gets a tinted hull that follows the live layout (repositioned every
+engine tick; the renderer never raycasts it, so it can't steal a node click). The
+legend lists every group; **clicking a group row collapses it** into a single
+super-node — members folded, internal links dropped, external links re-pointed and
+de-duplicated — and clicking again expands it. A collapsed group's edition arrays
+are the **union** of its members', so its compliance colour is worst-wins from the
+same client-side recompute. Collapse is also the perf lever on a large graph.
+
+### Upstream supply trace
+
+The **Consumers** button lists the leaf loads (the `socket`/`bulb`/`charger`/
+`appliance` glyphs) grouped by zone. Picking one — or the **Trace supply
+upstream** button in any electrical/automation node's inspector — reverse-walks
+the supply: it follows **flow** (`brick:feeds`, `s223:connectsThrough`/
+`connectsTo`) and **control** (`brick:controls`) edges backward to every source,
+then keeps only the `electrical`/`automation` nodes, so rooms and the building
+drop out. The traced chain replaces the graph (grouping and hulls suspend while a
+trace is active); **All** or **Clear trace** resets. Linkable as
+`?trace=<curie|id-suffix>`. On the demo house, `ex:socket-lr-1` resolves to
+socket → breaker → board → inverter → {AGCP, PV array, battery} → meter →
+`ex:delivery`.
+
 ### Three colour modes
+
+The colour dropdown offers different modes per view — **compliance** only in
+designing, **standard** only in modelling; **design view** in both.
 
 | Mode | Colours by | Tells you |
 |---|---|---|
@@ -210,6 +313,7 @@ scripts/preview-abox.sh
         runs    one SHACL pass PER EDITION, oldest → newest
         reuses  tests/_helpers/loadGraph.js                    ← the test suite's own validator
         writes  js-tools/data/{graph,report}.json              (gitignored)
+                js-tools/data/vocab.json                        (one per build: dhc-core + overlay, for the modelling catalog)
   └─ python3 ThreadingTCPServer  →  abox-viewer.html
 ```
 

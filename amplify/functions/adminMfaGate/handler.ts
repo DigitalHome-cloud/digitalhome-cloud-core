@@ -1,13 +1,13 @@
 import { AdminGetUserCommand, CognitoIdentityProviderClient } from "@aws-sdk/client-cognito-identity-provider";
 import type { PreTokenGenerationTriggerHandler } from "aws-lambda";
-import { groupsForToken, parseProtected } from "./gate";
+import { groupsForToken, isProtected, parseProtected } from "./gate";
 
 const cognito = new CognitoIdentityProviderClient({});
 const PROTECTED = parseProtected(process.env.PROTECTED_GROUPS);
 
 export const handler: PreTokenGenerationTriggerHandler = async (event) => {
   const groups = event.request.groupConfiguration?.groupsToOverride ?? [];
-  if (!groups.some((g) => PROTECTED.includes(g))) return event;   // most sign-ins: nothing to do
+  if (!groups.some((g) => isProtected(g, PROTECTED))) return event;   // most sign-ins: nothing to do
 
   // Ask Cognito, not the token: a token says nothing about MFA.
   let mfa: string[] | null = null;

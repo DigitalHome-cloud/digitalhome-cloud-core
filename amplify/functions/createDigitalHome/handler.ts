@@ -38,6 +38,7 @@ import {
   type SmartHomeIdParts,
 } from "./smartHomeId";
 import { buildAboxTurtle, buildAboxJsonLd } from "./abox";
+import { mintHomeId } from "../home-id/home-id";
 
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const BUCKET = process.env.STORAGE_BUCKET_NAME!;
@@ -65,6 +66,7 @@ interface CreateArgs {
 
 interface CreatePayload {
   smartHomeId: string;
+  homeId: string;
   createdAt: string;
 }
 
@@ -124,6 +126,7 @@ export const handler = async (
 
   // 6. Build A-Box artifacts
   const now = new Date().toISOString();
+  const homeId = mintHomeId(); // the permanent id; the SmartHome ID is a name (ADR 0018)
   const aboxInput = {
     smartHomeId,
     agentId: sub,
@@ -147,6 +150,7 @@ export const handler = async (
       Item: marshall(
         {
           smartHomeId,
+          homeId,
           country: parts.country,
           postalCode: parts.postalCode,
           streetCode: parts.streetCode,
@@ -223,5 +227,5 @@ export const handler = async (
   );
 
   // 11. Return
-  return { smartHomeId, createdAt: now };
+  return { smartHomeId, homeId, createdAt: now };
 };
