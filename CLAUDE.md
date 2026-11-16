@@ -341,6 +341,35 @@ refresh token in `~/.config/dhc/refresh-token`, group
 changing `schema/templates/`, the T-Box or a norm shapes file, run
 `node scripts/sync-template-shapes.mjs`; `tests/templates/` fails on drift.
 
+## A home's configurations and vault are keyed on its homeId
+
+darkfactory ADRs 0018 and 0019. Every home has a minted, meaningless
+`homeId` (`h-` + ten characters; `amplify/functions/home-id/`). The SmartHome
+ID is a name made from the address. **Key nothing new on the SmartHome ID.**
+A home made before the homeId existed gets one the first time a function
+calls `ensureHomeId` (a conditional update, so it is set only once).
+
+- `configurations-shared/`: one **live** configuration per home, versions
+  `<homeId>-MMMM-mmmm`, and planning options `<homeId>-pNN`.
+  - The live one moves only by a promote (a major: the old live becomes
+    legacy) or by a minor, which may only add non-structural nodes
+    (`rules.ts`, `minorProblems`).
+  - `HomeConfigVersions` holds one row per version plus a `HEAD` row. One
+    `TransactWriteItems` moves HEAD and puts the version row together, so a
+    lost race is refused and never half done.
+  - Options are graph-store rows in `HomeConfigOptions`.
+- `home-vault-shared/`: `HomeVaultItems` and
+  `tenant/{homeId}/vault/originals/sha256/…`, written once (`If-None-Match:
+  *`).
+  - Every item is grouped by `configVersion`.
+  - A promote re-groups the option's items to the new version.
+  - Documents are downloaded as an attachment.
+  - There is no delete.
+- Who: owners and `dhc-admins` (AppSync `configurations`, `homeVault`). An
+  edge works for its linked home and for its linking person's homes
+  (`/edge/v1/configurations/*`, `/edge/v1/vault/*`). See
+  `configurations-shared/access.ts`.
+
 ## What this repo does NOT do
 
 - **No tenant A-Box data, and no app demo homes.** Real Digital Home instances

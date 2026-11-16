@@ -58,7 +58,7 @@ export interface Clients {
 }
 
 let defaults: Clients | undefined;
-function awsClients(): Clients {
+export function awsClients(): Clients {
   if (!defaults) {
     // Presigned PUTs carry their checksum as a header S3 verifies; the SDK
     // must not add one of its own.

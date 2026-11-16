@@ -44,6 +44,10 @@ import { edgeMarket } from "./functions/edgeMarket/resource";
 import { market } from "./functions/market/resource";
 import { templates } from "./functions/templates/resource";
 import { edgeTemplates } from "./functions/edgeTemplates/resource";
+import { configurations } from "./functions/configurations/resource";
+import { edgeConfigurations } from "./functions/edgeConfigurations/resource";
+import { homeVault } from "./functions/homeVault/resource";
+import { edgeVault } from "./functions/edgeVault/resource";
 import { edgeDeviceApproval } from "./functions/edgeDeviceApproval/resource";
 import { adminDebug } from "./functions/adminDebug/resource";
 import { adminMfaGate } from "./functions/adminMfaGate/resource";
@@ -64,6 +68,10 @@ const backend = defineBackend({
   market,
   templates,
   edgeTemplates,
+  configurations,
+  edgeConfigurations,
+  homeVault,
+  edgeVault,
   edgeDeviceApproval,
   adminDebug,
   adminMfaGate,
@@ -318,6 +326,8 @@ for (const fn of [
   backend.edgeHomes,
   backend.edgeMarket,
   backend.edgeTemplates,
+  backend.edgeConfigurations,
+  backend.edgeVault,
 ]) {
   fn.addEnvironment("DEVICE_CODES_TABLE_NAME", deviceCodesTable.tableName);
   fn.addEnvironment("EDGE_REGISTRY_TABLE_NAME", edgeRegistryTable.tableName);
@@ -392,7 +402,8 @@ edgeHomesFn.addToRolePolicy(
 edgeHomesFn.addToRolePolicy(
   new PolicyStatement({
     effect: Effect.ALLOW,
-    actions: ["dynamodb:Scan", "dynamodb:GetItem"],
+    // UpdateItem: only to mint a missing homeId, once (home-id/ensureHomeId)
+    actions: ["dynamodb:Scan", "dynamodb:GetItem", "dynamodb:UpdateItem"],
     resources: [digitalHomeTable.tableArn],
   })
 );
@@ -513,6 +524,117 @@ edgeTemplatesFn.addToRolePolicy(new PolicyStatement({
 backend.edgeTemplates.addEnvironment("NORM_TEMPLATES_TABLE_NAME", normTemplatesTable.tableName);
 backend.edgeTemplates.addEnvironment("STORAGE_BUCKET_NAME", bucket.bucketName);
 
+// ─── A home's configurations (configurations for the Portal, edgeConfigurations for edges) ───
+// darkfactory ADR 0018. HomeConfigVersions: one row per version (homeId,
+// version) and a HEAD row naming the live one; the live configuration moves
+// only by a transaction over it (and the option it closes). HomeConfigOptions:
+// the planning options, graph-store rows. Turtle under configurations/
+// (versions/ written once, graphs/ and staging/ for the options). Both tables
+// live in the DATA stack beside the configurations Lambda; the edge Lambda
+// gets the same rights on them.
+const configurationsFn = backend.configurations.resources.lambda;
+const edgeConfigurationsFn = backend.edgeConfigurations.resources.lambda;
+const homeConfigVersionsTable = new Table(Stack.of(configurationsFn), "HomeConfigVersions", {
+  partitionKey: { name: "homeId", type: AttributeType.STRING },
+  sortKey: { name: "version", type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+  pointInTimeRecovery: true,
+  encryption: TableEncryption.AWS_MANAGED,
+});
+const homeConfigOptionsTable = new Table(Stack.of(configurationsFn), "HomeConfigOptions", {
+  partitionKey: { name: "id", type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+  pointInTimeRecovery: true,
+  encryption: TableEncryption.AWS_MANAGED,
+});
+for (const [fn, def] of [[configurationsFn, backend.configurations], [edgeConfigurationsFn, backend.edgeConfigurations]] as const) {
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:ConditionCheckItem"],
+    resources: [homeConfigVersionsTable.tableArn],
+  }));
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:ConditionCheckItem"],
+    resources: [homeConfigOptionsTable.tableArn],
+  }));
+  // find the home by its homeId (Scan), mint a missing one (UpdateItem, once)
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:UpdateItem"],
+    resources: [digitalHomeTable.tableArn],
+  }));
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+    resources: [`${bucket.bucketArn}/configurations/*`],
+  }));
+  def.addEnvironment("HOME_CONFIG_VERSIONS_TABLE_NAME", homeConfigVersionsTable.tableName);
+  def.addEnvironment("HOME_CONFIG_OPTIONS_TABLE_NAME", homeConfigOptionsTable.tableName);
+  def.addEnvironment("DIGITALHOME_TABLE_NAME", digitalHomeTable.tableName);
+  def.addEnvironment("STORAGE_BUCKET_NAME", bucket.bucketName);
+}
+edgeConfigurationsFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["dynamodb:GetItem"],
+  resources: [edgeRegistryTable.tableArn],
+}));
+
+// ─── A home's vault (homeVault for the Portal, edgeVault for edges) ─────────
+// darkfactory ADR 0019. HomeVaultItems: one row per (homeId, sha256). The
+// files under tenant/{homeId}/vault/ (tenant/ is granted to no Cognito role):
+// originals written once through presigned PUTs with If-None-Match, a photo's
+// thumbnail under derived/. No delete in v1. The configuration Lambdas
+// re-group items when an option is promoted.
+const homeVaultFn = backend.homeVault.resources.lambda;
+const edgeVaultFn = backend.edgeVault.resources.lambda;
+const homeVaultTable = new Table(Stack.of(homeVaultFn), "HomeVaultItems", {
+  partitionKey: { name: "homeId", type: AttributeType.STRING },
+  sortKey: { name: "sha256", type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+  pointInTimeRecovery: true,
+  encryption: TableEncryption.AWS_MANAGED,
+});
+for (const [fn, def] of [[homeVaultFn, backend.homeVault], [edgeVaultFn, backend.edgeVault]] as const) {
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:PutItem", "dynamodb:UpdateItem"],
+    resources: [homeVaultTable.tableArn],
+  }));
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:UpdateItem"],
+    resources: [digitalHomeTable.tableArn],
+  }));
+  // signs GETs and PUTs (no delete); HeadObject is s3:GetObject
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["s3:GetObject", "s3:PutObject"],
+    resources: [`${bucket.bucketArn}/tenant/*/vault/*`],
+  }));
+  def.addEnvironment("HOME_VAULT_TABLE_NAME", homeVaultTable.tableName);
+  def.addEnvironment("DIGITALHOME_TABLE_NAME", digitalHomeTable.tableName);
+  def.addEnvironment("STORAGE_BUCKET_NAME", bucket.bucketName);
+}
+edgeVaultFn.addToRolePolicy(new PolicyStatement({
+  effect: Effect.ALLOW,
+  actions: ["dynamodb:GetItem"],
+  resources: [edgeRegistryTable.tableArn],
+}));
+for (const [fn, def] of [[configurationsFn, backend.configurations], [edgeConfigurationsFn, backend.edgeConfigurations]] as const) {
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:UpdateItem"],
+    resources: [homeVaultTable.tableArn],
+  }));
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["s3:GetObject"],
+    resources: [`${bucket.bucketArn}/tenant/*/vault/derived/*`],
+  }));
+  def.addEnvironment("HOME_VAULT_TABLE_NAME", homeVaultTable.tableName);
+}
+
 // edgeDeviceApproval (AppSync): queries the KEYS_ONLY user_code GSI, re-reads
 // the base row (GetItem) for device_info, updates DeviceCodes, reads DigitalHome
 // to verify home ownership, and (two-step) reads/updates EdgeRegistry to list
@@ -600,6 +722,12 @@ const routes: Array<[string, typeof edgeAuthzFn]> = [
   ["/edge/v1/market/uploads", edgeMarketFn],
   ["/edge/v1/templates/editions", edgeTemplatesFn],
   ["/edge/v1/templates/get", edgeTemplatesFn],
+  ...["versions", "get", "option", "save-option", "promote", "seed", "minor"].map(
+    (r) => [`/edge/v1/configurations/${r}`, edgeConfigurationsFn] as [string, typeof edgeAuthzFn]
+  ),
+  ...["items", "upload", "commit", "url", "group"].map(
+    (r) => [`/edge/v1/vault/${r}`, edgeVaultFn] as [string, typeof edgeAuthzFn]
+  ),
 ];
 for (const [path, fn] of routes) {
   edgeApi.addRoutes({

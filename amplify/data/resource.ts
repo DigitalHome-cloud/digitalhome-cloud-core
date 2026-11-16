@@ -5,6 +5,8 @@ import { edgeDeviceApproval } from "../functions/edgeDeviceApproval/resource";
 import { adminDebug } from "../functions/adminDebug/resource";
 import { market } from "../functions/market/resource";
 import { templates } from "../functions/templates/resource";
+import { configurations } from "../functions/configurations/resource";
+import { homeVault } from "../functions/homeVault/resource";
 
 /**
  * AppSync data layer. Models + custom mutations.
@@ -109,6 +111,11 @@ const schema = a.schema({
       addressLine2: a.string(),
       isDemo: a.boolean().required(),
       createdBy: a.string().required(),
+      // The home's permanent, meaningless id (ADR 0018). The SmartHome ID is
+      // a name made from the address; what is keyed per home from ADR 0018 on
+      // (configuration versions, options, the vault) uses this. Minted by
+      // initiateDigitalHome, or by the first function that needs it.
+      homeId: a.string(),
     })
     .identifier(["smartHomeId"])
     .authorization((allow) => [
@@ -196,6 +203,7 @@ const schema = a.schema({
   // ─── custom return type for initiateDigitalHome ──────────────────
   InitiateDigitalHomePayload: a.customType({
     smartHomeId: a.string().required(),
+    homeId: a.string(),
     createdAt: a.datetime().required(),
   }),
 
@@ -603,6 +611,174 @@ const schema = a.schema({
     .arguments({ edition: a.string().required(), template: a.string().required() })
     .returns(a.ref("TemplateSave"))
     .handler(a.handler.function(templates))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── A home's configurations (ADR 0018): live, legacy, planning options ──
+  // Keyed on the home's meaningless homeId. The Lambda allows the home's
+  // owners and dhc-admins only (allow.authenticated() just lets it run).
+  HomeConfigVersion: a.customType({
+    id: a.string().required(),              // <homeId>-MMMM-mmmm
+    version: a.string().required(),         // MMMM-mmmm
+    status: a.string().required(),          // live | superseded | legacy
+    kind: a.string().required(),            // first | major | minor
+    basedOn: a.string(),
+    fromOption: a.string(),
+    triples: a.integer(),
+    summary: a.string(),
+    at: a.string(),
+    by: a.string(),
+  }),
+  HomeConfigOption: a.customType({
+    id: a.string().required(),              // <homeId>-pNN
+    label: a.string(),
+    basedOn: a.string(),
+    status: a.string(),                     // open | promoted
+    promotedTo: a.string(),
+    version: a.integer(),                   // the option graph's save counter
+    updatedAt: a.string(),
+    updatedBy: a.string(),
+  }),
+  HomeConfigurations: a.customType({
+    homeId: a.string().required(),
+    live: a.string(),
+    versions: a.ref("HomeConfigVersion").array(),
+    options: a.ref("HomeConfigOption").array(),
+  }),
+  HomeConfigGraph: a.customType({
+    id: a.string().required(),
+    kind: a.string(),                       // option | first | major | minor
+    version: a.string(),
+    url: a.string(),                        // 15 minutes
+  }),
+  HomeConfigSave: a.customType({
+    status: a.string().required(),          // ready | ok | conflict | invalid
+    key: a.string(),
+    url: a.string(),
+    version: a.integer(),
+    triples: a.integer(),
+    currentVersion: a.integer(),
+    currentUrl: a.string(),
+    problems: a.string().array(),
+  }),
+  HomeConfigChange: a.customType({
+    status: a.string().required(),          // ok | conflict | invalid
+    id: a.string(),
+    version: a.string(),
+    summary: a.string(),
+    live: a.string(),
+    problems: a.string().array(),
+  }),
+
+  homeConfigurations: a
+    .query()
+    .arguments({ homeId: a.string().required() })
+    .returns(a.ref("HomeConfigurations"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  homeConfigurationGraph: a
+    .query()
+    .arguments({ homeId: a.string().required(), id: a.string().required() })
+    .returns(a.ref("HomeConfigGraph"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  createHomeConfigOption: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), basedOn: a.string().required(), label: a.string().required() })
+    .returns(a.ref("HomeConfigOption"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // step 1 without key: where to PUT; step 2 with the key from step 1
+  saveHomeConfigOption: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), option: a.string().required(), baseVersion: a.integer().required(), key: a.string() })
+    .returns(a.ref("HomeConfigSave"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  promoteHomeConfigOption: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), option: a.string().required() })
+    .returns(a.ref("HomeConfigChange"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  seedHomeConfiguration: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), ttl: a.string().required() })
+    .returns(a.ref("HomeConfigChange"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  addHomeConfigMinor: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), ttl: a.string().required(), expectedLive: a.string() })
+    .returns(a.ref("HomeConfigChange"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // ─── A home's vault (ADR 0019): photos and documents by configuration ───
+  HomeVaultItem: a.customType({
+    sha256: a.string().required(),
+    kind: a.string().required(),            // photo | video | document | other
+    name: a.string().required(),
+    size: a.float(),
+    contentType: a.string(),
+    takenAt: a.string(),
+    caption: a.string(),
+    configVersion: a.string(),              // <homeId>-MMMM-mmmm or <homeId>-pNN
+    thumbUrl: a.string(),                   // 5 minutes
+    uploadedAt: a.string(),
+    uploadedBy: a.string(),
+  }),
+  HomeVaultItems: a.customType({
+    homeId: a.string().required(),
+    items: a.ref("HomeVaultItem").array(),
+  }),
+  HomeVaultResult: a.customType({
+    status: a.string(),
+    sha256: a.string(),
+    configVersion: a.string(),
+    url: a.string(),
+  }),
+
+  homeVaultItems: a
+    .query()
+    .arguments({ homeId: a.string().required(), configVersion: a.string() })
+    .returns(a.ref("HomeVaultItems"))
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  homeVaultItemUrl: a
+    .query()
+    .arguments({ homeId: a.string().required(), sha256: a.string().required() })
+    .returns(a.ref("HomeVaultResult"))
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // files: [{ sha256, size, name, contentType, takenAt?, caption?, configVersion?, thumb? }]
+  // → JSON { files: [{ sha256, status: known | new | too_large, url?, headers?, thumbUrl? }] }
+  requestHomeVaultUpload: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), files: a.json().required(), dryRun: a.boolean() })
+    .returns(a.json())
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  commitHomeVaultItem: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), file: a.json().required() })
+    .returns(a.ref("HomeVaultResult"))
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  setHomeVaultItemGroup: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), sha256: a.string().required(), configVersion: a.string() })
+    .returns(a.ref("HomeVaultResult"))
+    .handler(a.handler.function(homeVault))
     .authorization((allow) => [allow.authenticated()]),
 
 });

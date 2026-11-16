@@ -5,7 +5,10 @@
 // plus the home the edge itself is linked to. The person is taken from the
 // token's registry row, never from the request body.
 //
-//   200 → { homes: [{ smartHomeId, label, city, postalCode, country, isDemo, linked }] }
+//   200 → { homes: [{ smartHomeId, homeId, label, city, postalCode, country, isDemo, linked }] }
+//
+// homeId is the home's permanent id (ADR 0018); a home made before it existed
+// gets one here, once.
 //   401 → invalid/expired token   (edge re-runs device flow)
 //   410 → box revoked
 //
@@ -24,11 +27,13 @@ import {
   verifyDeviceToken,
   EDGE_REGISTRY_TABLE,
 } from "../edge-shared/registry";
+import { ensureHomeId } from "../home-id/home-id";
 
 const DIGITALHOME_TABLE = process.env.DIGITALHOME_TABLE_NAME!;
 
 interface HomeRow {
   smartHomeId: string;
+  homeId?: string;
   owners?: string[];
   city?: string;
   postalCode?: string;
@@ -39,6 +44,7 @@ interface HomeRow {
 
 const view = (h: HomeRow, linkedId: string) => ({
   smartHomeId: h.smartHomeId,
+  homeId: h.homeId || "",
   label: [h.addressLine1, h.city].filter(Boolean).join(", ") || h.smartHomeId,
   city: h.city || "",
   postalCode: h.postalCode || "",
@@ -95,6 +101,7 @@ export const handler = async (
     if (res.Item) found.set(linkedId, unmarshall(res.Item) as HomeRow);
   }
 
+  for (const h of found.values()) await ensureHomeId(ddb, DIGITALHOME_TABLE, h);
   const homes = [...found.values()]
     .map((h) => view(h, linkedId))
     .sort((a, b) => Number(b.linked) - Number(a.linked) || a.label.localeCompare(b.label));
