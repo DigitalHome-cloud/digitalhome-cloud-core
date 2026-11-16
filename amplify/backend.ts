@@ -1,5 +1,6 @@
 import { defineBackend } from "@aws-amplify/backend";
-import { Aws, CfnOutput, Stack } from "aws-cdk-lib";
+import { Aws, CfnOutput, CustomResource, RemovalPolicy, Stack, Tags } from "aws-cdk-lib";
+import { CfnBucket } from "aws-cdk-lib/aws-s3";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import {
@@ -86,6 +87,71 @@ const backend = defineBackend({
 // a custom-mutation handler, so we do it explicitly here.
 const proxyLambda = backend.dhcDesignStorageProxy.resources.lambda;
 const bucket = backend.storage.resources.bucket;
+
+// ─── Storage hardening (every deployed branch alike) ───────────────────────
+// Amplify creates the bucket with sandbox defaults: RemovalPolicy.DESTROY, an
+// auto-delete custom resource that empties it when the stack goes, no
+// versioning, CORS for every origin. The bucket holds each home's vault and
+// configurations (ADRs 0018, 0019), so on a deployed branch (stage, main —
+// identical on purpose) it is kept, versioned and closed. A personal sandbox
+// (AWS_BRANCH unset) keeps the defaults and still cleans up after itself.
+if (process.env.AWS_BRANCH) {
+  const cfnBucket = backend.storage.resources.cfnResources.cfnBucket as CfnBucket;
+  // Kept when the stack or the branch is removed. Written as a template
+  // override: Amplify's auto-delete mixin validates that the bucket's own
+  // removal policy stays DESTROY, so that option is left alone and the
+  // rendered template says Retain.
+  cfnBucket.addOverride("DeletionPolicy", "Retain");
+  cfnBucket.addOverride("UpdateReplacePolicy", "Retain");
+  // The auto-delete resource is left in the template (removing it would send
+  // its handler a Delete event) but retained, so a stack deletion never calls
+  // it; and its handler only empties a bucket that carries this tag.
+  (bucket.node.findChild("AutoDeleteObjectsCustomResource") as CustomResource)
+    .applyRemovalPolicy(RemovalPolicy.RETAIN);
+  Tags.of(bucket).remove("aws-cdk:auto-delete-objects");
+  // An overwritten or deleted file can be recovered for 90 days.
+  cfnBucket.versioningConfiguration = { status: "Enabled" };
+  cfnBucket.lifecycleConfiguration = {
+    rules: [{
+      id: "expire-old-versions",
+      status: "Enabled",
+      noncurrentVersionExpiration: { noncurrentDays: 90 },
+      abortIncompleteMultipartUpload: { daysAfterInitiation: 7 },
+      expiredObjectDeleteMarker: true,
+    }],
+  };
+  // Stated, not left to S3's defaults: S3-managed keys (nothing of ours to
+  // lose), no public access by ACL or bucket policy (public/* is read through
+  // the Cognito guest role, which this does not affect), no ACLs at all.
+  cfnBucket.bucketEncryption = {
+    serverSideEncryptionConfiguration: [{ serverSideEncryptionByDefault: { sseAlgorithm: "AES256" }, bucketKeyEnabled: true }],
+  };
+  cfnBucket.publicAccessBlockConfiguration = {
+    blockPublicAcls: true, blockPublicPolicy: true, ignorePublicAcls: true, restrictPublicBuckets: true,
+  };
+  cfnBucket.ownershipControls = { rules: [{ objectOwnership: "BucketOwnerEnforced" }] };
+  // Browsers only from the platform's own apps (edges are no browsers). Not
+  // an access control — every request needs a signed URL or Cognito — but
+  // nothing else needs it.
+  const apps = { portal: "d2996kz21l6s55", designer: "d32uewjxwze9ge", modeler: "d3dbklx3mmld1g" };
+  const origins = [
+    ...Object.entries(apps).flatMap(([name, id]) => [
+      `https://${name}.digitalhome.cloud`, `https://stage-${name}.digitalhome.cloud`,
+      `https://main.${id}.amplifyapp.com`, `https://stage.${id}.amplifyapp.com`,
+    ]),
+    "http://localhost:8000", "http://localhost:8001", "http://localhost:8002",
+  ];
+  cfnBucket.corsConfiguration = {
+    corsRules: [{
+      allowedOrigins: origins,
+      allowedMethods: ["GET", "HEAD", "PUT", "POST", "DELETE"],
+      allowedHeaders: ["*"],
+      exposedHeaders: ["x-amz-server-side-encryption", "x-amz-request-id", "x-amz-id-2", "ETag"],
+      maxAge: 3000,
+    }],
+  };
+}
+
 const smartHomeDesignTable = backend.data.resources.tables.SmartHomeDesign;
 const digitalHomeTable = backend.data.resources.tables.DigitalHome;
 
