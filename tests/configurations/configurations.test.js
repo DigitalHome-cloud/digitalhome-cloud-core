@@ -103,11 +103,53 @@ describe("configurations: live, legacy and planning options", () => {
     const a = await c.createOption(H, `${H}-0001-0000`, "Plan A", "user:a");
     const b = await c.createOption(H, `${H}-0001-0000`, "Plan B", "user:a");
     expect(b.id).toBe(`${H}-p02`);
+    await c.saveOption(a.id, await stage(a.id, AS_IS + `i:r1 a dhc:RCD ; rdfs:label "RCD 30 mA" .\n`), 1, "user:a");
     expect((await c.promote(a.id, "user:a")).status).toBe("ok");
     const r = await c.promote(b.id, "user:a");
     expect(r.status).toBe("invalid");
     expect(r.problems[0]).toMatch(/rebase/);
     expect((await c.listOptions(H)).map((o) => [o.id, o.status])).toEqual([[a.id, "promoted"], [b.id, "open"]]);
+  });
+
+  it("refuses to promote an option that changes nothing", async () => {
+    await c.seedFirstLive(H, AS_IS, "user:a");
+    const same = await c.createOption(H, `${H}-0001-0000`, "Baseline", "user:a");
+    const r = await c.promote(same.id, "user:a");
+    expect(r.status).toBe("invalid");
+    expect(r.problems[0]).toMatch(/same as 0001-0000.*nothing to promote/);
+    expect((await c.versions(H)).map((v) => v.version)).toEqual(["0001-0000"]);
+  });
+
+  it("withdraws a live major that changed nothing, and nothing else", async () => {
+    await c.seedFirstLive(H, AS_IS, "user:a");
+    const same = await c.createOption(H, `${H}-0001-0000`, "Baseline", "user:a");
+    // promoted before the guard existed: write the no-change major as it was then
+    const head = await c.head(H);
+    const key = "configurations/versions/" + H + "/0002-0000-old.ttl";
+    f.objects.set(key, AS_IS);
+    f.table("HomeConfigVersions").set(JSON.stringify([H, "0002-0000"]), {
+      homeId: H, version: "0002-0000", id: `${H}-0002-0000`, kind: "major", s3Key: key, basedOn: `${H}-0001-0000`,
+      fromOption: same.id, triples: 5, summary: "no change", at: "2026-01-01T00:00:00Z", by: "user:a" });
+    f.table("HomeConfigVersions").set(JSON.stringify([H, "HEAD"]), { ...head, live: "0002-0000", liveKey: key });
+    f.table("HomeConfigOptions").get(JSON.stringify([same.id])).status = "promoted";
+    f.table("HomeConfigOptions").get(JSON.stringify([same.id])).promotedTo = `${H}-0002-0000`;
+
+    expect((await c.withdraw(`${H}-0001-0000`, "user:a")).problems[0]).toMatch(/not the live version/);
+    expect((await c.withdraw(`${H}-0002-0000`, "user:a", 2)).problems[0]).toMatch(/2 vault item/);
+    const r = await c.withdraw(`${H}-0002-0000`, "user:a");
+    expect(r).toMatchObject({ status: "ok", id: `${H}-0001-0000`, version: "0001-0000" });
+    expect((await c.versions(H)).map((v) => [v.version, v.status])).toEqual([["0001-0000", "live"]]);
+    expect(await c.listOptions(H)).toEqual([]);
+    expect(f.objects.has(key)).toBe(false);
+    expect((await c.head(H)).lastWithdrawn).toMatchObject({ id: `${H}-0002-0000`, by: "user:a" });
+
+    // a real plan, promoted, stays
+    const plan = await c.createOption(H, `${H}-0001-0000`, "Modernisation", "user:a");
+    await c.saveOption(plan.id, await stage(plan.id, AS_IS + `i:r1 a dhc:RCD ; rdfs:label "RCD 30 mA" .\n`), 1, "user:a");
+    expect((await c.promote(plan.id, "user:a")).id).toBe(`${H}-0002-0000`);
+    const kept = await c.withdraw(`${H}-0002-0000`, "user:a");
+    expect(kept.status).toBe("invalid");
+    expect(kept.problems[0]).toMatch(/changed the configuration/);
   });
 
   it("loses a race cleanly: the version and HEAD move together or not at all", async () => {

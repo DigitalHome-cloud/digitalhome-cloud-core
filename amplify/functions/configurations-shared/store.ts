@@ -13,7 +13,7 @@
 // names the version the writer read). A writer that lost the race leaves an
 // unreferenced object behind, never a wrong live version.
 
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import {
   GetItemCommand, QueryCommand, TransactWriteItemsCommand, TransactionCanceledException, UpdateItemCommand,
 } from "@aws-sdk/client-dynamodb";
@@ -259,6 +259,9 @@ export class HomeConfigs {
     const ttl = await write(merged);
     const check = checkConfiguration(ttl);
     if (!check.ok) return { status: "invalid", problems: check.problems };
+    if (summary(liveQuads, merged) === "no change") {
+      return { status: "invalid", problems: [`${id} is the same as ${head.live}, which is live: there is nothing to promote`] };
+    }
     const version = formatVersion({ major: live.major + 1, minor: 0 });
     const row: VersionRow = {
       homeId: home, version, id: versionId(home, version), kind: "major", s3Key: await this.putVersionObject(home, version, ttl),
@@ -273,6 +276,57 @@ export class HomeConfigs {
     } };
     if (!(await this.commitVersion(row, head.live, [close]))) return { status: "conflict", live: (await this.head(home))?.live ?? null };
     return { status: "ok", id: row.id, version, summary: row.summary };
+  }
+
+  /**
+   * Take back a live major that changed nothing: its content is the same as
+   * the version it replaced. That version is live again, the major's row and
+   * Turtle are removed, and so is the option it was promoted from (the same
+   * content too). Every other version stays immutable; a version that
+   * changed something is never withdrawn. `inUse`: what still refers to it
+   * (vault items), checked by the caller; any refuses.
+   */
+  async withdraw(id: string, by: string, inUse = 0): Promise<ChangeResult> {
+    const v = await this.versionById(id);
+    const home = v.homeId;
+    const head = await this.head(home);
+    if (!head || head.live !== v.version) return { status: "invalid", problems: [`${id} is not the live version; only the live one can be withdrawn`] };
+    if (v.kind !== "major") return { status: "invalid", problems: [`${id} is a ${v.kind} version; only a promoted major that changed nothing can be withdrawn`] };
+    const before = (await this.versions(home)).find((r) => r.version < v.version);
+    if (!before) return { status: "invalid", problems: [`${id} has no version before it`] };
+    if (summary(parse(await this.text(before.s3Key)), parse(await this.text(v.s3Key))) !== "no change") {
+      return { status: "invalid", problems: [`${id} changed the configuration against ${before.version}; a version that changed something stays`] };
+    }
+    if (inUse) return { status: "invalid", problems: [`${inUse} vault item(s) are tagged with ${id}; move them first`] };
+    const at = new Date().toISOString();
+    const items: any[] = [
+      { Delete: { TableName: VERSIONS(), Key: marshall({ homeId: home, version: v.version }), ConditionExpression: "attribute_exists(homeId)" } },
+      { Update: {
+          TableName: VERSIONS(), Key: marshall({ homeId: home, version: HEAD }),
+          UpdateExpression: "SET live = :v, liveKey = :k, updatedAt = :now, lastWithdrawn = :w",
+          ConditionExpression: "live = :from",
+          ExpressionAttributeValues: marshall({ ":v": before.version, ":k": before.s3Key, ":now": at, ":from": v.version,
+            ":w": { id, at, by, summary: v.summary } }),
+      } },
+    ];
+    const opt = v.fromOption ? await this.options.get<OptionRow>(v.fromOption) : null;
+    if (opt) {
+      items.push({ Delete: {
+        TableName: OPTIONS(), Key: marshall({ id: opt.id }),
+        ConditionExpression: "promotedTo = :to", ExpressionAttributeValues: marshall({ ":to": id }),
+      } });
+    }
+    try {
+      await this.c.ddb.send(new TransactWriteItemsCommand({ TransactItems: items }));
+    } catch (err) {
+      if (err instanceof TransactionCanceledException) return { status: "conflict", live: (await this.head(home))?.live ?? null };
+      throw err;
+    }
+    for (const key of [v.s3Key, opt?.s3Key]) {
+      if (key) await this.c.s3.send(new DeleteObjectCommand({ Bucket: BUCKET(), Key: key })).catch(() => undefined);
+    }
+    console.log("[configurations] withdrawn", { id, by, live: before.id, option: opt?.id ?? null });
+    return { status: "ok", id: before.id, version: before.version, summary: `withdrew ${v.version}${opt ? ` and ${opt.id}` : ""}` };
   }
 }
 

@@ -1,12 +1,14 @@
 // A home's vault (darkfactory ADR 0019): photos, documents, videos and other
-// files, kept once per fingerprint, each grouped under the configuration
-// version (or planning option) it documents. What is taken from the
+// files, kept once per fingerprint, each tagged with the configuration
+// versions (and planning options) it documents, one or several. What is taken from the
 // Mediathek: write-once originals by SHA-256, a dry run before the upload,
 // thumbnails made on the edge, originals of documents downloaded as an
 // attachment, nothing over 5 GB.
 //
 //   HomeVaultItems (homeId, sha256)   kind, name, size, contentType, takenAt,
-//                                     caption, configVersion, uploadedBy/At, thumb
+//                                     caption, tags (version and option ids),
+//                                     uploadedBy/At, thumb; configVersion is
+//                                     the single tag of older rows, read as one
 //   S3 tenant/{homeId}/vault/originals/sha256/<hash>.<ext>   written once
 //      tenant/{homeId}/vault/derived/<hash>/thumb.webp       a photo's thumbnail
 //
@@ -43,9 +45,15 @@ export const kindOf = (name: string) =>
 
 export interface VaultItem {
   homeId: string; sha256: string; kind: string; name: string; size: number; contentType: string;
-  takenAt?: string; caption?: string; configVersion?: string; thumb?: boolean;
+  takenAt?: string; caption?: string; configVersion?: string; tags?: string[]; thumb?: boolean;
   uploadedAt: string; uploadedBy: string;
 }
+
+const MAX_TAGS = 20;
+
+/** An item's tags: its tags, and the single configVersion of an older row. */
+export const tagsOf = (i: { tags?: string[]; configVersion?: string }) =>
+  [...new Set([...(i.configVersion ? [i.configVersion] : []), ...(i.tags ?? [])])].sort();
 
 export interface FileOffer {
   sha256: string; size: number; name: string; contentType?: string;
@@ -81,7 +89,8 @@ export class HomeVault {
     return g;
   }
 
-  async items(home: string, configVersion?: string): Promise<Array<VaultItem & { thumbUrl: string | null }>> {
+  /** The items; with `tag`, those that carry it. Every item comes with its tags. */
+  async items(home: string, tag?: string): Promise<Array<VaultItem & { tags: string[]; thumbUrl: string | null }>> {
     const rows: VaultItem[] = [];
     let start: Record<string, any> | undefined;
     do {
@@ -89,15 +98,15 @@ export class HomeVault {
         TableName: TABLE(), KeyConditionExpression: "homeId = :h",
         ExpressionAttributeValues: marshall({ ":h": home }), ExclusiveStartKey: start,
       }));
-      (res.Items || []).forEach((i: any) => rows.push(unmarshall(i) as VaultItem));
+      (res.Items || []).forEach((i: any) => { const r = unmarshall(i) as VaultItem; rows.push({ ...r, tags: tagsOf(r) }); });
       start = res.LastEvaluatedKey;
     } while (start);
-    const want = configVersion ? this.group(home, configVersion) : undefined;
+    const want = tag ? this.group(home, tag) : undefined;
     const shown = rows
-      .filter((r) => !want || r.configVersion === want)
-      .sort((a, b) => (a.configVersion ?? "").localeCompare(b.configVersion ?? "") || (a.takenAt ?? a.uploadedAt).localeCompare(b.takenAt ?? b.uploadedAt));
+      .filter((r) => !want || r.tags!.includes(want))
+      .sort((a, b) => (a.tags![0] ?? "").localeCompare(b.tags![0] ?? "") || (a.takenAt ?? a.uploadedAt).localeCompare(b.takenAt ?? b.uploadedAt));
     return Promise.all(shown.map(async (r) => ({
-      ...r,
+      ...r, tags: r.tags!,
       thumbUrl: r.thumb ? await this.c.sign(new GetObjectCommand({ Bucket: BUCKET(), Key: thumbKey(home, r.sha256) }), URL_TTL_S) : null,
     })));
   }
@@ -158,7 +167,7 @@ export class HomeVault {
       homeId: home, sha256: f.sha256, kind: kindOf(f.name), name: f.name, size, contentType: String(f.contentType || "application/octet-stream"),
       ...(f.takenAt ? { takenAt: String(f.takenAt) } : {}),
       ...(f.caption ? { caption: String(f.caption).slice(0, 500) } : {}),
-      ...(this.group(home, f.configVersion) ? { configVersion: this.group(home, f.configVersion) } : {}),
+      ...(this.group(home, f.configVersion) ? { tags: [this.group(home, f.configVersion)!] } : {}),
       thumb, uploadedAt: new Date().toISOString(), uploadedBy: by,
     };
     try {
@@ -182,22 +191,51 @@ export class HomeVault {
     }), URL_TTL_S);
   }
 
-  async setGroup(home: string, sha256: string, configVersion: unknown): Promise<VaultItem> {
-    const g = this.group(home, configVersion);
-    if (!(await this.item(home, sha256))) throw new BadRequest(`no item ${sha256} in this vault`);
+  private async writeTags(home: string, sha256: string, tags: string[]): Promise<VaultItem & { tags: string[] }> {
+    const key = marshall({ homeId: home, sha256: String(sha256).toLowerCase() });
     await this.c.ddb.send(new UpdateItemCommand({
-      TableName: TABLE(), Key: marshall({ homeId: home, sha256: String(sha256).toLowerCase() }),
-      ...(g
-        ? { UpdateExpression: "SET configVersion = :g", ExpressionAttributeValues: marshall({ ":g": g }) }
-        : { UpdateExpression: "REMOVE configVersion" }),
+      TableName: TABLE(), Key: key, ConditionExpression: "attribute_exists(homeId)",
+      ...(tags.length
+        ? { UpdateExpression: "SET tags = :t REMOVE configVersion", ExpressionAttributeValues: marshall({ ":t": tags }) }
+        : { UpdateExpression: "REMOVE tags, configVersion" }),
     }));
-    return (await this.item(home, sha256))!;
+    const it = (await this.item(home, sha256))!;
+    return { ...it, tags: tagsOf(it) };
   }
 
-  /** When an option is promoted, what was grouped under it moves to the new version. */
+  /** Replace an item's tags by one (or none): "file it under". */
+  async setGroup(home: string, sha256: string, configVersion: unknown): Promise<VaultItem & { tags: string[] }> {
+    const g = this.group(home, configVersion);
+    if (!(await this.item(home, sha256))) throw new BadRequest(`no item ${sha256} in this vault`);
+    return this.writeTags(home, sha256, g ? [g] : []);
+  }
+
+  /**
+   * Add and remove tags on several items at once (a multiple selection).
+   * Each tag is a version or an option of this home.
+   */
+  async tag(home: string, sha256s: unknown, add: unknown = [], remove: unknown = []): Promise<Array<{ sha256: string; tags: string[] }>> {
+    const list = (v: unknown) => (Array.isArray(v) ? v : v ? [v] : []).map((x) => String(x));
+    const shas = [...new Set(list(sha256s).map((s) => s.toLowerCase()))];
+    if (!shas.length || shas.length > 500) throw new BadRequest("sha256s: 1 to 500 items");
+    const plus = list(add).map((t) => this.group(home, t)!).filter(Boolean);
+    const minus = new Set(list(remove).map((t) => this.group(home, t)!).filter(Boolean));
+    if (!plus.length && !minus.size) throw new BadRequest("say which tags to add or remove");
+    const out = [];
+    for (const sha of shas) {
+      const it = await this.item(home, sha);
+      if (!it) throw new BadRequest(`no item ${sha} in this vault`);
+      const next = [...new Set([...tagsOf(it), ...plus])].filter((t) => !minus.has(t)).sort();
+      if (next.length > MAX_TAGS) throw new BadRequest(`an item has at most ${MAX_TAGS} tags`);
+      out.push({ sha256: sha, tags: (await this.writeTags(home, sha, next)).tags });
+    }
+    return out;
+  }
+
+  /** When an option is promoted, what is tagged with it is tagged with the new version instead. */
   async regroup(home: string, from: string, to: string): Promise<number> {
-    const items = (await this.items(home)).filter((i) => i.configVersion === from);
-    for (const it of items) await this.setGroup(home, it.sha256, to);
+    const items = (await this.items(home)).filter((i) => i.tags.includes(from));
+    for (const it of items) await this.tag(home, [it.sha256], [to], [from]);
     return items.length;
   }
 }

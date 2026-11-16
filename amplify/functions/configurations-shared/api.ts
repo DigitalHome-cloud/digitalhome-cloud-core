@@ -86,6 +86,14 @@ export async function promote(home: string, a: Args, by: string) {
   return change(r);
 }
 
+/** A live major that changed nothing goes back to the version before it. */
+export async function withdraw(home: string, a: Args, by: string) {
+  const id = String(a.id ?? a.version ?? "");
+  if (splitVersionId(id).homeId !== home) throw new BadRequest(`${id} is not of this home`);
+  const tagged = (await homeVault().items(home)).filter((i) => (i.tags ?? []).includes(id)).length;
+  return change(await store().withdraw(id, by, tagged));
+}
+
 const turtle = (a: Args) => {
   if (typeof a.ttl !== "string" || !a.ttl) throw new BadRequest("ttl is the configuration as Turtle");
   return a.ttl;

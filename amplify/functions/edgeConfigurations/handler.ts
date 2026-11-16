@@ -9,11 +9,12 @@
 //   POST /edge/v1/configurations/promote     { homeId, option }                  → { status: ok, id, version, summary } | conflict | invalid
 //   POST /edge/v1/configurations/seed        { homeId, ttl }                     → the first live configuration, 0001-0000
 //   POST /edge/v1/configurations/minor       { homeId, ttl[, expectedLive] }     → MMMM-mmmm+1, additions only
+//   POST /edge/v1/configurations/withdraw    { homeId, id }                      → a live major that changed nothing is taken back
 //
 //   401 invalid/expired token · 410 revoked · 403 not this edge's home · 400 bad request (as every edge route)
 //
-// A promote is a person's act: the edge sends it only after a person
-// confirmed it (a button or a confirmed chat proposal).
+// A promote, and a withdraw, is a person's act: the edge sends it only after
+// a person confirmed it (a button or a confirmed chat proposal).
 
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import { extractBearer, json, parseJsonBody } from "../edge-shared/http";
@@ -30,6 +31,7 @@ const ROUTES: Record<string, (home: string, a: Record<string, unknown>, by: stri
   promote: api.promote,
   seed: api.seed,
   minor: api.minor,
+  withdraw: api.withdraw,
 };
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {

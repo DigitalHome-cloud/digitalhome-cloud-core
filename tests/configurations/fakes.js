@@ -64,6 +64,12 @@ export function fakeAws() {
       return row;
     };
   }
+  function del(input) {
+    const rows = table(input.TableName), k = keyOf(input.TableName, unmarshall(input.Key));
+    const values = input.ExpressionAttributeValues ? unmarshall(input.ExpressionAttributeValues) : {};
+    if (!evalCondition(input.ConditionExpression, rows.get(k), input.ExpressionAttributeNames || {}, values)) return false;
+    return () => rows.delete(k);
+  }
   const fail = () => { throw new ConditionalCheckFailedException({ message: "condition", $metadata: {} }); };
 
   const ddb = {
@@ -93,7 +99,7 @@ export function fakeAws() {
         return { Items: items.map((r) => marshall(r)) };
       }
       if (n === "TransactWriteItemsCommand") {
-        const steps = input.TransactItems.map((t) => (t.Put ? put(t.Put) : t.Update ? update(t.Update) : null));
+        const steps = input.TransactItems.map((t) => (t.Put ? put(t.Put) : t.Update ? update(t.Update) : t.Delete ? del(t.Delete) : null));
         if (steps.some((s) => !s)) throw new TransactionCanceledException({ message: "cancelled", $metadata: {} });
         steps.forEach((s) => s());
         return {};

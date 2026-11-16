@@ -42,7 +42,7 @@ describe("home vault", () => {
     expect((await v.commit(H, photo, "edge:e1")).status).toBe("known");
     expect((await v.upload(H, [photo], true)).files[0].status).toBe("known");
     const [item] = await v.items(H);
-    expect(item).toMatchObject({ kind: "photo", configVersion: `${H}-0001-0000`, thumb: false, uploadedBy: "edge:e1" });
+    expect(item).toMatchObject({ kind: "photo", tags: [`${H}-0001-0000`], thumb: false, uploadedBy: "edge:e1" });
   });
 
   it("groups by configuration, moves a group on promote, and downloads documents", async () => {
@@ -53,11 +53,31 @@ describe("home vault", () => {
     expect(await v.regroup(H, `${H}-p01`, `${H}-0002-0000`)).toBe(1);
     expect((await v.items(H, `${H}-0002-0000`)).map((i) => i.name)).toEqual(["panel open.png"]);
     await expect(v.setGroup(H, sha("b"), "h-bbbbbbbbbb-0001-0000")).rejects.toThrow(BadRequest);
-    expect((await v.setGroup(H, sha("b"), "")).configVersion).toBeUndefined();
+
+    expect((await v.setGroup(H, sha("b"), "")).tags).toEqual([]);
 
     await v.url(H, sha("b"));
     expect(f.signed.at(-1).input.ResponseContentDisposition).toBe('attachment; filename="checklist.md"');
     await v.url(H, sha("a"));
     expect(f.signed.at(-1).input.ResponseContentDisposition).toMatch(/^inline/);
+  });
+
+  it("tags several items with several versions, filters by a tag, and reads an older single group as a tag", async () => {
+    put(H, photo, "12345"); put(H, doc, "abc");
+    await v.commit(H, { ...photo, configVersion: undefined }, "edge:e1");
+    await v.commit(H, doc, "edge:e1");
+    // a row written before tags: one configVersion
+    f.table("HomeVaultItems").get(JSON.stringify([H, sha("b")])).configVersion = `${H}-0001-0000`;
+    delete f.table("HomeVaultItems").get(JSON.stringify([H, sha("b")])).tags;
+
+    const r = await v.tag(H, [sha("a"), sha("b")], [`${H}-0001-0000`, `${H}-0002-0000`]);
+    expect(r.map((x) => x.tags)).toEqual([[`${H}-0001-0000`, `${H}-0002-0000`], [`${H}-0001-0000`, `${H}-0002-0000`]]);
+    expect(f.table("HomeVaultItems").get(JSON.stringify([H, sha("b")])).configVersion).toBeUndefined();
+    await v.tag(H, [sha("b")], [], [`${H}-0002-0000`]);
+    expect((await v.items(H, `${H}-0002-0000`)).map((i) => i.name)).toEqual(["panel open.png"]);
+    expect((await v.items(H, `${H}-0001-0000`)).length).toBe(2);
+    await expect(v.tag(H, [sha("a")], ["h-bbbbbbbbbb-0001-0000"])).rejects.toThrow(BadRequest);
+    await expect(v.tag(H, [sha("c")], [`${H}-0001-0000`])).rejects.toThrow(/no item/);
+    await expect(v.tag(H, [sha("a")], [])).rejects.toThrow(/which tags/);
   });
 });

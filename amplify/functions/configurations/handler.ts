@@ -8,6 +8,7 @@
 //   promoteHomeConfigOption(homeId, option)                        the option becomes MMMM+1-0000
 //   seedHomeConfiguration(homeId, ttl)                             the first live configuration, 0001-0000
 //   addHomeConfigMinor(homeId, ttl, expectedLive?)                 MMMM-mmmm+1, additions only
+//   withdrawHomeConfigVersion(homeId, id)                          a live major that changed nothing is taken back
 
 import type { AppSyncIdentityCognito, AppSyncResolverEvent } from "aws-lambda";
 import { homeForPerson } from "../configurations-shared/access";
@@ -30,6 +31,7 @@ export const handler = async (event: AppSyncResolverEvent<Args>) => {
     case "promoteHomeConfigOption": return api.promote(home, args, by);
     case "seedHomeConfiguration": return api.seed(home, args, by);
     case "addHomeConfigMinor": return api.minor(home, args, by);
+    case "withdrawHomeConfigVersion": return api.withdraw(home, args, by);
     default: throw new Error(`configurations: unknown field ${field}`);
   }
 };
