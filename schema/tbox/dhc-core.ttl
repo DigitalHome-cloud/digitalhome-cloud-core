@@ -38,21 +38,6 @@
 # VIEW: governance
 # ════════════════════════════════════════════════════════════
 
-dhc:Contactor a owl:Class ;
-    rdfs:label "Contactor"@en ;
-    rdfs:comment "An electrically controlled switch used for remote or automatic switching of circuits. In residential installations, typically used as a contacteur heures creuses (FR) to switch the water heater on/off based on off-peak tariff signals from the energy provider. Has a control input (tariff signal) and a power output (switched load)."@en ;
-    rdfs:subClassOf s223:Equipment,
-        brick:Switchgear .
-
-dhc:EquipotentialBonding a owl:Class ;
-    rdfs:label "Equipotential Bonding"@en ;
-    rdfs:comment "A protective conductor that connects exposed conductive parts and extraneous conductive parts to the earthing system, ensuring they remain at the same potential. Known as liaison équipotentielle (FR), Potentialausgleich (DE). Required in bathrooms (NF C 15-100 Part 7-701), pool areas (Part 7-702), and as main bonding at the distribution board."@en ;
-    rdfs:subClassOf s223:Connection .
-
-dhc:NormEdition a owl:Class ;
-    rdfs:label "Norm Edition"@en ;
-    rdfs:comment "A specific version/revision of a Norm (e.g. NF C 15-100:2015, NF C 15-100:2024). Each edition has a corresponding C-Box SHACL shape file. New editions are not retroactive — existing installations remain governed by the edition they were built under."@en .
-
 dhc:Role a owl:Class ;
     rdfs:label "Role"@en ;
     rdfs:comment "A type of role (Owner, Operator, Installer, Maintainer, Occupant, etc.)."@en .
@@ -61,54 +46,10 @@ dhc:RoleAssignment a owl:Class ;
     rdfs:label "Role Assignment"@en ;
     rdfs:comment "Agent X plays Role Y in Context Z (optionally during time window T)."@en .
 
-dhc:SurgeProtector a owl:Class ;
-    rdfs:label "Surge Protector"@en ;
-    rdfs:comment "A Surge Protective Device (SPD) that limits transient overvoltages from lightning or switching. Known as parafoudre (FR), Überspannungsschutz (DE). Mandatory per NF C 15-100 §443 since 2002. Typically installed at the main distribution board, downstream of the main circuit breaker."@en ;
-    rdfs:subClassOf s223:Equipment,
-        brick:Switchgear .
-
 dhc:User a owl:Class ;
     rdfs:label "Application User"@en ;
     rdfs:comment "A major subdivision of a property (e.g. main building, annex, garden). No direct REC equivalent; extends rec:Architecture."@en ;
     rdfs:subClassOf rec:Person .
-
-dhc:NormEdition_NFC14100_2008 a dhc:NormEdition ;
-    rdfs:label "NF C 14-100:2008"@en ;
-    rdfs:comment "The edition the C-Box implements: cbox/electrical/nfc14100-2008.shapes.ttl declares normVersion 2008. Declared so that WHICH edition those shapes encode is recorded rather than inferred from a filename. Before this existed the only NF C 14-100 edition in the T-Box was 2021, while the shapes said 2008 — a mismatch no test could see, because nothing joined the two."@en ;
-    dhc:editionOf dhc:Norm_NFC14100 ;
-    dhc:editionYear "2008"^^xsd:gYear ;
-    dhc:shapesFile "cbox/electrical/nfc14100-2008.shapes.ttl" .
-
-dhc:NormEdition_NFC14100_2021 a dhc:NormEdition ;
-    rdfs:label "NF C 14-100:2021"@en ;
-    rdfs:comment "Current edition of NF C 14-100, and dhc:latestEdition. Declares no dhc:shapesFile: no shapes have been authored for it, so nothing governed by NF C 14-100 can be proven compliant with the edition actually in force. The compliance viewer draws those nodes ghosted for exactly that reason — they pass the 2008 rules we hold, and we cannot speak to 2021."@en ;
-    dhc:editionOf dhc:Norm_NFC14100 ;
-    dhc:editionYear "2021"^^xsd:gYear ;
-    dhc:supersedes dhc:NormEdition_NFC14100_2008 .
-
-dhc:NormEdition_NFC15100_2002 a dhc:NormEdition ;
-    rdfs:label "NF C 15-100:2002"@en ;
-    rdfs:comment "Edition in force 2002–2015. Many existing installations were built under this edition. No dhc:shapesFile: shapes for this edition have not been authored."@en ;
-    dhc:editionOf dhc:Norm_NFC15100 ;
-    dhc:editionYear "2002"^^xsd:gYear .
-
-dhc:NormEdition_NFC15100_2015 a dhc:NormEdition ;
-    rdfs:label "NF C 15-100:2015"@en ;
-    rdfs:comment "Major revision with amended requirements for residential installations. Added requirements for IRVE, updated bathroom zones, revised minimum circuit counts. Implemented in full by cbox/electrical/nfc15100-2015.shapes.ttl (normVersion 2015-A5), which is the base of the supersedes chain: every later edition's shapes are a delta concatenated on top of this file."@en ;
-    dhc:editionEffectiveDate "2015-11-27"^^xsd:date ;
-    dhc:editionOf dhc:Norm_NFC15100 ;
-    dhc:editionYear "2015"^^xsd:gYear ;
-    dhc:shapesFile "cbox/electrical/nfc15100-2015.shapes.ttl" ;
-    dhc:supersedes dhc:NormEdition_NFC15100_2002 .
-
-dhc:NormEdition_NFC15100_2024 a dhc:NormEdition ;
-    rdfs:label "NF C 15-100:2024"@en ;
-    rdfs:comment "Current edition. Includes updated Part 7-702 (pools/basins), revised IRVE requirements, new requirements for energy storage systems. Its dhc:shapesFile carries only the DELTA over 2015 — the effective rule set is that file concatenated with every file down the dhc:supersedes chain. WARNING: those shapes are ILLUSTRATIVE and UNVERIFIED. They are not sourced from the published NF C 15-100:2024 text; they encode plausible stand-ins for two of the three deltas named above, so that the multi-edition machinery has something real to compute. See the header of cbox/electrical/nfc15100-2024.shapes.ttl."@en ;
-    dhc:editionEffectiveDate "2024-07-01"^^xsd:date ;
-    dhc:editionOf dhc:Norm_NFC15100 ;
-    dhc:editionYear "2024"^^xsd:gYear ;
-    dhc:shapesFile "cbox/electrical/nfc15100-2024.shapes.ttl" ;
-    dhc:supersedes dhc:NormEdition_NFC15100_2015 .
 
 dhc:Role_Designer a dhc:Role ;
     rdfs:label "Designer / Architect"@en ;
@@ -179,46 +120,43 @@ dhc:assignmentStatus a owl:DatatypeProperty ;
     rdfs:domain dhc:RoleAssignment ;
     rdfs:range xsd:string .
 
-dhc:builtUnder a owl:ObjectProperty ;
-    rdfs:label "built under"@en ;
-    rdfs:comment "Optional evidence: the dhc:NormEdition an A-Box entity's work was designed and carried out under. It does NOT decide compliance — that is computed by validating against each edition's C-Box shapes. It disambiguates ONE result: a node that fails the edition in force. With builtUnder present, that failure is checkable — if the node also fails the very edition it claims to have been built under, it was never lawful even as built (illegal as built, not grandfathered); if it passes its declared edition and only fails a later one, it is genuinely grandfathered. With builtUnder absent — the normal case when reverse-engineering an existing installation — the tool cannot tell grandfathered from newly-illegal, and must say so rather than assume the charitable reading. Deliberately has no rdfs:domain, like dhc:governedBy: it applies to Circuit, EnergyMeter, EnergyDelivery, DistributionBoard and ElectricalTechnicalSpace, which share no common ancestor. Range is dhc:NormEdition."@en ;
-    rdfs:range dhc:NormEdition .
+dhc:createdAt a owl:DatatypeProperty ;
+    rdfs:label "Created at"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:dateTime .
 
-dhc:editionEffectiveDate a owl:DatatypeProperty ;
-    rdfs:label "effective date"@en ;
-    rdfs:comment "Date from which this edition is enforceable for new installations."@en ;
-    rdfs:domain dhc:NormEdition ;
-    rdfs:range xsd:date .
+dhc:createdBy a owl:ObjectProperty ;
+    rdfs:label "Created by"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range rec:Agent .
 
-dhc:editionOf a owl:ObjectProperty ;
-    rdfs:label "edition of"@en ;
-    rdfs:comment "Inverse of hasEdition. Links a NormEdition back to its parent Norm."@en ;
-    rdfs:domain dhc:NormEdition ;
-    rdfs:range dhc:Norm ;
-    owl:inverseOf dhc:hasEdition .
-
-dhc:editionYear a owl:DatatypeProperty ;
-    rdfs:label "edition year"@en ;
-    rdfs:comment "Publication year of this edition."@en ;
-    rdfs:domain dhc:NormEdition ;
-    rdfs:range xsd:gYear .
-
-dhc:powerRating a owl:DatatypeProperty ;
-    rdfs:label "power rating (W)"@en ;
-    rdfs:domain brick:Equipment ;
-    rdfs:range xsd:decimal .
-
-dhc:shapesFile a owl:DatatypeProperty ;
-    rdfs:label "shapes file"@en ;
-    rdfs:comment "Relative path to the C-Box SHACL shapes file for this edition (e.g. 'cbox/nfc15100/nfc15100-2024.shapes.ttl')."@en ;
-    rdfs:domain dhc:NormEdition ;
+dhc:creationStatus a owl:DatatypeProperty ;
+    rdfs:label "Creation status"@en ;
+    rdfs:comment "One of: draft | active | archived."@en ;
+    rdfs:domain dhc:DigitalHome ;
     rdfs:range xsd:string .
 
-dhc:supersedes a owl:ObjectProperty ;
-    rdfs:label "supersedes"@en ;
-    rdfs:comment "Links a NormEdition to the previous edition it replaces. Used by the compliance engine to identify the upgrade path."@en ;
-    rdfs:domain dhc:NormEdition ;
-    rdfs:range dhc:NormEdition .
+dhc:isDemo a owl:DatatypeProperty ;
+    rdfs:label "Is demo"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:boolean .
+
+dhc:preferredLanguage a owl:DatatypeProperty ;
+    rdfs:label "Preferred language"@en ;
+    rdfs:comment "BCP-47 tag: 'en', 'de', 'fr'."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:string .
+
+dhc:smartHomeId a owl:DatatypeProperty ;
+    rdfs:label "SmartHome ID"@en ;
+    rdfs:comment "Tenant partition key. Format: {country}-{zip}-{street3}{number}-{nn} e.g. DE-80331-MAR12-01."@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:string .
+
+dhc:updatedAt a owl:DatatypeProperty ;
+    rdfs:label "Updated at"@en ;
+    rdfs:domain dhc:DigitalHome ;
+    rdfs:range xsd:dateTime .
 
 dhc:validFrom a owl:DatatypeProperty ;
     rdfs:label "valid from"@en ;
@@ -280,22 +218,6 @@ dhc:SemiDetachedHouse a owl:Class ;
     rdfs:comment "An end-of-row or paired building with three facades, sharing one sidewall."@en ;
     rdfs:subClassOf rec:Building .
 
-dhc:createdAt a owl:DatatypeProperty ;
-    rdfs:label "Created at"@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range xsd:dateTime .
-
-dhc:createdBy a owl:ObjectProperty ;
-    rdfs:label "Created by"@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range rec:Agent .
-
-dhc:creationStatus a owl:DatatypeProperty ;
-    rdfs:label "Creation status"@en ;
-    rdfs:comment "One of: draft | active | archived."@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range xsd:string .
-
 dhc:fenced a owl:DatatypeProperty ;
     rdfs:label "Fenced"@en ;
     rdfs:comment "Whether the outdoor area is enclosed by a fence or wall."@en ;
@@ -314,11 +236,6 @@ dhc:hasVehicle a owl:ObjectProperty ;
     rdfs:domain dhc:DigitalHome ;
     rdfs:range dhc:Vehicle .
 
-dhc:isDemo a owl:DatatypeProperty ;
-    rdfs:label "Is demo"@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range xsd:boolean .
-
 dhc:placeId a owl:DatatypeProperty ;
     rdfs:label "Place ID"@en ;
     rdfs:comment "Map provider's stable place identifier."@en ;
@@ -331,28 +248,11 @@ dhc:placeIdProvider a owl:DatatypeProperty ;
     rdfs:domain dhc:DigitalHome ;
     rdfs:range xsd:string .
 
-dhc:preferredLanguage a owl:DatatypeProperty ;
-    rdfs:label "Preferred language"@en ;
-    rdfs:comment "BCP-47 tag: 'en', 'de', 'fr'."@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range xsd:string .
-
-dhc:smartHomeId a owl:DatatypeProperty ;
-    rdfs:label "SmartHome ID"@en ;
-    rdfs:comment "Tenant partition key. Format: {country}-{zip}-{street3}{number}-{nn} e.g. DE-80331-MAR12-01."@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range xsd:string .
-
 dhc:surfaceType a owl:DatatypeProperty ;
     rdfs:label "Surface Type"@en ;
     rdfs:comment "Primary ground surface: grass, gravel, paved, stone, natural, composite, water."@en ;
     rdfs:domain dhc:OutdoorArea ;
     rdfs:range xsd:string .
-
-dhc:updatedAt a owl:DatatypeProperty ;
-    rdfs:label "Updated at"@en ;
-    rdfs:domain dhc:DigitalHome ;
-    rdfs:range xsd:dateTime .
 
 
 # ════════════════════════════════════════════════════════════
@@ -381,6 +281,12 @@ dhc:Circuit a owl:Class ;
 dhc:CircuitType a owl:Class ;
     rdfs:label "Circuit Type"@en ;
     rdfs:comment "Classification: lighting, sockets, dedicated, etc. Instances are used as dropdown values."@en .
+
+dhc:Contactor a owl:Class ;
+    rdfs:label "Contactor"@en ;
+    rdfs:comment "An electrically controlled switch used for remote or automatic switching of circuits. In residential installations, typically used as a contacteur heures creuses (FR) to switch the water heater on/off based on off-peak tariff signals from the energy provider. Has a control input (tariff signal) and a power output (switched load)."@en ;
+    rdfs:subClassOf s223:Equipment,
+        brick:Switchgear .
 
 dhc:Distribution a owl:Class ;
     rdfs:label "Distribution"@en ;
@@ -412,6 +318,11 @@ dhc:EnergyMeter a owl:Class ;
     rdfs:comment "The billing meter at the delivery point (e.g. Linky). Subclasses brick:Electrical_Meter rather than s223:ElectricityMeter: the 223P class mandates at least one contained VoltageSensor and ElectricCurrentSensor, which is telemetry the design model does not carry. Referenced by nfc14100:EnergyMeterGovernanceShape."@en ;
     rdfs:subClassOf brick:Electrical_Meter .
 
+dhc:EquipotentialBonding a owl:Class ;
+    rdfs:label "Equipotential Bonding"@en ;
+    rdfs:comment "A protective conductor that connects exposed conductive parts and extraneous conductive parts to the earthing system, ensuring they remain at the same potential. Known as liaison équipotentielle (FR), Potentialausgleich (DE). Required in bathrooms (NF C 15-100 Part 7-701), pool areas (Part 7-702), and as main bonding at the distribution board."@en ;
+    rdfs:subClassOf s223:Connection .
+
 dhc:ProtectionDevice a owl:Class ;
     rdfs:label "Protection Device"@en ;
     rdfs:comment "Circuit breaker, RCD, fuse, surge protector. Subclasses s223:ElectricityBreaker — inherits the constraint that it must have at least one s223:OutletConnectionPoint with Constituent-Electricity."@en ;
@@ -432,6 +343,12 @@ dhc:Socket a owl:Class ;
     rdfs:label "Socket"@en ;
     rdfs:comment "An electrical socket/outlet. Subclasses s223:ElectricityOutlet — inherits the constraint of one inlet and at least one outlet ConnectionPoint with Constituent-Electricity."@en ;
     rdfs:subClassOf s223:ElectricityOutlet .
+
+dhc:SurgeProtector a owl:Class ;
+    rdfs:label "Surge Protector"@en ;
+    rdfs:comment "A Surge Protective Device (SPD) that limits transient overvoltages from lightning or switching. Known as parafoudre (FR), Überspannungsschutz (DE). Mandatory per NF C 15-100 §443 since 2002. Typically installed at the main distribution board, downstream of the main circuit breaker."@en ;
+    rdfs:subClassOf s223:Equipment,
+        brick:Switchgear .
 
 dhc:WiringSegment a owl:Class ;
     rdfs:label "Wiring Segment"@en ;
@@ -533,6 +450,11 @@ dhc:phase a owl:DatatypeProperty ;
     rdfs:domain dhc:Circuit ;
     rdfs:range xsd:integer .
 
+dhc:powerRating a owl:DatatypeProperty ;
+    rdfs:label "power rating (W)"@en ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range xsd:decimal .
+
 dhc:ratedCurrent a owl:DatatypeProperty ;
     rdfs:label "rated current (A)"@en ;
     rdfs:comment "Rated current in amperes. Deliberately has no rdfs:domain: it carries design intent on a dhc:Circuit (what the circuit is rated for, which is what the C-Box shapes read) AND device fact on a dhc:ProtectionDevice or dhc:EmergencyDisconnect. A domain would make any RDFS reasoner infer that every Circuit is also a ProtectionDevice. The two assertions must agree."@en ;
@@ -590,6 +512,62 @@ dhc:Norm a owl:Class ;
     rdfs:label "Norm"@en ;
     rdfs:comment "A national standard, regulation, or best practice. A Norm has one or more NormEditions, each representing a specific revision with its own C-Box SHACL shape file."@en .
 
+dhc:NormEdition a owl:Class ;
+    rdfs:label "Norm Edition"@en ;
+    rdfs:comment "A specific version/revision of a Norm (e.g. NF C 15-100:2015, NF C 15-100:2024). Each edition has a corresponding C-Box SHACL shape file. New editions are not retroactive — existing installations remain governed by the edition they were built under."@en .
+
+dhc:NormEdition_NFC14100_2008 a dhc:NormEdition ;
+    rdfs:label "NF C 14-100:2008"@en ;
+    rdfs:comment "The edition the C-Box implements: cbox/electrical/nfc14100-2008.shapes.ttl declares normVersion 2008. Declared so that WHICH edition those shapes encode is recorded rather than inferred from a filename. Before this existed the only NF C 14-100 edition in the T-Box was 2021, while the shapes said 2008 — a mismatch no test could see, because nothing joined the two."@en ;
+    dhc:editionOf dhc:Norm_NFC14100 ;
+    dhc:editionYear "2008"^^xsd:gYear ;
+    dhc:shapesFile "cbox/electrical/nfc14100-2008.shapes.ttl" .
+
+dhc:NormEdition_NFC14100_2021 a dhc:NormEdition ;
+    rdfs:label "NF C 14-100:2021"@en ;
+    rdfs:comment "Current edition of NF C 14-100, and dhc:latestEdition. Declares no dhc:shapesFile: no shapes have been authored for it, so nothing governed by NF C 14-100 can be proven compliant with the edition actually in force. The compliance viewer draws those nodes ghosted for exactly that reason — they pass the 2008 rules we hold, and we cannot speak to 2021."@en ;
+    dhc:editionOf dhc:Norm_NFC14100 ;
+    dhc:editionYear "2021"^^xsd:gYear ;
+    dhc:supersedes dhc:NormEdition_NFC14100_2008 .
+
+dhc:NormEdition_NFC15100_1976 a dhc:NormEdition ;
+    rdfs:label "NF C 15-100:1976"@en ;
+    rdfs:comment "Edition in force from 1976 until the May 1991 edition replaced it; withdrawn. Installations from the late 1970s and 1980s were built under it (fuse boards, a 500 mA main breaker, often no 30 mA RCD). No dhc:shapesFile: no shapes have been authored, so dhc:builtUnder naming it is evidence a report can record but not check. The year comes from a standards catalogue listing (NF C15-100:1976, withdrawn); its amendments are not recorded here."@en ;
+    dhc:editionOf dhc:Norm_NFC15100 ;
+    dhc:editionYear "1976"^^xsd:gYear .
+
+dhc:NormEdition_NFC15100_1991 a dhc:NormEdition ;
+    rdfs:label "NF C 15-100:1991"@en ;
+    rdfs:comment "Edition of May 1991 (amendments A1 1994, A2 1995), in force until the December 2002 edition replaced it. No dhc:shapesFile: shapes for this edition have not been authored."@en ;
+    dhc:editionOf dhc:Norm_NFC15100 ;
+    dhc:editionYear "1991"^^xsd:gYear ;
+    dhc:supersedes dhc:NormEdition_NFC15100_1976 .
+
+dhc:NormEdition_NFC15100_2002 a dhc:NormEdition ;
+    rdfs:label "NF C 15-100:2002"@en ;
+    rdfs:comment "Edition in force 2002–2015. Many existing installations were built under this edition. No dhc:shapesFile: shapes for this edition have not been authored."@en ;
+    dhc:editionOf dhc:Norm_NFC15100 ;
+    dhc:editionYear "2002"^^xsd:gYear ;
+    dhc:supersedes dhc:NormEdition_NFC15100_1991 .
+
+dhc:NormEdition_NFC15100_2015 a dhc:NormEdition ;
+    rdfs:label "NF C 15-100:2015"@en ;
+    rdfs:comment "Major revision with amended requirements for residential installations. Added requirements for IRVE, updated bathroom zones, revised minimum circuit counts. Implemented in full by cbox/electrical/nfc15100-2015.shapes.ttl (normVersion 2015-A5), which is the base of the supersedes chain: every later edition's shapes are a delta concatenated on top of this file."@en ;
+    dhc:editionEffectiveDate "2015-11-27"^^xsd:date ;
+    dhc:editionOf dhc:Norm_NFC15100 ;
+    dhc:editionYear "2015"^^xsd:gYear ;
+    dhc:shapesFile "cbox/electrical/nfc15100-2015.shapes.ttl" ;
+    dhc:supersedes dhc:NormEdition_NFC15100_2002 .
+
+dhc:NormEdition_NFC15100_2024 a dhc:NormEdition ;
+    rdfs:label "NF C 15-100:2024"@en ;
+    rdfs:comment "Current edition. Includes updated Part 7-702 (pools/basins), revised IRVE requirements, new requirements for energy storage systems. Its dhc:shapesFile carries only the DELTA over 2015 — the effective rule set is that file concatenated with every file down the dhc:supersedes chain. WARNING: those shapes are ILLUSTRATIVE and UNVERIFIED. They are not sourced from the published NF C 15-100:2024 text; they encode plausible stand-ins for two of the three deltas named above, so that the multi-edition machinery has something real to compute. See the header of cbox/electrical/nfc15100-2024.shapes.ttl."@en ;
+    dhc:editionEffectiveDate "2024-07-01"^^xsd:date ;
+    dhc:editionOf dhc:Norm_NFC15100 ;
+    dhc:editionYear "2024"^^xsd:gYear ;
+    dhc:shapesFile "cbox/electrical/nfc15100-2024.shapes.ttl" ;
+    dhc:supersedes dhc:NormEdition_NFC15100_2015 .
+
 dhc:Norm_NFC14100 a dhc:Norm ;
     rdfs:label "NF C 14-100"@en ;
     rdfs:comment "Energy delivery from provider to main board (France). Covers the connection between the public distribution network and the origin of the private installation."@en ;
@@ -609,6 +587,30 @@ dhc:Norm_NFC15100 a dhc:Norm ;
     dhc:normDomain "electrical" ;
     dhc:normId "nfc15100" ;
     dhc:normWeight 1.0 .
+
+dhc:builtUnder a owl:ObjectProperty ;
+    rdfs:label "built under"@en ;
+    rdfs:comment "Optional evidence: the dhc:NormEdition an A-Box entity's work was designed and carried out under. It does NOT decide compliance — that is computed by validating against each edition's C-Box shapes. It disambiguates ONE result: a node that fails the edition in force. With builtUnder present, that failure is checkable — if the node also fails the very edition it claims to have been built under, it was never lawful even as built (illegal as built, not grandfathered); if it passes its declared edition and only fails a later one, it is genuinely grandfathered. With builtUnder absent — the normal case when reverse-engineering an existing installation — the tool cannot tell grandfathered from newly-illegal, and must say so rather than assume the charitable reading. Deliberately has no rdfs:domain, like dhc:governedBy: it applies to Circuit, EnergyMeter, EnergyDelivery, DistributionBoard and ElectricalTechnicalSpace, which share no common ancestor. Range is dhc:NormEdition."@en ;
+    rdfs:range dhc:NormEdition .
+
+dhc:editionEffectiveDate a owl:DatatypeProperty ;
+    rdfs:label "effective date"@en ;
+    rdfs:comment "Date from which this edition is enforceable for new installations."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range xsd:date .
+
+dhc:editionOf a owl:ObjectProperty ;
+    rdfs:label "edition of"@en ;
+    rdfs:comment "Inverse of hasEdition. Links a NormEdition back to its parent Norm."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range dhc:Norm ;
+    owl:inverseOf dhc:hasEdition .
+
+dhc:editionYear a owl:DatatypeProperty ;
+    rdfs:label "edition year"@en ;
+    rdfs:comment "Publication year of this edition."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range xsd:gYear .
 
 dhc:governedBy a owl:ObjectProperty ;
     rdfs:label "governed by"@en ;
@@ -656,4 +658,16 @@ dhc:normWeight a owl:DatatypeProperty ;
     rdfs:comment "1.0 = mandatory, 0.5 = recommended, 0.2 = optional."@en ;
     rdfs:domain dhc:Norm ;
     rdfs:range xsd:decimal .
+
+dhc:shapesFile a owl:DatatypeProperty ;
+    rdfs:label "shapes file"@en ;
+    rdfs:comment "Relative path to the C-Box SHACL shapes file for this edition (e.g. 'cbox/nfc15100/nfc15100-2024.shapes.ttl')."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range xsd:string .
+
+dhc:supersedes a owl:ObjectProperty ;
+    rdfs:label "supersedes"@en ;
+    rdfs:comment "Links a NormEdition to the previous edition it replaces. Used by the compliance engine to identify the upgrade path."@en ;
+    rdfs:domain dhc:NormEdition ;
+    rdfs:range dhc:NormEdition .
 

@@ -1511,6 +1511,14 @@ dhc:NormEdition_NFC14100_2021 rdfs:label "NF C 14-100:2021"@de,
         "NF C 14-100:2021"@fr ;
     dhc:designView "compliance" .
 
+dhc:NormEdition_NFC15100_1976 rdfs:label "NF C 15-100:1976"@de,
+        "NF C 15-100:1976"@fr ;
+    dhc:designView "compliance" .
+
+dhc:NormEdition_NFC15100_1991 rdfs:label "NF C 15-100:1991"@de,
+        "NF C 15-100:1991"@fr ;
+    dhc:designView "compliance" .
+
 dhc:NormEdition_NFC15100_2002 rdfs:label "NF C 15-100:2002"@de,
         "NF C 15-100:2002"@fr ;
     dhc:designView "compliance" .
