@@ -18,18 +18,26 @@ describe('C-Box manifest', () => {
     expect(manifest.profiles.length).toBeGreaterThan(0);
   });
 
-  // Scoped to France while the v3 core is prototyped. DIN VDE 0100 (DE),
-  // AREI/RGIE (BE) and BS 7671 (GB) were removed in v3.0.0 — shapes, tests,
-  // fixtures and Norm instances together — and return once dhc-core is
-  // released. Keeping a profile whose shapes or Norm no longer exist is the
-  // dangling-reference failure the guards tests exist to prevent.
-  it('contains the French electrical profiles, one per edition', () => {
+  // France, and Belgium from RGIE 1981 (a draft). DIN VDE 0100 (DE) and
+  // BS 7671 (GB) were removed in v3.0.0 — shapes, tests, fixtures and Norm
+  // instances together — and return once dhc-core is released. Keeping a
+  // profile whose shapes or Norm no longer exist is the dangling-reference
+  // failure the guards tests exist to prevent.
+  it('contains the French and Belgian electrical profiles, one per edition', () => {
     const ids = manifest.profiles.map(p => p.id);
-    expect(new Set(ids)).toEqual(new Set(['nfc15100-2015', 'nfc15100-2024', 'nfc14100-2008']));
+    expect(new Set(ids)).toEqual(new Set(['nfc15100-2015', 'nfc15100-2024', 'nfc14100-2008', 'rgie-1981']));
   });
 
-  it('every profile is French while the core is prototyped', () => {
-    expect(manifest.profiles.map(p => p.country)).toEqual(manifest.profiles.map(() => 'FR'));
+  it('every profile is French or Belgian', () => {
+    for (const p of manifest.profiles) expect(['FR', 'BE']).toContain(p.country);
+  });
+
+  // A draft profile says so where a person reads it, not only in a comment.
+  it('the RGIE draft is marked unverified in its label and entry', () => {
+    const p = manifest.profiles.find(x => x.id === 'rgie-1981');
+    expect(p.unverified).toBeTruthy();
+    expect(p.label.en).toMatch(/DRAFT/);
+    expect(p.label.fr).toMatch(/BROUILLON/);
   });
 
   // The T-Box's dhc:shapesFile is authoritative; this manifest mirrors it so

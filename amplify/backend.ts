@@ -616,12 +616,13 @@ const homeConfigOptionsTable = new Table(Stack.of(configurationsFn), "HomeConfig
 for (const [fn, def] of [[configurationsFn, backend.configurations], [edgeConfigurationsFn, backend.edgeConfigurations]] as const) {
   fn.addToRolePolicy(new PolicyStatement({
     effect: Effect.ALLOW,
-    actions: ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:ConditionCheckItem"],
+    // DeleteItem: only a withdrawn version that changed nothing (store.withdraw)
+    actions: ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:ConditionCheckItem"],
     resources: [homeConfigVersionsTable.tableArn],
   }));
   fn.addToRolePolicy(new PolicyStatement({
     effect: Effect.ALLOW,
-    actions: ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:ConditionCheckItem"],
+    actions: ["dynamodb:GetItem", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:ConditionCheckItem"],
     resources: [homeConfigOptionsTable.tableArn],
   }));
   // find the home by its homeId (Scan), mint a missing one (UpdateItem, once)
@@ -788,10 +789,10 @@ const routes: Array<[string, typeof edgeAuthzFn]> = [
   ["/edge/v1/market/uploads", edgeMarketFn],
   ["/edge/v1/templates/editions", edgeTemplatesFn],
   ["/edge/v1/templates/get", edgeTemplatesFn],
-  ...["versions", "get", "option", "save-option", "promote", "seed", "minor"].map(
+  ...["versions", "get", "option", "save-option", "promote", "seed", "minor", "withdraw"].map(
     (r) => [`/edge/v1/configurations/${r}`, edgeConfigurationsFn] as [string, typeof edgeAuthzFn]
   ),
-  ...["items", "upload", "commit", "url", "group"].map(
+  ...["items", "upload", "commit", "url", "group", "tag"].map(
     (r) => [`/edge/v1/vault/${r}`, edgeVaultFn] as [string, typeof edgeAuthzFn]
   ),
 ];

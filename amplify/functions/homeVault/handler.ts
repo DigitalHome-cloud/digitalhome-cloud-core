@@ -1,11 +1,12 @@
 // homeVault — a home's vault for the Portal (AppSync), darkfactory ADR 0019.
 // The home's owners and dhc-admins only.
 //
-//   homeVaultItems(homeId, configVersion?)                  the items, grouped by configuration
+//   homeVaultItems(homeId, tag?)                            the items with their tags; with tag, those that carry it
 //   requestHomeVaultUpload(homeId, files: AWSJSON, dryRun)  the dry run, then the upload links
 //   commitHomeVaultItem(homeId, file: AWSJSON)              the catalogue row, once the file is there
 //   homeVaultItemUrl(homeId, sha256)                        a 5-minute link to the original
-//   setHomeVaultItemGroup(homeId, sha256, configVersion)    file it under another version or option
+//   setHomeVaultItemGroup(homeId, sha256, configVersion)    file it under one version or option (replaces its tags)
+//   tagHomeVaultItems(homeId, sha256s, add?, remove?)       add and remove version tags on several items
 
 import type { AppSyncIdentityCognito, AppSyncResolverEvent } from "aws-lambda";
 import { homeForPerson } from "../configurations-shared/access";
@@ -27,6 +28,7 @@ export const handler = async (event: AppSyncResolverEvent<Args>) => {
     case "commitHomeVaultItem": return api.commit(home, parsed(args.file) as Args, by);
     case "homeVaultItemUrl": return api.url(home, args);
     case "setHomeVaultItemGroup": return api.group(home, args);
+    case "tagHomeVaultItems": return JSON.stringify(await api.tag(home, args));
     default: throw new Error(`homeVault: unknown field ${field}`);
   }
 };

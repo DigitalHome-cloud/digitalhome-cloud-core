@@ -719,6 +719,14 @@ const schema = a.schema({
     .handler(a.handler.function(configurations))
     .authorization((allow) => [allow.authenticated()]),
 
+  // a live major that changed nothing goes back to the version before it
+  withdrawHomeConfigVersion: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), id: a.string().required() })
+    .returns(a.ref("HomeConfigChange"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
   // ─── A home's vault (ADR 0019): photos and documents by configuration ───
   HomeVaultItem: a.customType({
     sha256: a.string().required(),
@@ -728,7 +736,8 @@ const schema = a.schema({
     contentType: a.string(),
     takenAt: a.string(),
     caption: a.string(),
-    configVersion: a.string(),              // <homeId>-MMMM-mmmm or <homeId>-pNN
+    configVersion: a.string(),              // the first tag (older clients)
+    tags: a.string().array(),               // <homeId>-MMMM-mmmm and <homeId>-pNN, one or several
     thumbUrl: a.string(),                   // 5 minutes
     uploadedAt: a.string(),
     uploadedBy: a.string(),
@@ -746,7 +755,7 @@ const schema = a.schema({
 
   homeVaultItems: a
     .query()
-    .arguments({ homeId: a.string().required(), configVersion: a.string() })
+    .arguments({ homeId: a.string().required(), configVersion: a.string(), tag: a.string() })
     .returns(a.ref("HomeVaultItems"))
     .handler(a.handler.function(homeVault))
     .authorization((allow) => [allow.authenticated()]),
@@ -778,6 +787,14 @@ const schema = a.schema({
     .mutation()
     .arguments({ homeId: a.string().required(), sha256: a.string().required(), configVersion: a.string() })
     .returns(a.ref("HomeVaultResult"))
+    .handler(a.handler.function(homeVault))
+    .authorization((allow) => [allow.authenticated()]),
+
+  // several items at once → JSON { status, items: [{ sha256, tags }] }
+  tagHomeVaultItems: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), sha256s: a.string().array().required(), add: a.string().array(), remove: a.string().array() })
+    .returns(a.json())
     .handler(a.handler.function(homeVault))
     .authorization((allow) => [allow.authenticated()]),
 

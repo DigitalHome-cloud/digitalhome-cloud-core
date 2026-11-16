@@ -6,7 +6,8 @@
 //   POST /edge/v1/vault/upload { homeId, files: [...], dryRun }  → { files: [{ sha256, status: known | new | too_large, url?, headers?, thumbUrl? }] }
 //   POST /edge/v1/vault/commit { homeId, sha256, name, size, … } → { status: ok | known, sha256, configVersion }
 //   POST /edge/v1/vault/url    { homeId, sha256 }                → { url }   (5 min)
-//   POST /edge/v1/vault/group  { homeId, sha256, configVersion } → { status: ok, … }
+//   POST /edge/v1/vault/group  { homeId, sha256, configVersion } → { status: ok, … }   (replaces its tags)
+//   POST /edge/v1/vault/tag    { homeId, sha256s, add?, remove? } → { status: ok, items: [{ sha256, tags }] }
 //
 //   401 invalid/expired token · 410 revoked · 403 not this edge's home · 400 bad request
 
@@ -18,7 +19,7 @@ import { BadRequest } from "../configurations-shared/rules";
 import * as api from "../home-vault-shared/api";
 
 const ROUTES: Record<string, (home: string, a: Record<string, unknown>, by: string) => Promise<unknown>> = {
-  items: api.items, upload: api.upload, commit: api.commit, url: api.url, group: api.group,
+  items: api.items, upload: api.upload, commit: api.commit, url: api.url, group: api.group, tag: api.tag,
 };
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {

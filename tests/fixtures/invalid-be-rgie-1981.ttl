@@ -1,0 +1,26 @@
+@prefix dhc: <https://digitalhome.cloud/ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:  <http://example.org/> .
+
+# One breach per RGIE 1981 draft rule, each on its own node.
+ex:be-rcd-500 a dhc:RCD ; dhc:sensitivityMA "500"^^xsd:decimal ; dhc:rcdType "AC" .   # > 300 mA
+ex:be-rcd-30  a dhc:RCD ; dhc:sensitivityMA "30"^^xsd:decimal ;  dhc:rcdType "A" .
+
+ex:be-sockets-thin a dhc:Circuit ;                     # sockets on 1.5 mm², 10 sockets
+  dhc:hasCircuitType dhc:CircuitType_Socket ; dhc:dedicated false ;
+  dhc:maxPoints "10"^^xsd:integer ; dhc:ratedCurrent "16"^^xsd:decimal ; dhc:crossSection "1.5"^^xsd:decimal ;
+  dhc:hasProtection ex:be-rcd-30 .
+
+ex:be-light-20 a dhc:Circuit ;                         # lighting at 20 A
+  dhc:hasCircuitType dhc:CircuitType_Lighting ; dhc:dedicated false ;
+  dhc:ratedCurrent "20"^^xsd:decimal ; dhc:crossSection "2.5"^^xsd:decimal ;
+  dhc:hasProtection ex:be-rcd-30 .
+
+ex:be-oven-25-on-25 a dhc:Circuit ;                    # 2.5 mm² at 25 A
+  dhc:hasCircuitType dhc:CircuitType_DedicatedAppliance ; dhc:dedicated true ;
+  dhc:ratedCurrent "25"^^xsd:decimal ; dhc:crossSection "2.5"^^xsd:decimal ;
+  dhc:hasProtection ex:be-rcd-30 .
+
+ex:be-no-rcd a dhc:Circuit ;                           # below no differential
+  dhc:hasCircuitType dhc:CircuitType_Heating ; dhc:dedicated true ;
+  dhc:ratedCurrent "16"^^xsd:decimal ; dhc:crossSection "1.5"^^xsd:decimal .

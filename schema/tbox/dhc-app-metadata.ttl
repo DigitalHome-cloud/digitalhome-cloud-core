@@ -1539,6 +1539,18 @@ dhc:Norm_NFC15100 rdfs:label "NF C 15-100"@de,
         "NF C 15-100"@fr ;
     dhc:designView "compliance" .
 
+dhc:Norm_RGIE rdfs:label "AREI / RGIE"@de,
+        "RGIE / AREI"@fr ;
+    dhc:designView "compliance" .
+
+dhc:NormEdition_RGIE_1981 rdfs:label "AREI / RGIE (1981)"@de,
+        "RGIE / AREI (1981)"@fr ;
+    dhc:designView "compliance" .
+
+dhc:NormEdition_RGIE_2020 rdfs:label "AREI / RGIE Buch 1 (2020)"@de,
+        "RGIE / AREI Livre 1 (2020)"@fr ;
+    dhc:designView "compliance" .
+
 dhc:builtUnder rdfs:label "errichtet nach"@de,
         "réalisé selon"@fr ;
     dhc:designView "compliance" .

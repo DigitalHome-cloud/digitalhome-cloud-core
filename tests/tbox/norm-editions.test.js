@@ -115,7 +115,7 @@ describe('the edition→shapes binding', () => {
         return !latest || objectsOf(latest, 'shapesFile').length === 0;
       })
       .map(short);
-    expect(bad, 'norm whose edition in force has no shapes — nothing under it can be proven current').toEqual(['dhc:Norm_NFC14100']);
+    expect(bad, 'norm whose edition in force has no shapes — nothing under it can be proven current').toEqual(['dhc:Norm_NFC14100', 'dhc:Norm_RGIE']);
   });
 
   it('every edition that declares shapes resolves to a norm with a latestEdition', () => {

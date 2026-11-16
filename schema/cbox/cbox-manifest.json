@@ -1,7 +1,7 @@
 {
   "$schema": "https://digitalhome.cloud/schema/cbox-manifest.schema.json",
   "version": "3.1.0",
-  "description": "Registry of C-Box norm profiles. Each entry points to a SHACL shapes file that binds to a dhc:Norm instance in the T-Box, and to the dhc:NormEdition that file implements. Scoped to France while the v3 core is prototyped — DIN VDE 0100 (DE), AREI/RGIE (BE) and BS 7671 (GB) were removed in v3.0.0 and are re-added once dhc-core is released. Every profile listed here must bind to a dhc:Norm and a dhc:NormEdition that exist in the T-Box, and the T-Box's dhc:shapesFile must agree with the file named here; tests/cbox/manifest.test.js enforces all three.",
+  "description": "Registry of C-Box norm profiles. Each entry points to a SHACL shapes file that binds to a dhc:Norm instance in the T-Box, and to the dhc:NormEdition that file implements. France, and Belgium from RGIE 1981 (a DRAFT). DIN VDE 0100 (DE) and BS 7671 (GB) were removed in v3.0.0 and are re-added once dhc-core is released; AREI/RGIE (BE) came back for the first Belgian survey. Every profile listed here must bind to a dhc:Norm and a dhc:NormEdition that exist in the T-Box, and the T-Box's dhc:shapesFile must agree with the file named here; tests/cbox/manifest.test.js enforces all three.",
   "editionNote": "One profile per EDITION, not per norm (changed in 3.1.0). Compliance is computed by validating against each edition's shapes and comparing the verdicts: passing the latest is green, passing an older one but failing the latest is grandfathered. That is impossible with a single profile per norm. The T-Box's dhc:shapesFile on each dhc:NormEdition is authoritative; this manifest mirrors it so downstream apps can enumerate profiles without parsing Turtle.",
   "deltaNote": "A profile with \"delta\": true carries ONLY what its edition adds or tightens, and is meaningless on its own. Its effective rule set is itself concatenated with every profile down the dhc:supersedes chain. Concatenation ANDs constraints, so an edition may add or tighten but NEVER loosen — see the header of nfc15100-2024.shapes.ttl.",
   "profiles": [
@@ -52,6 +52,23 @@
       "edition": "dhc:NormEdition_NFC14100_2008",
       "file": "electrical/nfc14100-2008.shapes.ttl",
       "delta": false,
+      "requires": []
+    },
+    {
+      "id": "rgie-1981",
+      "label": {
+        "en": "RGIE / AREI (1981) — Domestic electrical installations (Belgium) — ⚠ DRAFT, not checked against the text",
+        "de": "AREI / RGIE (1981) — Elektrische Hausinstallationen (Belgien) — ⚠ ENTWURF, nicht am Text geprüft",
+        "fr": "RGIE / AREI (1981) — Installations électriques domestiques (Belgique) — ⚠ BROUILLON, non vérifié sur le texte"
+      },
+      "country": "BE",
+      "domain": "electrical",
+      "version": "1981",
+      "norm": "dhc:Norm_RGIE",
+      "edition": "dhc:NormEdition_RGIE_1981",
+      "file": "electrical/rgie-1981.shapes.ttl",
+      "delta": false,
+      "unverified": "A draft of the domestic rules as commonly stated, not yet compared with the published RGIE articles.",
       "requires": []
     }
   ]

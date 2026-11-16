@@ -38,20 +38,21 @@ describe('T-Box — dhc-core.ttl', () => {
     expect(ttl).not.toMatch(/\bdhc:guidelineWeight\b/);
   });
 
-  // Scoped to France while the v3 core is prototyped. DIN VDE 0100 (DE),
-  // AREI/RGIE (BE) and BS 7671 (GB) were removed in v3.0.0 — shapes, tests,
-  // fixtures, manifest profiles and Norm instances together, so nothing
-  // dangles. They return once dhc-core is released.
-  it('promotes Norm to a first-class class with exactly 2 instances (FR only)', () => {
+  // France, and Belgium's RGIE. DIN VDE 0100 (DE) and BS 7671 (GB) were
+  // removed in v3.0.0 — shapes, tests, fixtures, manifest profiles and Norm
+  // instances together, so nothing dangles. They return once dhc-core is
+  // released.
+  it('promotes Norm to a first-class class with exactly 3 instances (FR, BE)', () => {
     const normClass = subjects(namedNode(`${RDF}type`), namedNode(`${OWL}Class`))
       .filter(s => s === `${DHC}Norm`);
     expect(normClass).toHaveLength(1);
 
     const normInstances = subjects(namedNode(`${RDF}type`), namedNode(`${DHC}Norm`));
-    expect(normInstances).toHaveLength(2);
+    expect(normInstances).toHaveLength(3);
     expect(new Set(normInstances)).toEqual(new Set([
       `${DHC}Norm_NFC14100`,
       `${DHC}Norm_NFC15100`,
+      `${DHC}Norm_RGIE`,
     ]));
   });
 
