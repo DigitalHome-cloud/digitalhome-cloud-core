@@ -613,6 +613,22 @@ const homeConfigOptionsTable = new Table(Stack.of(configurationsFn), "HomeConfig
   pointInTimeRecovery: true,
   encryption: TableEncryption.AWS_MANAGED,
 });
+// HomeTags (ADR 0018 point 10): one row per blank QR tag, minted for a home
+// and bound to one of its items on site. Same stack and rights as above.
+const homeTagsTable = new Table(Stack.of(configurationsFn), "HomeTags", {
+  partitionKey: { name: "tagId", type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+  pointInTimeRecovery: true,
+  encryption: TableEncryption.AWS_MANAGED,
+});
+for (const [fn, def] of [[configurationsFn, backend.configurations], [edgeConfigurationsFn, backend.edgeConfigurations]] as const) {
+  fn.addToRolePolicy(new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"],
+    resources: [homeTagsTable.tableArn],
+  }));
+  def.addEnvironment("HOME_TAGS_TABLE_NAME", homeTagsTable.tableName);
+}
 for (const [fn, def] of [[configurationsFn, backend.configurations], [edgeConfigurationsFn, backend.edgeConfigurations]] as const) {
   fn.addToRolePolicy(new PolicyStatement({
     effect: Effect.ALLOW,
@@ -789,7 +805,7 @@ const routes: Array<[string, typeof edgeAuthzFn]> = [
   ["/edge/v1/market/uploads", edgeMarketFn],
   ["/edge/v1/templates/editions", edgeTemplatesFn],
   ["/edge/v1/templates/get", edgeTemplatesFn],
-  ...["versions", "get", "option", "save-option", "promote", "seed", "minor", "withdraw"].map(
+  ...["versions", "get", "option", "save-option", "promote", "seed", "minor", "withdraw", "tags"].map(
     (r) => [`/edge/v1/configurations/${r}`, edgeConfigurationsFn] as [string, typeof edgeAuthzFn]
   ),
   ...["items", "upload", "commit", "url", "group", "tag"].map(

@@ -733,6 +733,39 @@ const schema = a.schema({
     .handler(a.handler.function(configurations))
     .authorization((allow) => [allow.authenticated()]),
 
+  // ─── Blank QR tags (ADR 0018 point 10): minted per home, bound on site ───
+  HomeTag: a.customType({
+    tagId: a.string().required(),
+    homeId: a.string().required(),
+    item: a.string(),
+    boundAt: a.string(),
+  }),
+  HomeTagsMinted: a.customType({
+    homeId: a.string().required(),
+    tags: a.string().array().required(),
+  }),
+
+  mintHomeTags: a
+    .mutation()
+    .arguments({ homeId: a.string().required(), count: a.integer().required() })
+    .returns(a.ref("HomeTagsMinted"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  homeTag: a
+    .query()
+    .arguments({ tagId: a.string().required() })
+    .returns(a.ref("HomeTag"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
+  bindHomeTag: a
+    .mutation()
+    .arguments({ tagId: a.string().required(), item: a.string() })
+    .returns(a.ref("HomeTag"))
+    .handler(a.handler.function(configurations))
+    .authorization((allow) => [allow.authenticated()]),
+
   // ─── A home's vault (ADR 0019): photos and documents by configuration ───
   HomeVaultItem: a.customType({
     sha256: a.string().required(),

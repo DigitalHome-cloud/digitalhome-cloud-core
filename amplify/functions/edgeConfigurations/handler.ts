@@ -10,6 +10,7 @@
 //   POST /edge/v1/configurations/seed        { homeId, ttl }                     → the first live configuration, 0001-0000
 //   POST /edge/v1/configurations/minor       { homeId, ttl[, expectedLive] }     → MMMM-mmmm+1, additions only
 //   POST /edge/v1/configurations/withdraw    { homeId, id }                      → a live major that changed nothing is taken back
+//   POST /edge/v1/configurations/tags        { homeId, count }                   → { homeId, tags: [t-…] }, blank QR tags (point 10)
 //
 //   401 invalid/expired token · 410 revoked · 403 not this edge's home · 400 bad request (as every edge route)
 //
@@ -21,6 +22,7 @@ import { extractBearer, json, parseJsonBody } from "../edge-shared/http";
 import { EDGE_REGISTRY_TABLE, verifyDeviceToken } from "../edge-shared/registry";
 import { Forbidden, homeForEdge } from "../configurations-shared/access";
 import * as api from "../configurations-shared/api";
+import { mintTags } from "../configurations-shared/tags";
 import { BadRequest } from "../configurations-shared/rules";
 
 const ROUTES: Record<string, (home: string, a: Record<string, unknown>, by: string) => Promise<unknown>> = {
@@ -32,6 +34,7 @@ const ROUTES: Record<string, (home: string, a: Record<string, unknown>, by: stri
   seed: api.seed,
   minor: api.minor,
   withdraw: api.withdraw,
+  tags: (home, a, by) => mintTags(home, a.count, by),
 };
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
