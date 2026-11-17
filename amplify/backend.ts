@@ -805,7 +805,7 @@ const routes: Array<[string, typeof edgeAuthzFn]> = [
   ["/edge/v1/market/uploads", edgeMarketFn],
   ["/edge/v1/templates/editions", edgeTemplatesFn],
   ["/edge/v1/templates/get", edgeTemplatesFn],
-  ...["versions", "get", "option", "save-option", "promote", "seed", "minor", "withdraw", "tags"].map(
+  ...["versions", "get", "option", "save-option", "promote", "seed", "minor", "withdraw", "tags", "tag-bind"].map(
     (r) => [`/edge/v1/configurations/${r}`, edgeConfigurationsFn] as [string, typeof edgeAuthzFn]
   ),
   ...["items", "upload", "commit", "url", "group", "tag"].map(
