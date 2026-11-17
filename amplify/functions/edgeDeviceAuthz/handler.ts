@@ -20,6 +20,7 @@ import {
   POLL_INTERVAL_S,
 } from "../edge-shared/codes";
 import { ddb, marshall, DEVICE_CODES_TABLE } from "../edge-shared/registry";
+import { kindOf } from "../edge-shared/kinds";
 
 const PORTAL_LINK_URL =
   process.env.PORTAL_LINK_URL || "https://portal.digitalhome.cloud/link";
@@ -33,6 +34,7 @@ interface DeviceInfo {
   hostname?: string;
   lan_ip?: string;
   dhe_version?: string;
+  edge_kind?: string;
 }
 interface AuthzBody {
   client_id?: string;
@@ -40,7 +42,7 @@ interface AuthzBody {
   device_info?: DeviceInfo;
 }
 
-// Trim device_info to the four known fields (strings, length-capped) so we only
+// Trim device_info to the known fields (edge_kind only "pro" or "devops") (strings, length-capped) so we only
 // persist what the approval screen needs.
 function sanitizeDeviceInfo(di: DeviceInfo | undefined): DeviceInfo {
   const s = (v: unknown) =>
@@ -50,6 +52,7 @@ function sanitizeDeviceInfo(di: DeviceInfo | undefined): DeviceInfo {
     hostname: s(di?.hostname),
     lan_ip: s(di?.lan_ip),
     dhe_version: s(di?.dhe_version),
+    edge_kind: kindOf(di?.edge_kind) ?? undefined,
   };
 }
 

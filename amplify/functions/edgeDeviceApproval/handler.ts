@@ -15,6 +15,7 @@
 
 import {
   QueryCommand,
+  ScanCommand,
   UpdateItemCommand,
   GetItemCommand,
   DynamoDBClient,
@@ -22,6 +23,7 @@ import {
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { GetParametersCommand, SSMClient } from "@aws-sdk/client-ssm";
 import type { AppSyncResolverEvent, AppSyncIdentityCognito } from "aws-lambda";
+import { kindOf, workHomesFor } from "../edge-shared/kinds";
 
 const REGION = process.env.AWS_REGION || "eu-central-1";
 const DIGITALHOME_TABLE = process.env.DIGITALHOME_TABLE_NAME!;
@@ -58,6 +60,7 @@ interface DeviceInfo {
   hostname?: string;
   lan_ip?: string;
   dhe_version?: string;
+  edge_kind?: string;
 }
 interface PendingRow {
   device_code: string;
@@ -92,6 +95,25 @@ async function findByUserCode(userCode: string): Promise<PendingRow | null> {
   };
 }
 
+// Every home's ids and owners: few rows, read only when an edge reported homes.
+async function allHomes(): Promise<{ smartHomeId: string; homeId?: string; owners?: string[] }[]> {
+  const out: { smartHomeId: string; homeId?: string; owners?: string[] }[] = [];
+  let start: Record<string, any> | undefined;
+  do {
+    const res = await ddb.send(
+      new ScanCommand({
+        TableName: DIGITALHOME_TABLE,
+        ProjectionExpression: "smartHomeId, homeId, #o",
+        ExpressionAttributeNames: { "#o": "owners" },
+        ExclusiveStartKey: start,
+      })
+    );
+    for (const i of res.Items || []) out.push(unmarshall(i) as any);
+    start = res.LastEvaluatedKey;
+  } while (start);
+  return out;
+}
+
 // Owner of the DigitalHome, or admin.
 async function callerOwnsHome(
   sub: string,
@@ -111,8 +133,13 @@ async function callerOwnsHome(
   return owners.includes(sub);
 }
 
-function toEdgeSummary(row: Record<string, unknown>) {
+function toEdgeSummary(row: Record<string, unknown>, workHomes: string[] = []) {
   return {
+    // pro | devops (ADR 0020): reported, else read from the tool name
+    edge_kind: kindOf(row.edge_kind, row.dhe_version),
+    // a pro edge's workspaces' homes, as SmartHome IDs the caller may use
+    work_homes: workHomes,
+    work_homes_at: (row.work_homes_at as string) ?? null,
     edge_id: (row.edge_id as string) ?? null,
     home_id: (row.home_id as string) ?? null,
     machine_id: (row.machine_id as string) ?? null,
@@ -151,7 +178,10 @@ export const handler = async (event: AppSyncResolverEvent<Args>) => {
         ExpressionAttributeValues: marshall({ ":s": sub }),
       })
     );
-    return (res.Items || []).map((i) => toEdgeSummary(unmarshall(i)));
+    const rows = (res.Items || []).map((i) => unmarshall(i));
+    const homes = rows.some((r) => Array.isArray(r.work_homes) && r.work_homes.length) ? await allHomes() : [];
+    const username = (identity as { username?: string }).username;
+    return rows.map((r) => toEdgeSummary(r, workHomesFor(r.work_homes, homes, { sub, username, admin: isAdmin })));
   }
 
   if (field === "linkEdgeToHome") {
@@ -213,6 +243,7 @@ export const handler = async (event: AppSyncResolverEvent<Args>) => {
       hostname: di.hostname ?? null,
       lan_ip: di.lan_ip ?? null,
       dhe_version: di.dhe_version ?? null,
+      edge_kind: kindOf(di.edge_kind, di.dhe_version),
       machine_id: di.machine_id ?? null,
     };
   }

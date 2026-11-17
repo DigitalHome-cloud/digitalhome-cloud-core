@@ -63,6 +63,7 @@ interface DeviceCodeRow {
     hostname?: string;
     lan_ip?: string;
     dhe_version?: string;
+    edge_kind?: string;
   };
   approved_by_sub?: string | null;
   home_id?: string | null;
@@ -192,6 +193,8 @@ export const handler = async (
           hostname: row.device_info?.hostname || null,
           lan_ip: row.device_info?.lan_ip || null,
           dhe_version: row.device_info?.dhe_version || null,
+          // pro | devops (ADR 0020); every telemetry report restates it
+          edge_kind: row.device_info?.edge_kind || null,
           device_token_hash: tokenHash,
           device_token_expires: tokenExpiresIso,
           previous_token_hash: null,

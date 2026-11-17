@@ -221,6 +221,7 @@ const schema = a.schema({
     lan_ip: a.string(),
     dhe_version: a.string(),
     machine_id: a.string(),
+    edge_kind: a.string(),   // ADR 0020: a pro edge is linked to no home
   }),
 
   // ─── one registered edge, for the Portal "My Edges" view ─────────
@@ -233,6 +234,11 @@ const schema = a.schema({
     status: a.string(),
     last_telemetry_at: a.string(),
     linked_at: a.string(),
+    // ADR 0020: "pro" (works for its person's homes) or "devops" (one home)
+    edge_kind: a.string(),
+    // a pro edge's workspaces' homes: SmartHome IDs the caller may use
+    work_homes: a.string().array(),
+    work_homes_at: a.string(),
   }),
 
   // ─── initiateDigitalHome custom mutation ─────────────────────────
