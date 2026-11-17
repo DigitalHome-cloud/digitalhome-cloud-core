@@ -22,6 +22,7 @@ import {
   verifyDeviceToken,
   EDGE_REGISTRY_TABLE,
 } from "../edge-shared/registry";
+import { cleanWorkHomes, kindOf } from "../edge-shared/kinds";
 
 const MAX_DELTA_HISTORY = 20;
 
@@ -57,6 +58,20 @@ export const handler = async (
     ":linked": "linked",
   };
   const sets = ["last_telemetry_at = :now", "last_heartbeat_at = :now"];
+
+  // Two kinds of edge (ADR 0020): an edge may (re)state its kind, and a pro
+  // edge lists the homes its workspaces are attached to, by homeId only.
+  const kind = kindOf(body.edge_kind);
+  if (kind) {
+    values[":kind"] = kind;
+    sets.push("edge_kind = :kind");
+  }
+  const work = cleanWorkHomes(body.homes);
+  if (work) {
+    values[":work"] = work;
+    sets.push("work_homes = :work", "work_homes_at = :now");
+    delete body.homes;
+  }
 
   if (isFull) {
     names["#snap"] = "telemetry_snapshot";

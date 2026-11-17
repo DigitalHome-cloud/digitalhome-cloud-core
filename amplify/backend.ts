@@ -746,7 +746,7 @@ edgeApprovalFn.addToRolePolicy(
 edgeApprovalFn.addToRolePolicy(
   new PolicyStatement({
     effect: Effect.ALLOW,
-    actions: ["dynamodb:GetItem"],
+    actions: ["dynamodb:GetItem", "dynamodb:Scan"],   // Scan: listMyEdges names a pro edge's homes (ADR 0020)
     resources: [digitalHomeTable.tableArn],
   })
 );

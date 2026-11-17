@@ -30,6 +30,9 @@ export interface EdgeRow {
   telemetry_snapshot?: Record<string, unknown>;
   delta_history?: Record<string, unknown>[];
   linked_at?: string;
+  edge_kind?: "pro" | "devops" | null;
+  work_homes?: string[];
+  work_homes_at?: string;
   revoked_at?: string | null;
   revoked_reason?: string | null;
 }
