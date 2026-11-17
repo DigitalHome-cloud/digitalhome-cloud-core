@@ -50,6 +50,8 @@ export interface VaultItem {
 }
 
 const MAX_TAGS = 20;
+// what a survey photo shows: never an address, only ids and short words
+export const SUBJECT_TAG = /^(survey|item:[a-z][a-z0-9-]{2,60}|kind:[a-z_]{2,20}|room:[\p{L}\p{N} ._'-]{1,40})$/u;
 
 /** An item's tags: its tags, and the single configVersion of an older row. */
 export const tagsOf = (i: { tags?: string[]; configVersion?: string }) =>
@@ -81,6 +83,14 @@ export class HomeVault {
   }
 
   /** A group must be a version or an option of this home (or none). */
+  /** A tag: a version or option of this home, or what a survey photo shows
+   *  (survey, item:<id>, kind:<word>, room:<name>; ADR 0018 point 10). */
+  label(home: string, v: unknown): string | undefined {
+    const g = String(v ?? "").trim();
+    if (SUBJECT_TAG.test(g)) return g;
+    return this.group(home, g);
+  }
+
   group(home: string, v: unknown): string | undefined {
     const g = String(v ?? "").trim();
     if (!g) return undefined;
@@ -101,7 +111,7 @@ export class HomeVault {
       (res.Items || []).forEach((i: any) => { const r = unmarshall(i) as VaultItem; rows.push({ ...r, tags: tagsOf(r) }); });
       start = res.LastEvaluatedKey;
     } while (start);
-    const want = tag ? this.group(home, tag) : undefined;
+    const want = tag ? this.label(home, tag) : undefined;
     const shown = rows
       .filter((r) => !want || r.tags!.includes(want))
       .sort((a, b) => (a.tags![0] ?? "").localeCompare(b.tags![0] ?? "") || (a.takenAt ?? a.uploadedAt).localeCompare(b.takenAt ?? b.uploadedAt));
@@ -212,14 +222,14 @@ export class HomeVault {
 
   /**
    * Add and remove tags on several items at once (a multiple selection).
-   * Each tag is a version or an option of this home.
+   * Each tag is a version or an option of this home, or a survey subject.
    */
   async tag(home: string, sha256s: unknown, add: unknown = [], remove: unknown = []): Promise<Array<{ sha256: string; tags: string[] }>> {
     const list = (v: unknown) => (Array.isArray(v) ? v : v ? [v] : []).map((x) => String(x));
     const shas = [...new Set(list(sha256s).map((s) => s.toLowerCase()))];
     if (!shas.length || shas.length > 500) throw new BadRequest("sha256s: 1 to 500 items");
-    const plus = list(add).map((t) => this.group(home, t)!).filter(Boolean);
-    const minus = new Set(list(remove).map((t) => this.group(home, t)!).filter(Boolean));
+    const plus = list(add).map((t) => this.label(home, t)!).filter(Boolean);
+    const minus = new Set(list(remove).map((t) => this.label(home, t)!).filter(Boolean));
     if (!plus.length && !minus.size) throw new BadRequest("say which tags to add or remove");
     const out = [];
     for (const sha of shas) {

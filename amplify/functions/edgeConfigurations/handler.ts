@@ -10,6 +10,8 @@
 //   POST /edge/v1/configurations/seed        { homeId, ttl }                     → the first live configuration, 0001-0000
 //   POST /edge/v1/configurations/minor       { homeId, ttl[, expectedLive] }     → MMMM-mmmm+1, additions only
 //   POST /edge/v1/configurations/withdraw    { homeId, id }                      → a live major that changed nothing is taken back
+//   POST /edge/v1/configurations/tags        { homeId, count }                   → { homeId, tags: [t-…] }, blank QR tags (point 10)
+//   POST /edge/v1/configurations/tag-bind    { homeId, tagId, item? }            → { tagId, homeId, item, boundAt }, a tag of this home
 //
 //   401 invalid/expired token · 410 revoked · 403 not this edge's home · 400 bad request (as every edge route)
 //
@@ -21,6 +23,7 @@ import { extractBearer, json, parseJsonBody } from "../edge-shared/http";
 import { EDGE_REGISTRY_TABLE, verifyDeviceToken } from "../edge-shared/registry";
 import { Forbidden, homeForEdge } from "../configurations-shared/access";
 import * as api from "../configurations-shared/api";
+import { bindTag, getTag, mintTags, publicTag } from "../configurations-shared/tags";
 import { BadRequest } from "../configurations-shared/rules";
 
 const ROUTES: Record<string, (home: string, a: Record<string, unknown>, by: string) => Promise<unknown>> = {
@@ -32,6 +35,13 @@ const ROUTES: Record<string, (home: string, a: Record<string, unknown>, by: stri
   seed: api.seed,
   minor: api.minor,
   withdraw: api.withdraw,
+  tags: (home, a, by) => mintTags(home, a.count, by),
+  // the chat turned an observation into a design item: the tag follows it
+  "tag-bind": async (home, a, by) => {
+    const tag = await getTag(a.tagId);
+    if (!tag || tag.homeId !== home) throw new BadRequest("no such tag for this home");
+    return publicTag(await bindTag(tag, a.item, by));
+  },
 };
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
