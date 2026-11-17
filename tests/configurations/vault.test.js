@@ -80,4 +80,17 @@ describe("home vault", () => {
     await expect(v.tag(H, [sha("c")], [`${H}-0001-0000`])).rejects.toThrow(/no item/);
     await expect(v.tag(H, [sha("a")], [])).rejects.toThrow(/which tags/);
   });
+
+  it("files a survey photo under what it shows: item, kind, room (ADR 0018 point 10)", async () => {
+    await v.upload(H, [photo], false);
+    put(H, photo, "12345");
+    await v.commit(H, photo, "user:a");
+    const r = await v.tag(H, [sha("a")], ["survey", "item:pt-sink01", "kind:socket", "room:Küche 1"]);
+    expect(r[0].tags).toEqual(expect.arrayContaining([`${H}-0001-0000`, "survey", "item:pt-sink01", "kind:socket", "room:Küche 1"]));
+    expect((await v.items(H, "item:pt-sink01")).map((i) => i.name)).toEqual(["panel open.png"]);
+    await v.tag(H, [sha("a")], [], ["item:pt-sink01"]);
+    expect(await v.items(H, "item:pt-sink01")).toEqual([]);
+    for (const bad of ["item:Not An Id", "room:" + "x".repeat(41), "colour:red", "kind:<b>"])
+      await expect(v.tag(H, [sha("a")], [bad])).rejects.toThrow(BadRequest);
+  });
 });
